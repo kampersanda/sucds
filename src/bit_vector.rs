@@ -25,10 +25,10 @@ impl BitVector {
 
     pub fn from_bits<'a, I>(bits: I) -> Self
     where
-        I: Iterator<Item = &'a bool>,
+        I: IntoIterator<Item = &'a bool>,
     {
         let mut this = Self::new();
-        bits.for_each(|&b| this.push_bit(b));
+        bits.into_iter().for_each(|&b| this.push_bit(b));
         this
     }
 
@@ -175,7 +175,7 @@ mod tests {
 
     fn test_bit_vector(bits: &[bool]) {
         {
-            let bv = BitVector::from_bits(bits.iter());
+            let bv = BitVector::from_bits(bits);
             assert_eq!(bits.len(), bv.len());
             for i in 0..bits.len() {
                 assert_eq!(bits[i], bv.get_bit(i));
@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bv = BitVector::from_bits(gen_random_bits(10000, 42).iter());
+        let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
         let bytes = bincode::serialize(&bv).unwrap();
         let other: BitVector = bincode::deserialize(&bytes).unwrap();
         assert_eq!(bv.len(), other.len());

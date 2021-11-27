@@ -29,7 +29,7 @@ impl RsBitVector {
 
     pub fn from_bits<'a, I>(bits: I, select1_hints: bool, select0_hints: bool) -> Self
     where
-        I: Iterator<Item = &'a bool>,
+        I: IntoIterator<Item = &'a bool>,
     {
         Self::new(BitVector::from_bits(bits), select1_hints, select0_hints)
     }
@@ -310,7 +310,7 @@ mod tests {
     fn test_random_bits() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, seed);
-            let bv = RsBitVector::from_bits(bits.iter(), true, true);
+            let bv = RsBitVector::from_bits(&bits, true, true);
             test_rank_select1(&bits, &bv);
             test_rank_select0(&bits, &bv);
         }
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bv = RsBitVector::from_bits(gen_random_bits(10000, 42).iter(), true, true);
+        let bv = RsBitVector::from_bits(&gen_random_bits(10000, 42), true, true);
         let bytes = bincode::serialize(&bv).unwrap();
         let other: RsBitVector = bincode::deserialize(&bytes).unwrap();
         assert_eq!(bv.len(), other.len());
