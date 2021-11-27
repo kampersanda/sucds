@@ -1,11 +1,13 @@
 #![cfg(target_pointer_width = "64")]
 
 use crate::{broadword, BitVector};
+use serde::{Deserialize, Serialize};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
+#[derive(Serialize, Deserialize)]
 pub struct RsBitVector {
     bv: BitVector,
     block_rank1_pairs: Vec<usize>,
@@ -312,5 +314,15 @@ mod tests {
             test_rank_select1(&bits, &bv);
             test_rank_select0(&bits, &bv);
         }
+    }
+
+    #[test]
+    fn test_serialize() {
+        let bv = RsBitVector::from_bits(gen_random_bits(10000, 42).iter(), true, true);
+        let bytes = bincode::serialize(&bv).unwrap();
+        let other: RsBitVector = bincode::deserialize(&bytes).unwrap();
+        assert_eq!(bv.len(), other.len());
+        assert_eq!(bv.num_ones(), other.num_ones());
+        assert_eq!(bv.num_zeros(), other.num_zeros());
     }
 }

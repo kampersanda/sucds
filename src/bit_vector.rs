@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
+#[derive(Serialize, Deserialize)]
 pub struct BitVector {
     words: Vec<usize>,
     len: usize,
@@ -224,6 +227,17 @@ mod tests {
             let width = rng.gen_range(1..16);
             let ints = gen_random_ints(10000, width, seed);
             test_int_vector(&ints, width);
+        }
+    }
+
+    #[test]
+    fn test_serialize() {
+        let bv = BitVector::from_bits(gen_random_bits(10000, 42).iter());
+        let bytes = bincode::serialize(&bv).unwrap();
+        let other: BitVector = bincode::deserialize(&bytes).unwrap();
+        assert_eq!(bv.len(), other.len());
+        for i in 0..bv.len() {
+            assert_eq!(bv.get_bit(i), other.get_bit(i));
         }
     }
 }
