@@ -10,7 +10,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 #[derive(Serialize, Deserialize)]
 pub struct RsBitVector {
     bv: BitVector,
-    block_rank1_pairs: Vec<usize>,
+    block_rank_pairs: Vec<usize>,
     select1_hints: Vec<usize>,
     select0_hints: Vec<usize>,
 }
@@ -40,13 +40,13 @@ impl RsBitVector {
     }
 
     #[inline(always)]
-    pub fn rank1(&self, pos: usize) -> usize {
+    pub fn rank(&self, pos: usize) -> usize {
         debug_assert!(pos <= self.len());
         if pos == self.len() {
             return self.num_ones();
         }
         let (sub_bpos, sub_left) = (pos / 64, pos % 64);
-        let mut r = self.sub_block_rank1(sub_bpos);
+        let mut r = self.sub_block_rank(sub_bpos);
         if sub_left != 0 {
             r += broadword::popcount(self.bv.get_word(sub_bpos) << (64 - sub_left));
         }
@@ -55,11 +55,11 @@ impl RsBitVector {
 
     #[inline(always)]
     pub fn rank0(&self, pos: usize) -> usize {
-        pos - self.rank1(pos)
+        pos - self.rank(pos)
     }
 
     #[inline(always)]
-    pub fn select1(&self, n: usize) -> usize {
+    pub fn select(&self, n: usize) -> usize {
         debug_assert!(n < self.num_ones());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
@@ -74,7 +74,7 @@ impl RsBitVector {
 
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
-                let x = self.block_rank1(mid);
+                let x = self.block_rank(mid);
                 if x <= n {
                     a = mid;
                 } else {
@@ -86,11 +86,11 @@ impl RsBitVector {
 
         debug_assert!(block < self.num_blocks());
         let block_offset = block * BLOCK_LEN;
-        let mut cur_rank = self.block_rank1(block);
+        let mut cur_rank = self.block_rank(block);
         debug_assert!(cur_rank <= n);
 
         let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = self.sub_block_ranks1(block);
+        let sub_ranks = self.sub_block_ranks(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
@@ -135,7 +135,7 @@ impl RsBitVector {
         debug_assert!(cur_rank <= n);
 
         let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks1(block);
+        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
@@ -155,7 +155,7 @@ impl RsBitVector {
 
     #[inline(always)]
     pub fn num_ones(&self) -> usize {
-        self.block_rank1_pairs[self.block_rank1_pairs.len() - 2]
+        self.block_rank_pairs[self.block_rank_pairs.len() - 2]
     }
 
     #[inline(always)]
@@ -165,28 +165,28 @@ impl RsBitVector {
 
     #[inline(always)]
     fn num_blocks(&self) -> usize {
-        self.block_rank1_pairs.len() / 2 - 1
+        self.block_rank_pairs.len() / 2 - 1
     }
 
     #[inline(always)]
-    fn block_rank1(&self, block: usize) -> usize {
-        self.block_rank1_pairs[block * 2]
+    fn block_rank(&self, block: usize) -> usize {
+        self.block_rank_pairs[block * 2]
     }
 
     #[inline(always)]
-    fn sub_block_rank1(&self, sub_bpos: usize) -> usize {
+    fn sub_block_rank(&self, sub_bpos: usize) -> usize {
         let (block, left) = (sub_bpos / BLOCK_LEN, sub_bpos % BLOCK_LEN);
-        self.block_rank1(block) + (self.sub_block_ranks1(block) >> ((7 - left) * 9) & 0x1FF)
+        self.block_rank(block) + (self.sub_block_ranks(block) >> ((7 - left) * 9) & 0x1FF)
     }
 
     #[inline(always)]
-    fn sub_block_ranks1(&self, block: usize) -> usize {
-        self.block_rank1_pairs[block * 2 + 1]
+    fn sub_block_ranks(&self, block: usize) -> usize {
+        self.block_rank_pairs[block * 2 + 1]
     }
 
     #[inline(always)]
     fn block_rank0(&self, block: usize) -> usize {
-        block * BLOCK_LEN * 64 - self.block_rank1(block)
+        block * BLOCK_LEN * 64 - self.block_rank(block)
     }
 
     fn build_rank(bv: BitVector) -> Self {
@@ -194,7 +194,7 @@ impl RsBitVector {
         let mut cur_subrank = 0;
         let mut subranks = 0;
 
-        let mut block_rank1_pairs = vec![next_rank];
+        let mut block_rank_pairs = vec![next_rank];
 
         for i in 0..bv.num_words() {
             let word_pop = broadword::popcount(bv.get_word(i));
@@ -209,8 +209,8 @@ impl RsBitVector {
             cur_subrank += word_pop;
 
             if shift == BLOCK_LEN - 1 {
-                block_rank1_pairs.push(subranks);
-                block_rank1_pairs.push(next_rank);
+                block_rank_pairs.push(subranks);
+                block_rank_pairs.push(next_rank);
                 subranks = 0;
                 cur_subrank = 0;
             }
@@ -221,17 +221,17 @@ impl RsBitVector {
             subranks <<= 9;
             subranks |= cur_subrank;
         }
-        block_rank1_pairs.push(subranks);
+        block_rank_pairs.push(subranks);
 
         if bv.num_words() % BLOCK_LEN != 0 {
-            block_rank1_pairs.push(next_rank);
-            block_rank1_pairs.push(0);
+            block_rank_pairs.push(next_rank);
+            block_rank_pairs.push(0);
         }
-        block_rank1_pairs.shrink_to_fit();
+        block_rank_pairs.shrink_to_fit();
 
         Self {
             bv,
-            block_rank1_pairs,
+            block_rank_pairs,
             select1_hints: vec![],
             select0_hints: vec![],
         }
@@ -241,7 +241,7 @@ impl RsBitVector {
         let mut select1_hints = vec![];
         let mut cur_ones_threshold = SELECT_ONES_PER_HINT;
         for i in 0..self.num_blocks() {
-            if self.block_rank1(i + 1) > cur_ones_threshold {
+            if self.block_rank(i + 1) > cur_ones_threshold {
                 select1_hints.push(i);
                 cur_ones_threshold += SELECT_ONES_PER_HINT;
             }
@@ -285,9 +285,9 @@ mod tests {
     fn test_rank_select1(bits: &[bool], bv: &RsBitVector) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
-            assert_eq!(cur_rank, bv.rank1(i));
+            assert_eq!(cur_rank, bv.rank(i));
             if bits[i] {
-                assert_eq!(i, bv.select1(cur_rank));
+                assert_eq!(i, bv.select(cur_rank));
                 cur_rank += 1;
             }
         }
