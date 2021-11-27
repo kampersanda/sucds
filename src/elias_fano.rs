@@ -15,7 +15,7 @@ pub struct EliasFano {
 impl EliasFano {
     pub fn new(b: EliasFanoBuilder) -> Self {
         Self {
-            high_bits_d1: DArray::new(&b.high_bits),
+            high_bits_d1: DArray::new(&b.high_bits, true),
             high_bits: b.high_bits,
             low_bits: b.low_bits,
             l: b.l,
