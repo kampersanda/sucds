@@ -9,7 +9,6 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 
 #[derive(Serialize, Deserialize)]
 pub struct DArray {
-    bv: BitVector,
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,
     overflow_positions: Vec<usize>,
@@ -17,7 +16,7 @@ pub struct DArray {
 }
 
 impl DArray {
-    pub fn new(bv: BitVector) -> Self {
+    pub fn new(bv: &BitVector) -> Self {
         let mut cur_block_positions = vec![];
         let mut block_inventory = vec![];
         let mut subblock_inventory = vec![];
@@ -65,19 +64,11 @@ impl DArray {
         overflow_positions.shrink_to_fit();
 
         Self {
-            bv,
             block_inventory,
             subblock_inventory,
             overflow_positions,
             num_positions,
         }
-    }
-
-    pub fn from_bits<'a, I>(bits: I) -> Self
-    where
-        I: IntoIterator<Item = &'a bool>,
-    {
-        Self::new(BitVector::from_bits(bits))
     }
 
     fn flush_cur_block(
@@ -105,7 +96,7 @@ impl DArray {
         cur_block_positions.clear();
     }
 
-    pub fn select(&self, idx: usize) -> usize {
+    pub fn select(&self, bv: &BitVector, idx: usize) -> usize {
         debug_assert!(idx < self.num_positions);
 
         let block = idx / BLOCK_LEN;
@@ -125,7 +116,7 @@ impl DArray {
         } else {
             let mut word_idx = start_pos / 64;
             let word_shift = start_pos % 64;
-            let mut word = self.bv.get_word(word_idx) & (std::usize::MAX << word_shift);
+            let mut word = bv.get_word(word_idx) & (std::usize::MAX << word_shift);
 
             loop {
                 let popcnt = broadword::popcount(word);
@@ -134,7 +125,7 @@ impl DArray {
                 }
                 reminder -= popcnt;
                 word_idx += 1;
-                word = self.bv.get_word(word_idx);
+                word = bv.get_word(word_idx);
             }
 
             64 * word_idx + broadword::select_in_word(word, reminder)
@@ -158,11 +149,11 @@ mod tests {
         (0..len).map(|_| rng.gen::<bool>()).collect()
     }
 
-    fn test_select(bits: &[bool], da: &DArray) {
+    fn test_select(bv: &BitVector, da: &DArray) {
         let mut cur_rank = 0;
-        for i in 0..bits.len() {
-            if bits[i] {
-                assert_eq!(i, da.select(cur_rank));
+        for i in 0..bv.len() {
+            if bv.get_bit(i) {
+                assert_eq!(i, da.select(bv, cur_rank));
                 cur_rank += 1;
             }
         }
@@ -171,29 +162,30 @@ mod tests {
 
     #[test]
     fn test_tiny_bits() {
-        let da = DArray::from_bits(&[true, false, false, true, false, true, true]);
-        assert_eq!(da.select(0), 0);
-        assert_eq!(da.select(1), 3);
-        assert_eq!(da.select(2), 5);
-        assert_eq!(da.select(3), 6);
+        let bv = BitVector::from_bits(&[true, false, false, true, false, true, true]);
+        let da = DArray::new(&bv);
+        assert_eq!(da.select(&bv, 0), 0);
+        assert_eq!(da.select(&bv, 1), 3);
+        assert_eq!(da.select(&bv, 2), 5);
+        assert_eq!(da.select(&bv, 3), 6);
     }
 
     #[test]
     fn test_random_bits() {
         for seed in 0..100 {
-            let bits = gen_random_bits(10000, seed);
-            let da = DArray::from_bits(&bits);
-            test_select(&bits, &da);
+            let bv = BitVector::from_bits(&gen_random_bits(10000, seed));
+            let da = DArray::new(&bv);
+            test_select(&bv, &da);
         }
     }
 
     #[test]
     fn test_serialize() {
-        let bits = gen_random_bits(10000, 42);
-        let da = DArray::from_bits(&bits);
+        let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
+        let da = DArray::new(&bv);
         let bytes = bincode::serialize(&da).unwrap();
         let other: DArray = bincode::deserialize(&bytes).unwrap();
         assert_eq!(da.len(), other.len());
-        test_select(&bits, &other);
+        test_select(&bv, &other);
     }
 }

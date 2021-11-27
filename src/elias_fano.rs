@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct EliasFano {
-    high_bits: DArray,
+    high_bits: BitVector,
+    high_bits_d1: DArray,
     low_bits: BitVector,
     l: usize,
     universe: usize,
@@ -14,7 +15,8 @@ pub struct EliasFano {
 impl EliasFano {
     pub fn new(b: EliasFanoBuilder) -> Self {
         Self {
-            high_bits: DArray::new(b.high_bits),
+            high_bits_d1: DArray::new(&b.high_bits),
+            high_bits: b.high_bits,
             low_bits: b.low_bits,
             l: b.l,
             universe: b.n,
@@ -36,11 +38,12 @@ impl EliasFano {
     }
 
     pub fn select(&self, n: usize) -> usize {
-        ((self.high_bits.select(n) - n) << self.l) | self.low_bits.get_bits(n * self.l, self.l)
+        ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.l)
+            | self.low_bits.get_bits(n * self.l, self.l)
     }
 
     pub fn len(&self) -> usize {
-        self.high_bits.len()
+        self.high_bits_d1.len()
     }
 
     pub fn universe(&self) -> usize {
