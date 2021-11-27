@@ -318,11 +318,14 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bv = RsBitVector::from_bits(&gen_random_bits(10000, 42), true, true);
+        let bits = gen_random_bits(10000, 42);
+        let bv = RsBitVector::from_bits(&bits, true, true);
         let bytes = bincode::serialize(&bv).unwrap();
         let other: RsBitVector = bincode::deserialize(&bytes).unwrap();
         assert_eq!(bv.len(), other.len());
         assert_eq!(bv.num_ones(), other.num_ones());
         assert_eq!(bv.num_zeros(), other.num_zeros());
+        test_rank_select1(&bits, &other);
+        test_rank_select0(&bits, &other);
     }
 }
