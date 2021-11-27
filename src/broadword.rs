@@ -140,6 +140,25 @@ pub fn lsb(x: usize) -> Option<usize> {
     }
 }
 
+#[inline(always)]
+pub fn msb(mut x: usize) -> Option<usize> {
+    if x == 0 {
+        return None;
+    }
+
+    // right-saturate the word
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+
+    // isolate the MSB
+    x ^= x >> 1;
+    Some(bit_position(x))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
