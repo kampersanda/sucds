@@ -47,10 +47,10 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     let geq_k_step_8 = ((k_step_8 | MSBS_STEP_8) - byte_sums) & MSBS_STEP_8;
     let place = popcount(geq_k_step_8) * 8;
     let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF);
-    place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)]
+    place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
 
-const SELECT_IN_BYTE: [usize; 2048] = [
+const SELECT_IN_BYTE: [u8; 2048] = [
     8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
     5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
     6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
@@ -116,6 +116,29 @@ const SELECT_IN_BYTE: [usize; 2048] = [
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7,
 ];
+
+const DEBRUIJN64_MAPPING: [u8; 64] = [
+    63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55,
+    30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56,
+    45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5,
+];
+
+const DEBRUIJN64: usize = 0x07EDD5E59A4E28C2;
+
+#[inline(always)]
+pub fn bit_position(x: usize) -> usize {
+    debug_assert!(popcount(x) == 1);
+    DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
+}
+
+#[inline(always)]
+pub fn lsb(x: usize) -> Option<usize> {
+    if x == 0 {
+        None
+    } else {
+        Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+    }
+}
 
 #[cfg(test)]
 mod tests {
