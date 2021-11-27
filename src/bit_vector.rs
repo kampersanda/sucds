@@ -15,7 +15,7 @@ impl BitVector {
 
     pub fn with_len(len: usize) -> Self {
         Self {
-            words: vec![Self::words_for(len)],
+            words: vec![0; Self::words_for(len)],
             len: len,
         }
     }
@@ -25,31 +25,82 @@ impl BitVector {
         I: Iterator<Item = &'a bool>,
     {
         let mut this = Self::new();
-        for &b in bits {
-            this.push(b);
-        }
+        bits.for_each(|&b| this.push_bit(b));
         this
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.words.shrink_to_fit();
     }
 
     #[inline(always)]
     pub fn get_bit(&self, pos: usize) -> bool {
         debug_assert!(pos < self.len);
-        let block = pos / WORD_LEN;
-        let shift = pos % WORD_LEN;
+        let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
         (self.words[block] >> shift) & 1 == 1
     }
 
     #[inline(always)]
-    pub fn set_bit(&mut self, pos: usize, b: bool) {
-        debug_assert!(pos < self.len);
-        let wpos = pos / WORD_LEN;
-        let pos_in_word = pos % WORD_LEN;
-        self.words[wpos] &= !(1 << pos_in_word);
-        self.words[wpos] |= (b as usize) << pos_in_word;
+    pub fn get_bits(&self, pos: usize, len: usize) -> usize {
+        debug_assert!(len <= WORD_LEN);
+        debug_assert!(pos + len <= self.len());
+        if len == 0 {
+            return 0;
+        }
+        let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
+        let mask = {
+            if len < WORD_LEN {
+                (1 << len) - 1
+            } else {
+                std::usize::MAX
+            }
+        };
+        if shift + len <= WORD_LEN {
+            self.words[block] >> shift & mask
+        } else {
+            (self.words[block] >> shift) | (self.words[block + 1] << (WORD_LEN - shift) & mask)
+        }
     }
 
     #[inline(always)]
-    pub fn push(&mut self, b: bool) {
+    pub fn set_bit(&mut self, pos: usize, bit: bool) {
+        debug_assert!(pos < self.len);
+        let word = pos / WORD_LEN;
+        let pos_in_word = pos % WORD_LEN;
+        self.words[word] &= !(1 << pos_in_word);
+        self.words[word] |= (bit as usize) << pos_in_word;
+    }
+
+    #[inline(always)]
+    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) {
+        debug_assert!(len <= WORD_LEN);
+        debug_assert!(pos + len <= self.len());
+        debug_assert!(len == WORD_LEN || (bits >> len) == 0);
+        if len == 0 {
+            return;
+        }
+        let mask = {
+            if len < WORD_LEN {
+                (1 << len) - 1
+            } else {
+                std::usize::MAX
+            }
+        };
+        let word = pos / WORD_LEN;
+        let pos_in_word = pos % WORD_LEN;
+
+        self.words[word] &= !(mask << pos_in_word);
+        self.words[word] |= bits << pos_in_word;
+
+        let stored = WORD_LEN - pos_in_word;
+        if stored < len {
+            self.words[word + 1] &= !(mask >> stored);
+            self.words[word + 1] |= bits >> stored;
+        }
+    }
+
+    #[inline(always)]
+    pub fn push_bit(&mut self, b: bool) {
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
             self.words.push(b as usize);
@@ -58,6 +109,26 @@ impl BitVector {
             *cur_word |= (b as usize) << pos_in_word;
         }
         self.len += 1;
+    }
+
+    #[inline(always)]
+    pub fn push_bits(&mut self, bits: usize, len: usize) {
+        debug_assert!(len <= WORD_LEN);
+        debug_assert!(len == WORD_LEN || (bits >> len) == 0);
+        if len == 0 {
+            return;
+        }
+        let pos_in_word = self.len % WORD_LEN;
+        if pos_in_word == 0 {
+            self.words.push(bits);
+        } else {
+            let cur_word = self.words.last_mut().unwrap();
+            *cur_word |= bits << pos_in_word;
+            if len > 64 - pos_in_word {
+                self.words.push(bits >> (64 - pos_in_word));
+            }
+        }
+        self.len += len;
     }
 
     #[inline(always)]
@@ -85,18 +156,74 @@ impl BitVector {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_tiny_bit_vector() {
-        let bits = vec![
-            true, false, false, true, false, true, false, false, false, true, true, false, false,
-            false, true, true, true, false, true, false, true, false, false, false, true,
-        ];
-        let mut bv = BitVector::new();
-        bits.iter().for_each(|&b| bv.push(b));
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaChaRng;
 
-        assert_eq!(bits.len(), bv.len());
-        for i in 0..bits.len() {
-            assert_eq!(bits[i], bv.get_bit(i));
+    fn gen_random_bits(len: usize, seed: u64) -> Vec<bool> {
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        (0..len).map(|_| rng.gen::<bool>()).collect()
+    }
+
+    fn gen_random_ints(len: usize, width: usize, seed: u64) -> Vec<usize> {
+        let mask = (1 << width) - 1;
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        (0..len).map(|_| rng.gen::<usize>() & mask).collect()
+    }
+
+    fn test_bit_vector(bits: &[bool]) {
+        {
+            let bv = BitVector::from_bits(bits.iter());
+            assert_eq!(bits.len(), bv.len());
+            for i in 0..bits.len() {
+                assert_eq!(bits[i], bv.get_bit(i));
+            }
+        }
+        {
+            let mut bv = BitVector::with_len(bits.len());
+            assert_eq!(bits.len(), bv.len());
+            bits.iter().enumerate().for_each(|(i, &b)| bv.set_bit(i, b));
+            for i in 0..bits.len() {
+                assert_eq!(bits[i], bv.get_bit(i));
+            }
+        }
+    }
+
+    fn test_int_vector(ints: &[usize], width: usize) {
+        {
+            let mut bv = BitVector::new();
+            ints.iter().for_each(|&x| bv.push_bits(x, width));
+            assert_eq!(ints.len() * width, bv.len());
+            for i in 0..ints.len() {
+                assert_eq!(ints[i], bv.get_bits(i * width, width));
+            }
+        }
+        {
+            let mut bv = BitVector::with_len(ints.len() * width);
+            assert_eq!(ints.len() * width, bv.len());
+            ints.iter()
+                .enumerate()
+                .for_each(|(i, &x)| bv.set_bits(i * width, x, width));
+            for i in 0..ints.len() {
+                assert_eq!(ints[i], bv.get_bits(i * width, width));
+            }
+        }
+    }
+
+    #[test]
+    fn test_random_bits() {
+        for seed in 0..100 {
+            let bits = gen_random_bits(1000, seed);
+            test_bit_vector(&bits);
+        }
+    }
+
+    #[test]
+    fn test_random_ints() {
+        let mut rng = ChaChaRng::seed_from_u64(13);
+        for seed in 0..100 {
+            let width = rng.gen_range(1..16);
+            let ints = gen_random_ints(1000, width, seed);
+            test_int_vector(&ints, width);
         }
     }
 }
