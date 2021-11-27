@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn test_random_bits() {
         for seed in 0..100 {
-            let bits = gen_random_bits(1000, seed);
+            let bits = gen_random_bits(10000, seed);
             test_bit_vector(&bits);
         }
     }
@@ -222,7 +222,7 @@ mod tests {
         let mut rng = ChaChaRng::seed_from_u64(13);
         for seed in 0..100 {
             let width = rng.gen_range(1..16);
-            let ints = gen_random_ints(1000, width, seed);
+            let ints = gen_random_ints(10000, width, seed);
             test_int_vector(&ints, width);
         }
     }

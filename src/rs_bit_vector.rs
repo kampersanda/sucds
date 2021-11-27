@@ -289,6 +289,7 @@ mod tests {
                 cur_rank += 1;
             }
         }
+        assert_eq!(cur_rank, bv.num_ones());
     }
 
     fn test_rank_select0(bits: &[bool], bv: &RsBitVector) {
@@ -300,11 +301,12 @@ mod tests {
                 cur_rank += 1;
             }
         }
+        assert_eq!(cur_rank, bv.num_zeros());
     }
 
     #[test]
     fn test_random_bits() {
-        for seed in 0..10 {
+        for seed in 0..100 {
             let bits = gen_random_bits(10000, seed);
             let bv = RsBitVector::from_bits(bits.iter(), true, true);
             test_rank_select1(&bits, &bv);
