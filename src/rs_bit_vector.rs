@@ -61,7 +61,7 @@ impl RsBitVector {
     #[inline(always)]
     pub fn select1(&self, n: usize) -> usize {
         debug_assert!(n < self.num_ones());
-        let bpos = {
+        let block = {
             let (mut a, mut b) = (0, self.num_blocks());
 
             if !self.select1_hints.is_empty() {
@@ -84,13 +84,13 @@ impl RsBitVector {
             a
         };
 
-        debug_assert!(bpos < self.num_blocks());
-        let block_offset = bpos * BLOCK_LEN;
-        let mut cur_rank = self.block_rank1(bpos);
+        debug_assert!(block < self.num_blocks());
+        let block_offset = block * BLOCK_LEN;
+        let mut cur_rank = self.block_rank1(block);
         debug_assert!(cur_rank <= n);
 
         let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = self.sub_block_ranks1(bpos);
+        let sub_ranks = self.sub_block_ranks1(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
@@ -106,7 +106,7 @@ impl RsBitVector {
     #[inline(always)]
     pub fn select0(&self, n: usize) -> usize {
         debug_assert!(n < self.num_zeros());
-        let bpos = {
+        let block = {
             let (mut a, mut b) = (0, self.num_blocks());
 
             if !self.select0_hints.is_empty() {
@@ -129,13 +129,13 @@ impl RsBitVector {
             a
         };
 
-        debug_assert!(bpos < self.num_blocks());
-        let block_offset = bpos * BLOCK_LEN;
-        let mut cur_rank = self.block_rank0(bpos);
+        debug_assert!(block < self.num_blocks());
+        let block_offset = block * BLOCK_LEN;
+        let mut cur_rank = self.block_rank0(block);
         debug_assert!(cur_rank <= n);
 
         let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks1(bpos);
+        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks1(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
@@ -169,24 +169,24 @@ impl RsBitVector {
     }
 
     #[inline(always)]
-    fn block_rank1(&self, bpos: usize) -> usize {
-        self.block_rank1_pairs[bpos * 2]
+    fn block_rank1(&self, block: usize) -> usize {
+        self.block_rank1_pairs[block * 2]
     }
 
     #[inline(always)]
     fn sub_block_rank1(&self, sub_bpos: usize) -> usize {
-        let (bpos, left) = (sub_bpos / BLOCK_LEN, sub_bpos % BLOCK_LEN);
-        self.block_rank1(bpos) + (self.sub_block_ranks1(bpos) >> ((7 - left) * 9) & 0x1FF)
+        let (block, left) = (sub_bpos / BLOCK_LEN, sub_bpos % BLOCK_LEN);
+        self.block_rank1(block) + (self.sub_block_ranks1(block) >> ((7 - left) * 9) & 0x1FF)
     }
 
     #[inline(always)]
-    fn sub_block_ranks1(&self, bpos: usize) -> usize {
-        self.block_rank1_pairs[bpos * 2 + 1]
+    fn sub_block_ranks1(&self, block: usize) -> usize {
+        self.block_rank1_pairs[block * 2 + 1]
     }
 
     #[inline(always)]
-    fn block_rank0(&self, bpos: usize) -> usize {
-        bpos * BLOCK_LEN * 64 - self.block_rank1(bpos)
+    fn block_rank0(&self, block: usize) -> usize {
+        block * BLOCK_LEN * 64 - self.block_rank1(block)
     }
 
     fn build_rank(bv: BitVector) -> Self {
