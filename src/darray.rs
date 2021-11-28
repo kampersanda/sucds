@@ -13,11 +13,11 @@ pub struct DArray {
     subblock_inventory: Vec<u16>,
     overflow_positions: Vec<usize>,
     num_positions: usize,
-    on_one: bool, // TODO: Solve with generics
+    over_one: bool, // TODO: Solve with generics
 }
 
 impl DArray {
-    pub fn new(bv: &BitVector, on_one: bool) -> Self {
+    pub fn new(bv: &BitVector, over_one: bool) -> Self {
         let mut cur_block_positions = vec![];
         let mut block_inventory = vec![];
         let mut subblock_inventory = vec![];
@@ -25,7 +25,7 @@ impl DArray {
         let mut num_positions = 0;
 
         let w = {
-            if on_one {
+            if over_one {
                 Self::get_word_over_one
             } else {
                 Self::get_word_over_zero
@@ -77,7 +77,7 @@ impl DArray {
             subblock_inventory,
             overflow_positions,
             num_positions,
-            on_one,
+            over_one,
         }
     }
 
@@ -125,7 +125,7 @@ impl DArray {
             start_pos
         } else {
             let w = {
-                if self.on_one {
+                if self.over_one {
                     Self::get_word_over_one
                 } else {
                     Self::get_word_over_zero
