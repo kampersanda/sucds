@@ -1,5 +1,9 @@
 # `sucds`: Succinct data structures in Rust
 
+[![Documentation](https://docs.rs/sucds/badge.svg)](https://docs.rs/sucds)
+[![Crates.io](https://img.shields.io/crates/v/sucds.svg)](https://crates.io/crates/sucds)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kampersanda/sucds/blob/master/LICENSE)
+
 `sucds` contains some succinct data structures written in Rust.
 
 ## Data structures
