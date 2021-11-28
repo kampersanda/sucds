@@ -21,19 +21,19 @@ impl DArray {
         Self::build(bv, over_one)
     }
 
-    pub fn select(&self, bv: &BitVector, idx: usize) -> usize {
-        debug_assert!(idx < self.num_positions);
+    pub fn select(&self, bv: &BitVector, n: usize) -> usize {
+        debug_assert!(n < self.num_positions);
 
-        let block = idx / BLOCK_LEN;
+        let block = n / BLOCK_LEN;
         let block_pos = self.block_inventory[block];
 
         if block_pos < 0 {
             let overflow_pos = (-block_pos - 1) as usize;
-            return self.overflow_positions[overflow_pos + (idx % BLOCK_LEN)];
+            return self.overflow_positions[overflow_pos + (n % BLOCK_LEN)];
         }
 
-        let subblock = idx / SUBBLOCK_LEN;
-        let mut reminder = idx % SUBBLOCK_LEN;
+        let subblock = n / SUBBLOCK_LEN;
+        let mut reminder = n % SUBBLOCK_LEN;
         let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
 
         if reminder == 0 {

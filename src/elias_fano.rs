@@ -9,7 +9,7 @@ pub struct EliasFano {
     high_bits_d1: DArray,
     high_bits_d0: Option<DArray>,
     low_bits: BitVector,
-    l: usize,
+    low_len: usize,
     universe: usize,
 }
 
@@ -26,8 +26,8 @@ impl EliasFano {
             high_bits_d1,
             high_bits_d0,
             low_bits: b.low_bits,
-            l: b.l,
-            universe: b.n,
+            low_len: b.low_len,
+            universe: b.universe,
         }
     }
 
@@ -46,8 +46,8 @@ impl EliasFano {
     }
 
     pub fn select(&self, n: usize) -> usize {
-        ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.l)
-            | self.low_bits.get_bits(n * self.l, self.l)
+        ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.low_len)
+            | self.low_bits.get_bits(n * self.low_len, self.low_len)
     }
 
     pub fn rank(&self, pos: usize) -> usize {
@@ -60,14 +60,17 @@ impl EliasFano {
 
         let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
 
-        let h_rank = pos >> self.l;
+        let h_rank = pos >> self.low_len;
         let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank);
         let mut rank = h_pos - h_rank;
-        let l_pos = pos & ((1 << self.l) - 1);
+        let l_pos = pos & ((1 << self.low_len) - 1);
 
         while h_pos > 0
             && self.high_bits.get_bit(h_pos - 1)
-            && self.low_bits.get_bits((rank - 1) * self.l, self.l) >= l_pos
+            && self
+                .low_bits
+                .get_bits((rank - 1) * self.low_len, self.low_len)
+                >= l_pos
         {
             rank -= 1;
             h_pos -= 1;
@@ -100,38 +103,38 @@ impl EliasFano {
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
-    n: usize, // universe
-    m: usize, // num integers
+    universe: usize,
+    num_ints: usize,
     pos: usize,
     last: usize,
-    l: usize,
+    low_len: usize,
 }
 
 impl EliasFanoBuilder {
-    pub fn new(n: usize, m: usize) -> Self {
-        assert_ne!(n, 0);
-        assert_ne!(m, 0);
-        let l = broadword::msb(n / m).unwrap_or(0);
+    pub fn new(universe: usize, num_ints: usize) -> Self {
+        assert_ne!(universe, 0);
+        assert_ne!(num_ints, 0);
+        let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
         Self {
-            high_bits: BitVector::with_len((m + 1) + (n >> l) + 1),
+            high_bits: BitVector::with_len((num_ints + 1) + (universe >> low_len) + 1),
             low_bits: BitVector::new(),
-            n,
-            m,
+            universe,
+            num_ints,
             pos: 0,
             last: 0,
-            l,
+            low_len,
         }
     }
 
     pub fn push(&mut self, i: usize) {
-        assert!(i >= self.last && i <= self.n);
-        assert!(self.pos < self.m);
+        assert!(i >= self.last && i <= self.universe);
+        assert!(self.pos < self.num_ints);
         self.last = i;
-        let low_mask = (1 << self.l) - 1;
-        if self.l != 0 {
-            self.low_bits.push_bits(i & low_mask, self.l);
+        let low_mask = (1 << self.low_len) - 1;
+        if self.low_len != 0 {
+            self.low_bits.push_bits(i & low_mask, self.low_len);
         }
-        self.high_bits.set_bit((i >> self.l) + self.pos, true);
+        self.high_bits.set_bit((i >> self.low_len) + self.pos, true);
         self.pos += 1;
     }
 }

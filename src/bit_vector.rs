@@ -198,8 +198,8 @@ impl BitVector {
     }
 
     #[inline(always)]
-    pub fn get_word(&self, wpos: usize) -> usize {
-        self.words[wpos]
+    pub fn get_word(&self, word_pos: usize) -> usize {
+        self.words[word_pos]
     }
 
     #[inline(always)]
