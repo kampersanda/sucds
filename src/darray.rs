@@ -7,6 +7,8 @@ const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
 const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 
+/// Select data structure over integer set through dense array technique by Okanohara and Sadakane.
+/// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 #[derive(Serialize, Deserialize)]
 pub struct DArray {
     block_inventory: Vec<isize>,
@@ -17,10 +19,34 @@ pub struct DArray {
 }
 
 impl DArray {
+    /// Creates a new [`DArray`] from input bit vector `bv`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bv`: Input bit vector.
+    /// - `over_one`: Flag to build the index for ones.
     pub fn new(bv: &BitVector, over_one: bool) -> Self {
         Self::build(bv, over_one)
     }
 
+    /// Searches the `n`-th iteger.
+    ///
+    /// # Arguments
+    ///
+    /// - `bv`: Bit vector (used to build).
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, DArray};
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let da = DArray::new(&bv, true);
+    /// assert_eq!(da.select(&bv, 0), 0);
+    /// assert_eq!(da.select(&bv, 1), 3);
+    /// ```
+    #[inline(always)]
     pub fn select(&self, bv: &BitVector, n: usize) -> usize {
         debug_assert!(n < self.num_positions);
 
@@ -65,10 +91,14 @@ impl DArray {
         }
     }
 
+    /// Gets the number of integers.
+    #[inline(always)]
     pub const fn len(&self) -> usize {
         self.num_positions
     }
 
+    /// Checks if the set is empty.
+    #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }

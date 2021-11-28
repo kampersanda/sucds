@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
+/// Bit vector implementation.
+/// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Serialize, Deserialize, Default)]
 pub struct BitVector {
     words: Vec<usize>,
@@ -10,10 +12,12 @@ pub struct BitVector {
 }
 
 impl BitVector {
+    /// Creates a new empty [`BitVector`].
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates a new [`BitVector`] of `len` bits.
     pub fn with_len(len: usize) -> Self {
         Self {
             words: vec![0; Self::words_for(len)],
@@ -21,6 +25,23 @@ impl BitVector {
         }
     }
 
+    /// Creates a new [`BitVector`] from input bitset `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: List of bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// assert_eq!(bv.get_bit(0), true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), true);
+    /// ```
     pub fn from_bits<'a, I>(bits: I) -> Self
     where
         I: IntoIterator<Item = &'a bool>,
@@ -30,6 +51,23 @@ impl BitVector {
         this
     }
 
+    /// Gets the `pos`-th bit.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// assert_eq!(bv.get_bit(0), true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), true);
+    /// ```
     #[inline(always)]
     pub fn get_bit(&self, pos: usize) -> bool {
         debug_assert!(pos < self.len);
@@ -37,6 +75,79 @@ impl BitVector {
         (self.words[block] >> shift) & 1 == 1
     }
 
+    /// Sets the `pos`-th bit to `bit`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    /// - `bit`: Set bit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let mut bv = BitVector::from_bits(&[false, true, true, false]);
+    /// bv.set_bit(0, true);
+    /// bv.set_bit(2, false);
+    /// assert_eq!(bv.get_bit(0), true);
+    /// assert_eq!(bv.get_bit(1), true);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), false);
+    /// ```
+    #[inline(always)]
+    pub fn set_bit(&mut self, pos: usize, bit: bool) {
+        debug_assert!(pos < self.len);
+        let word = pos / WORD_LEN;
+        let pos_in_word = pos % WORD_LEN;
+        self.words[word] &= !(1 << pos_in_word);
+        self.words[word] |= (bit as usize) << pos_in_word;
+    }
+
+    /// Pushes `bit` at the end.
+    ///
+    /// # Arguments
+    ///
+    /// - `bit`: Pushed bit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let mut bv = BitVector::new();
+    /// bv.push_bit(true);
+    /// bv.push_bit(false);
+    /// assert_eq!(bv.get_bit(0), true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// ```
+    #[inline(always)]
+    pub fn push_bit(&mut self, bit: bool) {
+        let pos_in_word = self.len % WORD_LEN;
+        if pos_in_word == 0 {
+            self.words.push(bit as usize);
+        } else {
+            let cur_word = self.words.last_mut().unwrap();
+            *cur_word |= (bit as usize) << pos_in_word;
+        }
+        self.len += 1;
+    }
+
+    /// Gets the `len` bits starting at the `pos`-th bit.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Starting bit position.
+    /// - `len`: Number of bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, true, false, true]);
+    /// assert_eq!(bv.get_bits(1, 4), 0b1010);
+    /// ```
     #[inline(always)]
     pub fn get_bits(&self, pos: usize, len: usize) -> usize {
         debug_assert!(len <= WORD_LEN);
@@ -59,15 +170,23 @@ impl BitVector {
         }
     }
 
-    #[inline(always)]
-    pub fn set_bit(&mut self, pos: usize, bit: bool) {
-        debug_assert!(pos < self.len);
-        let word = pos / WORD_LEN;
-        let pos_in_word = pos % WORD_LEN;
-        self.words[word] &= !(1 << pos_in_word);
-        self.words[word] |= (bit as usize) << pos_in_word;
-    }
-
+    /// Sets the `len` bits starting at the `pos`-th bit to `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Starting bit position.
+    /// - `bits`: Set bits.
+    /// - `len`: Number of bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let mut bv = BitVector::with_len(5);
+    /// bv.set_bits(1, 0b1010, 4);
+    /// assert_eq!(bv.get_bits(1, 4), 0b1010);
+    /// ```
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) {
         debug_assert!(len <= WORD_LEN);
@@ -96,18 +215,23 @@ impl BitVector {
         }
     }
 
-    #[inline(always)]
-    pub fn push_bit(&mut self, b: bool) {
-        let pos_in_word = self.len % WORD_LEN;
-        if pos_in_word == 0 {
-            self.words.push(b as usize);
-        } else {
-            let cur_word = self.words.last_mut().unwrap();
-            *cur_word |= (b as usize) << pos_in_word;
-        }
-        self.len += 1;
-    }
-
+    /// Pushes `bits` of `len` bits at the end.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: Pushed bits.
+    /// - `len`: Number of bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let mut bv = BitVector::new();
+    /// bv.push_bits(0b1, 1);
+    /// bv.push_bits(0b1010, 4);
+    /// assert_eq!(bv.get_bits(1, 4), 0b1010);
+    /// ```
     #[inline(always)]
     pub fn push_bits(&mut self, bits: usize, len: usize) {
         debug_assert!(len <= WORD_LEN);
@@ -128,6 +252,25 @@ impl BitVector {
         self.len += len;
     }
 
+    /// Gets the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
+    /// If not found, `None` is returned.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[false, true, false, true]);
+    /// assert_eq!(bv.predecessor1(3), Some(3));
+    /// assert_eq!(bv.predecessor1(2), Some(1));
+    /// assert_eq!(bv.predecessor1(1), Some(1));
+    /// assert_eq!(bv.predecessor1(0), None);
+    /// ```
+    #[inline(always)]
     pub fn predecessor1(&self, pos: usize) -> Option<usize> {
         debug_assert!(pos < self.len());
         let mut block = pos / WORD_LEN;
@@ -144,6 +287,25 @@ impl BitVector {
         }
     }
 
+    /// Gets the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set.
+    /// If not found, `None` is returned.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, true, false]);
+    /// assert_eq!(bv.successor1(0), Some(0));
+    /// assert_eq!(bv.successor1(1), Some(2));
+    /// assert_eq!(bv.successor1(2), Some(2));
+    /// assert_eq!(bv.successor1(3), None);
+    /// ```
+    #[inline(always)]
     pub fn successor1(&self, pos: usize) -> Option<usize> {
         debug_assert!(pos < self.len());
         let mut block = pos / WORD_LEN;
@@ -161,6 +323,25 @@ impl BitVector {
         }
     }
 
+    /// Gets the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set.
+    /// If not found, `None` is returned.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, true, false]);
+    /// assert_eq!(bv.predecessor0(3), Some(3));
+    /// assert_eq!(bv.predecessor0(2), Some(1));
+    /// assert_eq!(bv.predecessor0(1), Some(1));
+    /// assert_eq!(bv.predecessor0(0), None);
+    /// ```
+    #[inline(always)]
     pub fn predecessor0(&self, pos: usize) -> Option<usize> {
         debug_assert!(pos < self.len());
         let mut block = pos / WORD_LEN;
@@ -177,6 +358,25 @@ impl BitVector {
         }
     }
 
+    /// Gets the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set.
+    /// If not found, `None` is returned.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[false, true, false, true]);
+    /// assert_eq!(bv.successor0(0), Some(0));
+    /// assert_eq!(bv.successor0(1), Some(2));
+    /// assert_eq!(bv.successor0(2), Some(2));
+    /// assert_eq!(bv.successor0(3), None);
+    /// ```
+    #[inline(always)]
     pub fn successor0(&self, pos: usize) -> Option<usize> {
         debug_assert!(pos < self.len());
         let mut block = pos / WORD_LEN;
@@ -194,26 +394,31 @@ impl BitVector {
         }
     }
 
+    /// Gets the `word_pos`-th word.
     #[inline(always)]
     pub fn get_word(&self, word_pos: usize) -> usize {
         self.words[word_pos]
     }
 
+    /// Gets the number of words.
     #[inline(always)]
     pub fn num_words(&self) -> usize {
         self.words.len()
     }
 
+    /// Gets the number of bits.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
     }
 
+    /// Checks if the vector is empty.
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
-        self.len == 0
+        self.len() == 0
     }
 
+    /// Shrinks the capacity of the vector as much as possible.
     pub fn shrink_to_fit(&mut self) {
         self.words.shrink_to_fit();
     }

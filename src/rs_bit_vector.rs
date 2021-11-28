@@ -7,6 +7,8 @@ const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
+/// Rank/select data structure over bit vector through Vigna's rank9 and hinted selection technique.
+/// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 #[derive(Serialize, Deserialize)]
 pub struct RsBitVector {
     bv: BitVector,
@@ -16,6 +18,26 @@ pub struct RsBitVector {
 }
 
 impl RsBitVector {
+    /// Creates a new [`RsBitVector`] from input bit vector `bv`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bv`: Input bit vector.
+    /// - `select1_hints`: Flag to build the index for select1.
+    /// - `select0_hints`: Flag to build the index for select0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, RsBitVector};
+    ///
+    /// let bv = RsBitVector::new(BitVector::from_bits(&[true, false, false, true]), true, true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.rank1(1), 1);
+    /// assert_eq!(bv.rank0(1), 0);
+    /// assert_eq!(bv.select1(1), 3);
+    /// assert_eq!(bv.select0(0), 1);
+    /// ```
     pub fn new(bv: BitVector, select1_hints: bool, select0_hints: bool) -> Self {
         let mut this = Self::build_rank(bv);
         if select1_hints {
@@ -27,6 +49,26 @@ impl RsBitVector {
         this
     }
 
+    /// Creates a new [`RsBitVector`] from input bitset `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: List of bits.
+    /// - `select1_hints`: Flag to build the index for select1.
+    /// - `select0_hints`: Flag to build the index for select0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], true, true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.rank1(1), 1);
+    /// assert_eq!(bv.rank0(1), 0);
+    /// assert_eq!(bv.select1(1), 3);
+    /// assert_eq!(bv.select0(0), 1);
+    /// ```
     pub fn from_bits<'a, I>(bits: I, select1_hints: bool, select0_hints: bool) -> Self
     where
         I: IntoIterator<Item = &'a bool>,
@@ -34,11 +76,45 @@ impl RsBitVector {
         Self::new(BitVector::from_bits(bits), select1_hints, select0_hints)
     }
 
+    /// Gets the `pos`-th bit.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], false, false);
+    /// assert_eq!(bv.get_bit(0), true);
+    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), true);
+    /// ```
     #[inline(always)]
     pub fn get_bit(&self, pos: usize) -> bool {
         self.bv.get_bit(pos)
     }
 
+    /// Counts the number of ones from the zeroth bit to the `pos-1`-th bit.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], false, false);
+    /// assert_eq!(bv.rank1(1), 1);
+    /// assert_eq!(bv.rank1(2), 1);
+    /// assert_eq!(bv.rank1(3), 1);
+    /// assert_eq!(bv.rank1(4), 2);
+    /// ```
     #[inline(always)]
     pub fn rank1(&self, pos: usize) -> usize {
         debug_assert!(pos <= self.len());
@@ -53,11 +129,43 @@ impl RsBitVector {
         r
     }
 
+    /// Counts the number of zeros from the zeroth bit to the `pos-1`-th bit.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], false, false);
+    /// assert_eq!(bv.rank0(1), 0);
+    /// assert_eq!(bv.rank0(2), 1);
+    /// assert_eq!(bv.rank0(3), 2);
+    /// assert_eq!(bv.rank0(4), 2);
+    /// ```
     #[inline(always)]
     pub fn rank0(&self, pos: usize) -> usize {
         pos - self.rank1(pos)
     }
 
+    /// Searches the position of the `n`-th bit set.
+    ///
+    /// # Arguments
+    ///
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], true, false);
+    /// assert_eq!(bv.select1(0), 0);
+    /// assert_eq!(bv.select1(1), 3);
+    /// ```
     #[inline(always)]
     pub fn select1(&self, n: usize) -> usize {
         debug_assert!(n < self.num_ones());
@@ -102,6 +210,21 @@ impl RsBitVector {
         word_offset * 64 + broadword::select_in_word(self.bv.get_word(word_offset), n - cur_rank)
     }
 
+    /// Searches the position of the `n`-th bit unset.
+    ///
+    /// # Arguments
+    ///
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits(&[true, false, false, true], false, true);
+    /// assert_eq!(bv.select0(0), 1);
+    /// assert_eq!(bv.select0(1), 2);
+    /// ```
     #[inline(always)]
     pub fn select0(&self, n: usize) -> usize {
         debug_assert!(n < self.num_zeros());
@@ -146,21 +269,25 @@ impl RsBitVector {
         word_offset * 64 + broadword::select_in_word(!self.bv.get_word(word_offset), n - cur_rank)
     }
 
+    /// Gets the number of bits.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.bv.len()
     }
 
+    /// Checks if the vector is empty.
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Gets the number of bits set.
     #[inline(always)]
     pub fn num_ones(&self) -> usize {
         self.block_rank_pairs[self.block_rank_pairs.len() - 2]
     }
 
+    /// Gets the number of bits unset.
     #[inline(always)]
     pub fn num_zeros(&self) -> usize {
         self.len() - self.num_ones()

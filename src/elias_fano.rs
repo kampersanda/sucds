@@ -3,6 +3,8 @@
 use crate::{broadword, BitVector, DArray};
 use serde::{Deserialize, Serialize};
 
+/// Compressed monotone sequence through Elias-Fano encoding.
+///This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
 #[derive(Serialize, Deserialize)]
 pub struct EliasFano {
     high_bits: BitVector,
@@ -14,6 +16,12 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
+    /// Creates a new [`EliasFano`] from builder `b`.
+    ///
+    /// # Arguments
+    ///
+    /// - `b`: Builder.
+    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
     pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
         let high_bits_d1 = DArray::new(&b.high_bits, true);
         let high_bits_d0 = if with_rank_index {
@@ -31,6 +39,50 @@ impl EliasFano {
         }
     }
 
+    /// Creates a new [`EliasFano`] from input bitset `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: List of bits.
+    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[true, false, false, true], true);
+    /// assert_eq!(ef.rank(2), 1);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.predecessor(2), Some(0));
+    /// assert_eq!(ef.successor(1), Some(3));
+    /// ```
+    pub fn from_bits<'a, I>(bits: I, with_rank_index: bool) -> Self
+    where
+        I: IntoIterator<Item = &'a bool>,
+    {
+        Self::from_bitvec(&BitVector::from_bits(bits), with_rank_index)
+    }
+
+    /// Creates a new [`EliasFano`] from input bit vector `bv`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bv`: Input bit vector.
+    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{EliasFano, BitVector};
+    ///
+    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let ef = EliasFano::from_bitvec(&bv, true);
+    /// assert_eq!(ef.rank(2), 1);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.predecessor(2), Some(0));
+    /// assert_eq!(ef.successor(1), Some(3));
+    /// ```
     pub fn from_bitvec(bv: &BitVector, with_rank_index: bool) -> Self {
         let n = bv.len();
         let m = (0..bv.num_words())
@@ -45,11 +97,45 @@ impl EliasFano {
         Self::new(b, with_rank_index)
     }
 
+    /// Searches the `n`-th iteger.
+    ///
+    /// # Arguments
+    ///
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[true, false, false, true], true);
+    /// assert_eq!(ef.select(0), 0);
+    /// assert_eq!(ef.select(1), 3);
+    /// ```
+    #[inline(always)]
     pub fn select(&self, n: usize) -> usize {
         ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.low_len)
             | self.low_bits.get_bits(n * self.low_len, self.low_len)
     }
 
+    /// Counts the number of integers less than `pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Rank query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[true, false, false, true], true);
+    /// assert_eq!(ef.rank(1), 1);
+    /// assert_eq!(ef.rank(2), 1);
+    /// assert_eq!(ef.rank(3), 1);
+    /// assert_eq!(ef.rank(4), 2);
+    /// ```
+    #[inline(always)]
     pub fn rank(&self, pos: usize) -> usize {
         debug_assert!(pos <= self.universe());
         debug_assert!(self.high_bits_d0.is_some());
@@ -79,26 +165,66 @@ impl EliasFano {
         rank
     }
 
+    /// Gets the largest integer `pred` such that `pred <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Predecessor query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[false, true, false, false, true], true);
+    /// assert_eq!(ef.predecessor(4), Some(4));
+    /// assert_eq!(ef.predecessor(3), Some(1));
+    /// assert_eq!(ef.predecessor(0), None);
+    /// ```
+    #[inline(always)]
     pub fn predecessor(&self, pos: usize) -> Option<usize> {
         Some(self.rank(pos + 1))
             .filter(|&i| i > 0)
             .map(|i| self.select(i - 1))
     }
 
+    /// Gets the smallest integer `succ` such that `succ >= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Successor query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[true, false, false, true, false], true);
+    /// assert_eq!(ef.successor(0), Some(0));
+    /// assert_eq!(ef.successor(1), Some(3));
+    /// assert_eq!(ef.successor(4), None);
+    /// ```
+    #[inline(always)]
     pub fn successor(&self, pos: usize) -> Option<usize> {
         Some(self.rank(pos))
             .filter(|&i| i < self.len())
             .map(|i| self.select(i))
     }
 
+    /// Gets the number of integers.
+    #[inline(always)]
     pub const fn len(&self) -> usize {
         self.high_bits_d1.len()
     }
 
+    /// Checks if the sequence is empty.
+    #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Gets the max of stored integers.
+    #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
     }
@@ -194,8 +320,7 @@ mod tests {
 
     #[test]
     fn test_tiny_bits() {
-        let bv = BitVector::from_bits(&[true, false, false, true, false, true, true]);
-        let ef = EliasFano::from_bitvec(&bv, false);
+        let ef = EliasFano::from_bits(&[true, false, false, true, false, true, true], false);
         assert_eq!(ef.select(0), 0);
         assert_eq!(ef.select(1), 3);
         assert_eq!(ef.select(2), 5);
@@ -206,8 +331,7 @@ mod tests {
     fn test_random_bits() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, seed);
-            let bv = BitVector::from_bits(&bits);
-            let ef = EliasFano::from_bitvec(&bv, true);
+            let ef = EliasFano::from_bits(&bits, true);
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
         }
@@ -216,8 +340,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let bits = gen_random_bits(10000, 42);
-        let bv = BitVector::from_bits(&bits);
-        let ef = EliasFano::from_bitvec(&bv, true);
+        let ef = EliasFano::from_bits(&bits, true);
         let bytes = bincode::serialize(&ef).unwrap();
         let other: EliasFano = bincode::deserialize(&bytes).unwrap();
         assert_eq!(ef.len(), other.len());
