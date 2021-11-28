@@ -84,9 +84,9 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
         });
     });
 
-    group.bench_function("sucds/DArray", |b| {
+    group.bench_function("sucds/DArrayIndex", |b| {
         let bv = sucds::BitVector::from_bits(bits);
-        let idx = sucds::DArray::new(&bv, true);
+        let idx = sucds::DArrayIndex::new(&bv, true);
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
