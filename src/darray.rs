@@ -7,7 +7,7 @@ const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
 const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 
-/// Select data structure over integer set through dense array technique by Okanohara and Sadakane.
+/// Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
 /// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 #[derive(Serialize, Deserialize)]
 pub struct DArray {
