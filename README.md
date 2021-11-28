@@ -10,6 +10,8 @@
 
 So far, the following data structures are implemented. All of them are yet another Rust ports of implementations of [C++ Succinct library by Ottaviano](https://github.com/ot/succinct).
 
+- `BitVector`
+  - Bit vector supporting some utilities such as update, chunking, predecessor, and successor.
 - `RsBitVector`
   - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection technique.
 - `EliasFano`
