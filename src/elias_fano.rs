@@ -76,12 +76,16 @@ impl EliasFano {
         rank
     }
 
-    pub fn predecessor(&self, pos: usize) -> usize {
-        self.select(self.rank(pos + 1) - 1)
+    pub fn predecessor(&self, pos: usize) -> Option<usize> {
+        Some(self.rank(pos + 1))
+            .filter(|&i| i > 0)
+            .map(|i| self.select(i - 1))
     }
 
-    pub fn successor(&self, pos: usize) -> usize {
-        self.select(self.rank(pos))
+    pub fn successor(&self, pos: usize) -> Option<usize> {
+        Some(self.rank(pos))
+            .filter(|&i| i < self.len())
+            .map(|i| self.select(i))
     }
 
     pub fn len(&self) -> usize {
@@ -144,7 +148,7 @@ mod tests {
         (0..len).map(|_| rng.gen::<bool>()).collect()
     }
 
-    fn test_select(bits: &[bool], ef: &EliasFano) {
+    fn test_rank_select(bits: &[bool], ef: &EliasFano) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
             assert_eq!(cur_rank, ef.rank(i));
@@ -155,6 +159,30 @@ mod tests {
         }
         assert_eq!(cur_rank, ef.len());
         assert_eq!(bits.len(), ef.universe());
+    }
+
+    fn test_successor_predecessor(bits: &[bool], ef: &EliasFano) {
+        let one_positions: Vec<usize> = (0..bits.len()).filter(|&i| bits[i]).collect();
+
+        let mut pos = 0;
+        for &i in &one_positions {
+            let next = ef.successor(pos).unwrap();
+            debug_assert_eq!(i, next);
+            pos = next + 1;
+        }
+        debug_assert!(pos == ef.universe() || ef.successor(pos).is_none());
+
+        let mut pos = bits.len() - 1;
+        for &i in one_positions.iter().rev() {
+            let pred = ef.predecessor(pos).unwrap();
+            debug_assert_eq!(i, pred);
+            if pred == 0 {
+                pos = ef.universe();
+                break;
+            }
+            pos = pred - 1;
+        }
+        debug_assert!(pos == ef.universe() || ef.predecessor(pos).is_none());
     }
 
     #[test]
@@ -173,7 +201,8 @@ mod tests {
             let bits = gen_random_bits(10000, seed);
             let bv = BitVector::from_bits(&bits);
             let ef = EliasFano::from_bitvec(&bv, true);
-            test_select(&bits, &ef);
+            test_rank_select(&bits, &ef);
+            test_successor_predecessor(&bits, &ef);
         }
     }
 
@@ -186,6 +215,7 @@ mod tests {
         let other: EliasFano = bincode::deserialize(&bytes).unwrap();
         assert_eq!(ef.len(), other.len());
         assert_eq!(ef.universe(), other.universe());
-        test_select(&bits, &other);
+        test_rank_select(&bits, &other);
+        test_successor_predecessor(&bits, &other);
     }
 }
