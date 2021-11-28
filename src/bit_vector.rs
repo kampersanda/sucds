@@ -1,3 +1,4 @@
+use crate::broadword;
 use serde::{Deserialize, Serialize};
 
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -30,10 +31,6 @@ impl BitVector {
         let mut this = Self::new();
         bits.into_iter().for_each(|&b| this.push_bit(b));
         this
-    }
-
-    pub fn shrink_to_fit(&mut self) {
-        self.words.shrink_to_fit();
     }
 
     #[inline(always)]
@@ -134,6 +131,72 @@ impl BitVector {
         self.len += len;
     }
 
+    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
+        debug_assert!(pos < self.len());
+        let mut block = pos / WORD_LEN;
+        let shift = WORD_LEN - pos % WORD_LEN - 1;
+        let mut word = (self.words[block] << shift) >> shift;
+        loop {
+            if let Some(ret) = broadword::msb(word) {
+                return Some(block * 64 + ret);
+            } else if block == 0 {
+                return None;
+            }
+            block -= 1;
+            word = self.words[block];
+        }
+    }
+
+    pub fn successor1(&self, pos: usize) -> Option<usize> {
+        debug_assert!(pos < self.len());
+        let mut block = pos / WORD_LEN;
+        let shift = pos % WORD_LEN;
+        let mut word = (self.words[block] >> shift) << shift;
+        loop {
+            if let Some(ret) = broadword::lsb(word) {
+                return Some(block * 64 + ret).filter(|&i| i < self.len());
+            }
+            block += 1;
+            if block == self.words.len() {
+                return None;
+            }
+            word = self.words[block];
+        }
+    }
+
+    pub fn predecessor0(&self, pos: usize) -> Option<usize> {
+        debug_assert!(pos < self.len());
+        let mut block = pos / WORD_LEN;
+        let shift = WORD_LEN - pos % WORD_LEN - 1;
+        let mut word = (!self.words[block] << shift) >> shift;
+        loop {
+            if let Some(ret) = broadword::msb(word) {
+                return Some(block * 64 + ret);
+            } else if block == 0 {
+                return None;
+            }
+            block -= 1;
+            word = !self.words[block];
+        }
+    }
+
+    pub fn successor0(&self, pos: usize) -> Option<usize> {
+        debug_assert!(pos < self.len());
+        let mut block = pos / WORD_LEN;
+        let shift = pos % WORD_LEN;
+        let mut word = (!self.words[block] >> shift) << shift;
+        loop {
+            if let Some(ret) = broadword::lsb(word) {
+                return Some(block * 64 + ret).filter(|&i| i < self.len());
+            }
+            block += 1;
+            if block == self.words.len() {
+                return None;
+            }
+            word = !self.words[block];
+        }
+    }
+
     #[inline(always)]
     pub fn get_word(&self, wpos: usize) -> usize {
         self.words[wpos]
@@ -147,6 +210,10 @@ impl BitVector {
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.words.shrink_to_fit();
     }
 
     #[inline(always)]
@@ -174,21 +241,63 @@ mod tests {
     }
 
     fn test_bit_vector(bits: &[bool]) {
-        {
-            let bv = BitVector::from_bits(bits);
-            assert_eq!(bits.len(), bv.len());
-            for i in 0..bits.len() {
-                assert_eq!(bits[i], bv.get_bit(i));
-            }
+        let bv = BitVector::from_bits(bits);
+        assert_eq!(bits.len(), bv.len());
+        for i in 0..bits.len() {
+            assert_eq!(bits[i], bv.get_bit(i));
         }
-        {
-            let mut bv = BitVector::with_len(bits.len());
-            assert_eq!(bits.len(), bv.len());
-            bits.iter().enumerate().for_each(|(i, &b)| bv.set_bit(i, b));
-            for i in 0..bits.len() {
-                assert_eq!(bits[i], bv.get_bit(i));
-            }
+
+        let mut other = BitVector::with_len(bits.len());
+        assert_eq!(bv.len(), other.len());
+        bits.iter()
+            .enumerate()
+            .for_each(|(i, &b)| other.set_bit(i, b));
+        for i in 0..bv.len() {
+            assert_eq!(bv.get_bit(i), other.get_bit(i));
         }
+
+        let one_positions: Vec<usize> = (0..bv.len()).filter(|&i| bv.get_bit(i)).collect();
+        let zero_positions: Vec<usize> = (0..bv.len()).filter(|&i| !bv.get_bit(i)).collect();
+
+        let mut pos = 0;
+        for &i in &one_positions {
+            let next = bv.successor1(pos).unwrap();
+            debug_assert_eq!(i, next);
+            pos = next + 1;
+        }
+        debug_assert!(pos == bv.len() || bv.successor1(pos).is_none());
+
+        let mut pos = bv.len() - 1;
+        for &i in one_positions.iter().rev() {
+            let pred = bv.predecessor1(pos).unwrap();
+            debug_assert_eq!(i, pred);
+            if pred == 0 {
+                pos = bv.len();
+                break;
+            }
+            pos = pred - 1;
+        }
+        debug_assert!(pos == bv.len() || bv.predecessor1(pos).is_none());
+
+        let mut pos = 0;
+        for &i in &zero_positions {
+            let next = bv.successor0(pos).unwrap();
+            debug_assert_eq!(i, next);
+            pos = next + 1;
+        }
+        debug_assert!(pos == bv.len() || bv.successor0(pos).is_none());
+
+        let mut pos = bv.len() - 1;
+        for &i in zero_positions.iter().rev() {
+            let pred = bv.predecessor0(pos).unwrap();
+            debug_assert_eq!(i, pred);
+            if pred == 0 {
+                pos = bv.len();
+                break;
+            }
+            pos = pred - 1;
+        }
+        debug_assert!(pos == bv.len() || bv.predecessor0(pos).is_none());
     }
 
     fn test_int_vector(ints: &[usize], width: usize) {
