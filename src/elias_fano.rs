@@ -22,6 +22,24 @@ impl EliasFano {
     ///
     /// - `b`: Builder.
     /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{EliasFano, EliasFanoBuilder};
+    ///
+    /// let mut b = EliasFanoBuilder::new(10, 4);
+    /// b.push(2);
+    /// b.push(3);
+    /// b.push(6);
+    /// b.push(10);
+    ///
+    /// let ef = EliasFano::new(b, false);
+    /// assert_eq!(ef.select(0), 2);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 6);
+    /// assert_eq!(ef.select(3), 10);
+    /// ```
     pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
         let high_bits_d1 = DArray::new(&b.high_bits, true);
         let high_bits_d0 = if with_rank_index {
@@ -230,6 +248,7 @@ impl EliasFano {
     }
 }
 
+/// Builder of EliasFano.
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
@@ -241,6 +260,12 @@ pub struct EliasFanoBuilder {
 }
 
 impl EliasFanoBuilder {
+    /// Creates a new [`EliasFanoBuilder`].
+    ///
+    /// # Arguments
+    ///
+    /// - `universe`: The max of integers to be stored.
+    /// - `num_ints`: The number of integers to be stored.
     pub fn new(universe: usize, num_ints: usize) -> Self {
         assert_ne!(universe, 0);
         assert_ne!(num_ints, 0);
@@ -256,6 +281,11 @@ impl EliasFanoBuilder {
         }
     }
 
+    /// Pushes integer `i` at the end.
+    ///
+    /// # Arguments
+    ///
+    /// - `i`: Pushed integer that must be no less than the last one.
     pub fn push(&mut self, i: usize) {
         assert!(i >= self.last && i <= self.universe);
         assert!(self.pos < self.num_ints);
