@@ -1,6 +1,6 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, BitVector, DArray};
+use crate::{broadword, darray::DArrayIndex, BitVector};
 use serde::{Deserialize, Serialize};
 
 /// Compressed monotone sequence through Elias-Fano encoding.
@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct EliasFano {
     high_bits: BitVector,
-    high_bits_d1: DArray,
-    high_bits_d0: Option<DArray>,
+    high_bits_d1: DArrayIndex,
+    high_bits_d0: Option<DArrayIndex>,
     low_bits: BitVector,
     low_len: usize,
     universe: usize,
@@ -41,9 +41,9 @@ impl EliasFano {
     /// assert_eq!(ef.select(3), 10);
     /// ```
     pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
-        let high_bits_d1 = DArray::new(&b.high_bits, true);
+        let high_bits_d1 = DArrayIndex::new(&b.high_bits, true);
         let high_bits_d0 = if with_rank_index {
-            Some(DArray::new(&b.high_bits, false))
+            Some(DArrayIndex::new(&b.high_bits, false))
         } else {
             None
         };

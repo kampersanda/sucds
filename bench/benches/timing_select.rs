@@ -85,12 +85,11 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
     });
 
     group.bench_function("sucds/DArray", |b| {
-        let bv = sucds::BitVector::from_bits(bits);
-        let idx = sucds::DArray::new(&bv, true);
+        let idx = sucds::DArray::from_bits(bits);
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
-                sum += idx.select(&bv, q);
+                sum += idx.select(q);
             }
             if sum == 0 {
                 panic!();

@@ -11,6 +11,63 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 #[derive(Serialize, Deserialize)]
 pub struct DArray {
+    bv: BitVector,
+    da: DArrayIndex,
+}
+
+impl DArray {
+    /// Creates a new [`DArray`] from input bitset `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: List of bits.
+    pub fn from_bits<'a, I>(bits: I) -> Self
+    where
+        I: IntoIterator<Item = &'a bool>,
+    {
+        let bv = BitVector::from_bits(bits);
+        Self {
+            da: DArrayIndex::build(&bv, true),
+            bv,
+        }
+    }
+
+    /// Searches the `n`-th iteger.
+    ///
+    /// # Arguments
+    ///
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::DArray;
+    ///
+    /// let da = DArray::from_bits(&[true, false, false, true]);
+    /// assert_eq!(da.select(0), 0);
+    /// assert_eq!(da.select(1), 3);
+    /// ```
+    #[inline(always)]
+    pub fn select(&self, n: usize) -> usize {
+        self.da.select(&self.bv, n)
+    }
+
+    /// Gets the number of integers.
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.da.len()
+    }
+
+    /// Checks if the set is empty.
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.da.is_empty()
+    }
+}
+
+/// The index implementation of [`DArray`] separated from the bit vector.
+#[derive(Serialize, Deserialize)]
+pub struct DArrayIndex {
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,
     overflow_positions: Vec<usize>,
@@ -18,8 +75,8 @@ pub struct DArray {
     over_one: bool, // TODO: Solve with generics
 }
 
-impl DArray {
-    /// Creates a new [`DArray`] from input bit vector `bv`.
+impl DArrayIndex {
+    /// Creates a new [`DArrayIndex`] from input bit vector `bv`.
     ///
     /// # Arguments
     ///
@@ -39,10 +96,10 @@ impl DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, DArray};
+    /// use sucds::{BitVector, darray::DArrayIndex};
     ///
     /// let bv = BitVector::from_bits(&[true, false, false, true]);
-    /// let da = DArray::new(&bv, true);
+    /// let da = DArrayIndex::new(&bv, true);
     /// assert_eq!(da.select(&bv, 0), 0);
     /// assert_eq!(da.select(&bv, 1), 3);
     /// ```
@@ -213,7 +270,7 @@ mod tests {
         (0..len).map(|_| rng.gen::<bool>()).collect()
     }
 
-    fn test_select(bv: &BitVector, da: &DArray) {
+    fn test_select(bv: &BitVector, da: &DArrayIndex) {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
             if bv.get_bit(i) {
@@ -224,7 +281,7 @@ mod tests {
         assert_eq!(cur_rank, da.len());
     }
 
-    fn test_select0(bv: &BitVector, da: &DArray) {
+    fn test_select0(bv: &BitVector, da: &DArrayIndex) {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
             if !bv.get_bit(i) {
@@ -237,12 +294,12 @@ mod tests {
     #[test]
     fn test_tiny_bits() {
         let bv = BitVector::from_bits(&[true, false, false, true, false, true, true]);
-        let da = DArray::new(&bv, true);
+        let da = DArrayIndex::new(&bv, true);
         assert_eq!(da.select(&bv, 0), 0);
         assert_eq!(da.select(&bv, 1), 3);
         assert_eq!(da.select(&bv, 2), 5);
         assert_eq!(da.select(&bv, 3), 6);
-        let da = DArray::new(&bv, false);
+        let da = DArrayIndex::new(&bv, false);
         assert_eq!(da.select(&bv, 0), 1);
         assert_eq!(da.select(&bv, 1), 2);
         assert_eq!(da.select(&bv, 2), 4);
@@ -252,9 +309,9 @@ mod tests {
     fn test_random_bits() {
         for seed in 0..100 {
             let bv = BitVector::from_bits(&gen_random_bits(10000, seed));
-            let da = DArray::new(&bv, true);
+            let da = DArrayIndex::new(&bv, true);
             test_select(&bv, &da);
-            let da = DArray::new(&bv, false);
+            let da = DArrayIndex::new(&bv, false);
             test_select0(&bv, &da);
         }
     }
@@ -262,9 +319,9 @@ mod tests {
     #[test]
     fn test_serialize() {
         let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
-        let da = DArray::new(&bv, true);
+        let da = DArrayIndex::new(&bv, true);
         let bytes = bincode::serialize(&da).unwrap();
-        let other: DArray = bincode::deserialize(&bytes).unwrap();
+        let other: DArrayIndex = bincode::deserialize(&bytes).unwrap();
         assert_eq!(da.len(), other.len());
         test_select(&bv, &other);
     }
