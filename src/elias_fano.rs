@@ -1,6 +1,6 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, BitVector, DArrayIndex};
+use crate::{broadword, darray::DArrayIndex, BitVector};
 use serde::{Deserialize, Serialize};
 
 /// Compressed monotone sequence through Elias-Fano encoding.

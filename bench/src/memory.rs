@@ -32,11 +32,10 @@ fn show_memories(p: f64) {
     print_memory("RsBitVector(true,true)", bytes);
 
     let bytes = {
-        let bv = sucds::BitVector::from_bits(&bits);
-        let idx = sucds::DArrayIndex::new(&bv, true);
-        bincode::serialize(&idx).unwrap().len() + bincode::serialize(&bv).unwrap().len()
+        let idx = sucds::DArray::from_bits(&bits);
+        bincode::serialize(&idx).unwrap().len()
     };
-    print_memory("DArrayIndex", bytes);
+    print_memory("DArray", bytes);
 
     let bytes = {
         let idx = sucds::EliasFano::from_bits(&bits, false);

@@ -10,6 +10,63 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
 /// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 #[derive(Serialize, Deserialize)]
+pub struct DArray {
+    bv: BitVector,
+    da: DArrayIndex,
+}
+
+impl DArray {
+    /// Creates a new [`DArray`] from input bitset `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: List of bits.
+    pub fn from_bits<'a, I>(bits: I) -> Self
+    where
+        I: IntoIterator<Item = &'a bool>,
+    {
+        let bv = BitVector::from_bits(bits);
+        Self {
+            da: DArrayIndex::build(&bv, true),
+            bv,
+        }
+    }
+
+    /// Searches the `n`-th iteger.
+    ///
+    /// # Arguments
+    ///
+    /// - `n`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::DArray;
+    ///
+    /// let da = DArray::from_bits(&[true, false, false, true]);
+    /// assert_eq!(da.select(0), 0);
+    /// assert_eq!(da.select(1), 3);
+    /// ```
+    #[inline(always)]
+    pub fn select(&self, n: usize) -> usize {
+        self.da.select(&self.bv, n)
+    }
+
+    /// Gets the number of integers.
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.da.len()
+    }
+
+    /// Checks if the set is empty.
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.da.is_empty()
+    }
+}
+
+/// The index implementation of [`DArray`] separated from the bit vector.
+#[derive(Serialize, Deserialize)]
 pub struct DArrayIndex {
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,
@@ -39,7 +96,7 @@ impl DArrayIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, DArrayIndex};
+    /// use sucds::{BitVector, darray::DArrayIndex};
     ///
     /// let bv = BitVector::from_bits(&[true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
