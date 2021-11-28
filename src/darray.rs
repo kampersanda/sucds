@@ -24,9 +24,17 @@ impl DArray {
         let mut overflow_positions = vec![];
         let mut num_positions = 0;
 
+        let w = {
+            if on_one {
+                Self::get_word_over_one
+            } else {
+                Self::get_word_over_zero
+            }
+        };
+
         for word_idx in 0..bv.num_words() {
             let mut cur_pos = word_idx * 64;
-            let mut cur_word = Self::get_word(bv, word_idx, on_one);
+            let mut cur_word = w(bv, word_idx);
 
             while let Some(l) = broadword::lsb(cur_word) {
                 cur_pos += l;
@@ -116,10 +124,17 @@ impl DArray {
         if reminder == 0 {
             start_pos
         } else {
+            let w = {
+                if self.on_one {
+                    Self::get_word_over_one
+                } else {
+                    Self::get_word_over_zero
+                }
+            };
+
             let mut word_idx = start_pos / 64;
             let word_shift = start_pos % 64;
-            let mut word =
-                Self::get_word(bv, word_idx, self.on_one) & (std::usize::MAX << word_shift);
+            let mut word = w(bv, word_idx) & (std::usize::MAX << word_shift);
 
             loop {
                 let popcnt = broadword::popcount(word);
@@ -128,19 +143,19 @@ impl DArray {
                 }
                 reminder -= popcnt;
                 word_idx += 1;
-                word = Self::get_word(bv, word_idx, self.on_one);
+                word = w(bv, word_idx);
             }
 
             64 * word_idx + broadword::select_in_word(word, reminder)
         }
     }
 
-    fn get_word(bv: &BitVector, word_idx: usize, on_one: bool) -> usize {
-        if on_one {
-            bv.get_word(word_idx)
-        } else {
-            !bv.get_word(word_idx)
-        }
+    fn get_word_over_one(bv: &BitVector, word_idx: usize) -> usize {
+        bv.get_word(word_idx)
+    }
+
+    fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
+        !bv.get_word(word_idx)
     }
 
     pub fn len(&self) -> usize {
