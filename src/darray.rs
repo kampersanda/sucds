@@ -18,6 +18,58 @@ pub struct DArray {
 
 impl DArray {
     pub fn new(bv: &BitVector, over_one: bool) -> Self {
+        Self::build(bv, over_one)
+    }
+
+    pub fn select(&self, bv: &BitVector, idx: usize) -> usize {
+        debug_assert!(idx < self.num_positions);
+
+        let block = idx / BLOCK_LEN;
+        let block_pos = self.block_inventory[block];
+
+        if block_pos < 0 {
+            let overflow_pos = (-block_pos - 1) as usize;
+            return self.overflow_positions[overflow_pos + (idx % BLOCK_LEN)];
+        }
+
+        let subblock = idx / SUBBLOCK_LEN;
+        let mut reminder = idx % SUBBLOCK_LEN;
+        let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
+
+        if reminder == 0 {
+            start_pos
+        } else {
+            let w = {
+                if self.over_one {
+                    Self::get_word_over_one
+                } else {
+                    Self::get_word_over_zero
+                }
+            };
+
+            let mut word_idx = start_pos / 64;
+            let word_shift = start_pos % 64;
+            let mut word = w(bv, word_idx) & (std::usize::MAX << word_shift);
+
+            loop {
+                let popcnt = broadword::popcount(word);
+                if reminder < popcnt {
+                    break;
+                }
+                reminder -= popcnt;
+                word_idx += 1;
+                word = w(bv, word_idx);
+            }
+
+            64 * word_idx + broadword::select_in_word(word, reminder)
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.num_positions
+    }
+
+    fn build(bv: &BitVector, over_one: bool) -> Self {
         let mut cur_block_positions = vec![];
         let mut block_inventory = vec![];
         let mut subblock_inventory = vec![];
@@ -106,60 +158,12 @@ impl DArray {
         cur_block_positions.clear();
     }
 
-    pub fn select(&self, bv: &BitVector, idx: usize) -> usize {
-        debug_assert!(idx < self.num_positions);
-
-        let block = idx / BLOCK_LEN;
-        let block_pos = self.block_inventory[block];
-
-        if block_pos < 0 {
-            let overflow_pos = (-block_pos - 1) as usize;
-            return self.overflow_positions[overflow_pos + (idx % BLOCK_LEN)];
-        }
-
-        let subblock = idx / SUBBLOCK_LEN;
-        let mut reminder = idx % SUBBLOCK_LEN;
-        let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
-
-        if reminder == 0 {
-            start_pos
-        } else {
-            let w = {
-                if self.over_one {
-                    Self::get_word_over_one
-                } else {
-                    Self::get_word_over_zero
-                }
-            };
-
-            let mut word_idx = start_pos / 64;
-            let word_shift = start_pos % 64;
-            let mut word = w(bv, word_idx) & (std::usize::MAX << word_shift);
-
-            loop {
-                let popcnt = broadword::popcount(word);
-                if reminder < popcnt {
-                    break;
-                }
-                reminder -= popcnt;
-                word_idx += 1;
-                word = w(bv, word_idx);
-            }
-
-            64 * word_idx + broadword::select_in_word(word, reminder)
-        }
-    }
-
     fn get_word_over_one(bv: &BitVector, word_idx: usize) -> usize {
         bv.get_word(word_idx)
     }
 
     fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
         !bv.get_word(word_idx)
-    }
-
-    pub fn len(&self) -> usize {
-        self.num_positions
     }
 }
 
