@@ -40,7 +40,7 @@ impl RsBitVector {
     }
 
     #[inline(always)]
-    pub fn rank(&self, pos: usize) -> usize {
+    pub fn rank1(&self, pos: usize) -> usize {
         debug_assert!(pos <= self.len());
         if pos == self.len() {
             return self.num_ones();
@@ -55,11 +55,11 @@ impl RsBitVector {
 
     #[inline(always)]
     pub fn rank0(&self, pos: usize) -> usize {
-        pos - self.rank(pos)
+        pos - self.rank1(pos)
     }
 
     #[inline(always)]
-    pub fn select(&self, n: usize) -> usize {
+    pub fn select1(&self, n: usize) -> usize {
         debug_assert!(n < self.num_ones());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
@@ -285,9 +285,9 @@ mod tests {
     fn test_rank_select1(bits: &[bool], bv: &RsBitVector) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
-            assert_eq!(cur_rank, bv.rank(i));
+            assert_eq!(cur_rank, bv.rank1(i));
             if bits[i] {
-                assert_eq!(i, bv.select(cur_rank));
+                assert_eq!(i, bv.select1(cur_rank));
                 cur_rank += 1;
             }
         }
