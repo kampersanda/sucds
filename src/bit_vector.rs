@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct BitVector {
     words: Vec<usize>,
     len: usize,
@@ -11,16 +11,13 @@ pub struct BitVector {
 
 impl BitVector {
     pub fn new() -> Self {
-        Self {
-            words: vec![],
-            len: 0,
-        }
+        Self::default()
     }
 
     pub fn with_len(len: usize) -> Self {
         Self {
             words: vec![0; Self::words_for(len)],
-            len: len,
+            len,
         }
     }
 
@@ -208,8 +205,13 @@ impl BitVector {
     }
 
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
+    }
+
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
     }
 
     pub fn shrink_to_fit(&mut self) {
@@ -217,7 +219,7 @@ impl BitVector {
     }
 
     #[inline(always)]
-    fn words_for(n: usize) -> usize {
+    const fn words_for(n: usize) -> usize {
         (n + WORD_LEN - 1) / WORD_LEN
     }
 }

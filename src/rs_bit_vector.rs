@@ -99,8 +99,7 @@ impl RsBitVector {
         debug_assert!(cur_rank <= n);
 
         let word_offset = block_offset + sub_block_offset;
-        return word_offset * 64
-            + broadword::select_in_word(self.bv.get_word(word_offset), n - cur_rank);
+        word_offset * 64 + broadword::select_in_word(self.bv.get_word(word_offset), n - cur_rank)
     }
 
     #[inline(always)]
@@ -144,13 +143,17 @@ impl RsBitVector {
         debug_assert!(cur_rank <= n);
 
         let word_offset = block_offset + sub_block_offset;
-        return word_offset * 64
-            + broadword::select_in_word(!self.bv.get_word(word_offset), n - cur_rank);
+        word_offset * 64 + broadword::select_in_word(!self.bv.get_word(word_offset), n - cur_rank)
     }
 
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.bv.len()
+    }
+
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     #[inline(always)]

@@ -8,34 +8,34 @@ pub const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
 pub const INV_COUNT_STEP_9: usize = 1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
 
 #[inline(always)]
-pub fn leq_step_8(x: usize, y: usize) -> usize {
+pub const fn leq_step_8(x: usize, y: usize) -> usize {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub fn uleq_step_8(x: usize, y: usize) -> usize {
+pub const fn uleq_step_8(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub fn uleq_step_9(x: usize, y: usize) -> usize {
+pub const fn uleq_step_9(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_9) - (x & !MSBS_STEP_9)) | (x ^ y)) ^ (x & !y)) & MSBS_STEP_9) >> 8
 }
 
 #[inline(always)]
-pub fn byte_counts(mut x: usize) -> usize {
-    x = x - ((x & 0xa * ONES_STEP_4) >> 1);
-    x = (x & 3 * ONES_STEP_4) + ((x >> 2) & 3 * ONES_STEP_4);
-    (x + (x >> 4)) & 0x0f * ONES_STEP_8
+pub const fn byte_counts(mut x: usize) -> usize {
+    x = x - ((x & (0xa * ONES_STEP_4)) >> 1);
+    x = (x & (3 * ONES_STEP_4)) + ((x >> 2) & (3 * ONES_STEP_4));
+    (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
 #[inline(always)]
-pub fn bytes_sum(x: usize) -> usize {
+pub const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
 }
 
 #[inline(always)]
-pub fn popcount(x: usize) -> usize {
+pub const fn popcount(x: usize) -> usize {
     bytes_sum(byte_counts(x))
 }
 

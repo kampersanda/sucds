@@ -65,8 +65,12 @@ impl DArray {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.num_positions
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     fn build(bv: &BitVector, over_one: bool) -> Self {
@@ -147,9 +151,9 @@ impl DArray {
                 subblock_inventory.push((cur_block_positions[i] - first) as u16);
             }
         } else {
-            block_inventory.push(-1 * (overflow_positions.len() + 1) as isize);
-            for i in 0..cur_block_positions.len() {
-                overflow_positions.push(cur_block_positions[i]);
+            block_inventory.push(-((overflow_positions.len() + 1) as isize));
+            for &x in cur_block_positions.iter() {
+                overflow_positions.push(x);
             }
             for _ in (0..cur_block_positions.len()).step_by(SUBBLOCK_LEN) {
                 subblock_inventory.push(std::u16::MAX);

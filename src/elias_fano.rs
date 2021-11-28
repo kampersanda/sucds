@@ -91,11 +91,15 @@ impl EliasFano {
             .map(|i| self.select(i))
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.high_bits_d1.len()
     }
 
-    pub fn universe(&self) -> usize {
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub const fn universe(&self) -> usize {
         self.universe
     }
 }
