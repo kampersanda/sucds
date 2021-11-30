@@ -39,12 +39,12 @@ pub const fn bytes_sum(x: usize) -> usize {
 
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
-pub fn popcount(x: usize) -> usize {
+pub const fn popcount(x: usize) -> usize {
     bytes_sum(byte_counts(x))
 }
 #[inline(always)]
 #[cfg(feature = "intrinsics")]
-pub fn popcount(x: usize) -> usize {
+pub const fn popcount(x: usize) -> usize {
     intrinsics::popcount(x)
 }
 
@@ -160,7 +160,7 @@ pub fn lsb(x: usize) -> Option<usize> {
 }
 #[inline(always)]
 #[cfg(feature = "intrinsics")]
-pub fn lsb(x: usize) -> Option<usize> {
+pub const fn lsb(x: usize) -> Option<usize> {
     intrinsics::bsf64(x)
 }
 
@@ -185,7 +185,7 @@ pub fn msb(mut x: usize) -> Option<usize> {
 }
 #[inline(always)]
 #[cfg(feature = "intrinsics")]
-pub fn msb(x: usize) -> Option<usize> {
+pub const fn msb(x: usize) -> Option<usize> {
     intrinsics::bsr64(x)
 }
 
