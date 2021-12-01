@@ -2,6 +2,7 @@ pub mod bit_vector;
 pub mod broadword;
 pub mod darray;
 pub mod elias_fano;
+pub mod intrinsics;
 pub mod rs_bit_vector;
 
 pub use bit_vector::BitVector;

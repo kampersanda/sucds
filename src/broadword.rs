@@ -1,5 +1,8 @@
 #![cfg(target_pointer_width = "64")]
 
+#[cfg(feature = "intrinsics")]
+use crate::intrinsics;
+
 pub const ONES_STEP_4: usize = 0x1111111111111111;
 pub const ONES_STEP_8: usize = 0x0101010101010101;
 pub const ONES_STEP_9: usize = 1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
@@ -35,8 +38,14 @@ pub const fn bytes_sum(x: usize) -> usize {
 }
 
 #[inline(always)]
+#[cfg(not(feature = "intrinsics"))]
 pub const fn popcount(x: usize) -> usize {
     bytes_sum(byte_counts(x))
+}
+#[inline(always)]
+#[cfg(feature = "intrinsics")]
+pub const fn popcount(x: usize) -> usize {
+    intrinsics::popcount(x)
 }
 
 #[inline(always)]
@@ -45,7 +54,16 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     let byte_sums = ONES_STEP_8.wrapping_mul(byte_counts(x));
     let k_step_8 = k * ONES_STEP_8;
     let geq_k_step_8 = ((k_step_8 | MSBS_STEP_8) - byte_sums) & MSBS_STEP_8;
-    let place = popcount(geq_k_step_8) * 8;
+    let place = {
+        #[cfg(feature = "intrinsics")]
+        {
+            popcount(geq_k_step_8) * 8
+        }
+        #[cfg(not(feature = "intrinsics"))]
+        {
+            ((geq_k_step_8 >> 7).wrapping_mul(ONES_STEP_8) >> 53) & !0x7
+        }
+    };
     let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF);
     place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
@@ -132,6 +150,7 @@ pub fn bit_position(x: usize) -> usize {
 }
 
 #[inline(always)]
+#[cfg(not(feature = "intrinsics"))]
 pub fn lsb(x: usize) -> Option<usize> {
     if x == 0 {
         None
@@ -139,8 +158,14 @@ pub fn lsb(x: usize) -> Option<usize> {
         Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
     }
 }
+#[inline(always)]
+#[cfg(feature = "intrinsics")]
+pub const fn lsb(x: usize) -> Option<usize> {
+    intrinsics::bsf64(x)
+}
 
 #[inline(always)]
+#[cfg(not(feature = "intrinsics"))]
 pub fn msb(mut x: usize) -> Option<usize> {
     if x == 0 {
         return None;
@@ -157,6 +182,11 @@ pub fn msb(mut x: usize) -> Option<usize> {
     // isolate the MSB
     x ^= x >> 1;
     Some(bit_position(x))
+}
+#[inline(always)]
+#[cfg(feature = "intrinsics")]
+pub const fn msb(x: usize) -> Option<usize> {
+    intrinsics::bsr64(x)
 }
 
 #[cfg(test)]
