@@ -3,8 +3,48 @@
 use crate::{broadword, darray::DArrayIndex, BitVector};
 use serde::{Deserialize, Serialize};
 
-/// Compressed monotone sequence through Elias-Fano encoding.
-///This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+/// Compressed monotone increasing sequence through Elias-Fano encoding.
+///
+/// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
+/// It can store a very sparse sequence in compressed space.
+///
+/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+///
+/// # Example
+///
+/// ```
+/// use sucds::{EliasFano, EliasFanoBuilder};
+///
+/// let mut b = EliasFanoBuilder::new(10, 4);
+/// b.push(2);
+/// b.push(3);
+/// b.push(6);
+/// b.push(10);
+///
+/// let ef = EliasFano::new(b, true);
+/// assert_eq!(ef.select(0), 2);
+/// assert_eq!(ef.select(1), 3);
+/// assert_eq!(ef.select(2), 6);
+/// assert_eq!(ef.select(3), 10);
+///
+/// assert_eq!(ef.rank(5), 2);
+/// assert_eq!(ef.rank(10), 3);
+///
+/// assert_eq!(ef.predecessor(5), Some(3));
+/// assert_eq!(ef.predecessor(1), None);
+///
+/// assert_eq!(ef.successor(4), Some(6));
+/// assert_eq!(ef.successor(7), Some(10));
+/// ```
+///
+/// # References
+///
+///  - P. Elias, "Efficient storage and retrieval by content and address of static files,"
+///    Journal of the ACM, 1974.
+///  - R. Fano, "On the number of bits required to implement an associative memory,"
+///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
+///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
+///    In ALENEX, 2007.
 #[derive(Serialize, Deserialize)]
 pub struct EliasFano {
     high_bits: BitVector,
@@ -155,10 +195,9 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn rank(&self, pos: usize) -> usize {
-        debug_assert!(pos <= self.universe());
         debug_assert!(self.high_bits_d0.is_some());
 
-        if pos == self.universe() {
+        if pos > self.universe() {
             return self.len();
         }
 
