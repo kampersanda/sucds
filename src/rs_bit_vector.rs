@@ -13,8 +13,8 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 pub struct RsBitVector {
     bv: BitVector,
     block_rank_pairs: Vec<usize>,
-    select1_hints: Vec<usize>,
-    select0_hints: Vec<usize>,
+    select1_hints: Option<Vec<usize>>,
+    select0_hints: Option<Vec<usize>>,
 }
 
 impl RsBitVector {
@@ -171,15 +171,13 @@ impl RsBitVector {
         debug_assert!(n < self.num_ones());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
-
-            if !self.select1_hints.is_empty() {
+            if let Some(select1_hints) = self.select1_hints.as_ref() {
                 let chunk = n / SELECT_ONES_PER_HINT;
                 if chunk != 0 {
-                    a = self.select1_hints[chunk - 1];
+                    a = select1_hints[chunk - 1];
                 }
-                b = self.select1_hints[chunk] + 1;
+                b = select1_hints[chunk] + 1;
             }
-
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
                 let x = self.block_rank(mid);
@@ -230,15 +228,13 @@ impl RsBitVector {
         debug_assert!(n < self.num_zeros());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
-
-            if !self.select0_hints.is_empty() {
+            if let Some(select0_hints) = self.select0_hints.as_ref() {
                 let chunk = n / SELECT_ZEROS_PER_HINT;
                 if chunk != 0 {
-                    a = self.select0_hints[chunk - 1];
+                    a = select0_hints[chunk - 1];
                 }
-                b = self.select0_hints[chunk] + 1;
+                b = select0_hints[chunk] + 1;
             }
-
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
                 let x = self.block_rank0(mid);
@@ -362,8 +358,8 @@ impl RsBitVector {
         Self {
             bv,
             block_rank_pairs,
-            select1_hints: vec![],
-            select0_hints: vec![],
+            select1_hints: None,
+            select0_hints: None,
         }
     }
 
@@ -379,7 +375,7 @@ impl RsBitVector {
         select1_hints.push(self.num_blocks());
         select1_hints.shrink_to_fit();
 
-        self.select1_hints = select1_hints;
+        self.select1_hints = Some(select1_hints);
         self
     }
 
@@ -395,7 +391,7 @@ impl RsBitVector {
         select0_hints.push(self.num_blocks());
         select0_hints.shrink_to_fit();
 
-        self.select0_hints = select0_hints;
+        self.select0_hints = Some(select0_hints);
         self
     }
 }
