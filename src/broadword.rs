@@ -68,6 +68,52 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
 
+#[inline(always)]
+pub fn bit_position(x: usize) -> usize {
+    debug_assert!(popcount(x) == 1);
+    DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
+}
+
+#[inline(always)]
+#[cfg(not(feature = "intrinsics"))]
+pub fn lsb(x: usize) -> Option<usize> {
+    if x == 0 {
+        None
+    } else {
+        Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+    }
+}
+#[inline(always)]
+#[cfg(feature = "intrinsics")]
+pub const fn lsb(x: usize) -> Option<usize> {
+    intrinsics::bsf64(x)
+}
+
+#[inline(always)]
+#[cfg(not(feature = "intrinsics"))]
+pub fn msb(mut x: usize) -> Option<usize> {
+    if x == 0 {
+        return None;
+    }
+
+    // right-saturate the word
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+
+    // isolate the MSB
+    x ^= x >> 1;
+    Some(bit_position(x))
+}
+#[inline(always)]
+#[cfg(feature = "intrinsics")]
+pub const fn msb(x: usize) -> Option<usize> {
+    intrinsics::bsr64(x)
+}
+
 const SELECT_IN_BYTE: [u8; 2048] = [
     8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
     5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
@@ -142,52 +188,6 @@ const DEBRUIJN64_MAPPING: [u8; 64] = [
 ];
 
 const DEBRUIJN64: usize = 0x07EDD5E59A4E28C2;
-
-#[inline(always)]
-pub fn bit_position(x: usize) -> usize {
-    debug_assert!(popcount(x) == 1);
-    DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
-}
-
-#[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
-pub fn lsb(x: usize) -> Option<usize> {
-    if x == 0 {
-        None
-    } else {
-        Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
-    }
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn lsb(x: usize) -> Option<usize> {
-    intrinsics::bsf64(x)
-}
-
-#[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
-pub fn msb(mut x: usize) -> Option<usize> {
-    if x == 0 {
-        return None;
-    }
-
-    // right-saturate the word
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-
-    // isolate the MSB
-    x ^= x >> 1;
-    Some(bit_position(x))
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn msb(x: usize) -> Option<usize> {
-    intrinsics::bsr64(x)
-}
 
 #[cfg(test)]
 mod tests {
