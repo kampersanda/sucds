@@ -20,22 +20,20 @@ use serde::{Deserialize, Serialize};
 /// b.push(2);
 /// b.push(3);
 /// b.push(6);
-/// b.push(10);
+/// b.push(9);
 ///
 /// let ef = EliasFano::new(b, true);
-/// assert_eq!(ef.select(0), 2);
 /// assert_eq!(ef.select(1), 3);
-/// assert_eq!(ef.select(2), 6);
-/// assert_eq!(ef.select(3), 10);
+/// assert_eq!(ef.select(3), 9);
 ///
 /// assert_eq!(ef.rank(5), 2);
-/// assert_eq!(ef.rank(10), 3);
+/// assert_eq!(ef.rank(10), 4);
 ///
 /// assert_eq!(ef.predecessor(5), Some(3));
 /// assert_eq!(ef.predecessor(1), None);
 ///
 /// assert_eq!(ef.successor(4), Some(6));
-/// assert_eq!(ef.successor(7), Some(10));
+/// assert_eq!(ef.successor(10), None);
 /// ```
 ///
 /// # References
@@ -73,13 +71,13 @@ impl EliasFano {
     /// b.push(2);
     /// b.push(3);
     /// b.push(6);
-    /// b.push(10);
+    /// b.push(9);
     ///
     /// let ef = EliasFano::new(b, false);
     /// assert_eq!(ef.select(0), 2);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 6);
-    /// assert_eq!(ef.select(3), 10);
+    /// assert_eq!(ef.select(3), 9);
     /// ```
     pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
         let high_bits_d1 = DArrayIndex::new(&b.high_bits, true);
