@@ -81,7 +81,7 @@ fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[
     });
 
     group.bench_function("sucds/EliasFano", |b| {
-        let idx = sucds::EliasFano::from_bits(bits, true);
+        let idx = sucds::EliasFano::from_bits(bits, true).unwrap();
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
