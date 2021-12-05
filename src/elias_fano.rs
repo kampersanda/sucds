@@ -154,11 +154,15 @@ impl EliasFano {
         Self::new(b, with_rank_index)
     }
 
-    /// Searches the `n`-th iteger.
+    /// Searches the `k`-th iteger.
     ///
     /// # Arguments
     ///
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
     ///
     /// # Examples
     ///
@@ -170,9 +174,9 @@ impl EliasFano {
     /// assert_eq!(ef.select(1), 3);
     /// ```
     #[inline(always)]
-    pub fn select(&self, n: usize) -> usize {
-        ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.low_len)
-            | self.low_bits.get_bits(n * self.low_len, self.low_len)
+    pub fn select(&self, k: usize) -> usize {
+        ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
+            | self.low_bits.get_bits(k * self.low_len, self.low_len)
     }
 
     /// Counts the number of integers less than `pos`.
@@ -180,6 +184,10 @@ impl EliasFano {
     /// # Arguments
     ///
     /// - `pos`: Rank query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///
@@ -227,6 +235,10 @@ impl EliasFano {
     ///
     /// - `pos`: Predecessor query.
     ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
     /// # Examples
     ///
     /// ```
@@ -249,6 +261,10 @@ impl EliasFano {
     /// # Arguments
     ///
     /// - `pos`: Successor query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///
