@@ -38,13 +38,13 @@ fn show_memories(p: f64) {
     print_memory("DArray", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(&bits, false);
+        let idx = sucds::EliasFano::from_bits(&bits, false).unwrap();
         bincode::serialize(&idx).unwrap().len()
     };
     print_memory("EliasFano(false)", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(&bits, true);
+        let idx = sucds::EliasFano::from_bits(&bits, true).unwrap();
         bincode::serialize(&idx).unwrap().len()
     };
     print_memory("EliasFano(true)", bytes);
