@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
 /// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
-/// It can store a very sparse sequence in compressed space.
+/// When a sequence stores $`n`$ integers from $`[0, u-1]`$, this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n`$ bits of space.
+/// That is, a sparse sequence can be stored in a very compressed space.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
 ///
@@ -280,7 +281,7 @@ impl EliasFano {
         self.len() == 0
     }
 
-    /// Gets the max of stored integers.
+    /// Gets the (exclusive) upper bound of integers.
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
@@ -303,10 +304,9 @@ impl EliasFanoBuilder {
     ///
     /// # Arguments
     ///
-    /// - `universe`: The max of integers to be stored.
+    /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
     /// - `num_ints`: The number of integers to be stored.
     pub fn new(universe: usize, num_ints: usize) -> Self {
-        assert_ne!(universe, 0);
         assert_ne!(num_ints, 0);
         let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
         Self {
@@ -326,7 +326,7 @@ impl EliasFanoBuilder {
     ///
     /// - `i`: Pushed integer that must be no less than the last one.
     pub fn push(&mut self, i: usize) {
-        assert!(i >= self.last && i <= self.universe);
+        assert!(i >= self.last && i < self.universe);
         assert!(self.pos < self.num_ints);
         self.last = i;
         let low_mask = (1 << self.low_len) - 1;
