@@ -7,14 +7,36 @@ const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
-/// Rank/select data structure over bit vector through Vigna's rank9 and hinted selection technique.
+/// Rank/select data structure over a bit vector through Vigna's rank9 and hinted selection techniques.
+///
+/// [`RsBitVector`] builds rank/select indexes on a bit vector.
+/// The rank index is built with the 25% space overhead.
+/// The select index is built with the 28% space overhead.
+///
 /// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
+///
+/// # Examples
+///
+/// ```
+/// use sucds::RsBitVector;
+///
+/// let bv = RsBitVector::from_bits(&[true, false, false, true], true, true);
+/// assert_eq!(bv.get_bit(1), false);
+/// assert_eq!(bv.rank1(1), 1);
+/// assert_eq!(bv.rank0(1), 0);
+/// assert_eq!(bv.select1(1), 3);
+/// assert_eq!(bv.select0(0), 1);
+/// ```
+///
+/// # References
+///
+///  - S. Vigna, "Broadword implementation of rank/select queries," In WEA, 2008.
 #[derive(Serialize, Deserialize)]
 pub struct RsBitVector {
     bv: BitVector,
     block_rank_pairs: Vec<usize>,
-    select1_hints: Vec<usize>,
-    select0_hints: Vec<usize>,
+    select1_hints: Option<Vec<usize>>,
+    select0_hints: Option<Vec<usize>>,
 }
 
 impl RsBitVector {
@@ -104,6 +126,10 @@ impl RsBitVector {
     ///
     /// - `pos`: Bit position.
     ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
     /// # Examples
     ///
     /// ```
@@ -135,6 +161,10 @@ impl RsBitVector {
     ///
     /// - `pos`: Bit position.
     ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
     /// # Examples
     ///
     /// ```
@@ -151,11 +181,15 @@ impl RsBitVector {
         pos - self.rank1(pos)
     }
 
-    /// Searches the position of the `n`-th bit set.
+    /// Searches the position of the `k`-th bit set.
     ///
     /// # Arguments
     ///
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
     ///
     /// # Examples
     ///
@@ -167,23 +201,21 @@ impl RsBitVector {
     /// assert_eq!(bv.select1(1), 3);
     /// ```
     #[inline(always)]
-    pub fn select1(&self, n: usize) -> usize {
-        debug_assert!(n < self.num_ones());
+    pub fn select1(&self, k: usize) -> usize {
+        debug_assert!(k < self.num_ones());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
-
-            if !self.select1_hints.is_empty() {
-                let chunk = n / SELECT_ONES_PER_HINT;
+            if let Some(select1_hints) = self.select1_hints.as_ref() {
+                let chunk = k / SELECT_ONES_PER_HINT;
                 if chunk != 0 {
-                    a = self.select1_hints[chunk - 1];
+                    a = select1_hints[chunk - 1];
                 }
-                b = self.select1_hints[chunk] + 1;
+                b = select1_hints[chunk] + 1;
             }
-
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
                 let x = self.block_rank(mid);
-                if x <= n {
+                if x <= k {
                     a = mid;
                 } else {
                     b = mid;
@@ -195,26 +227,30 @@ impl RsBitVector {
         debug_assert!(block < self.num_blocks());
         let block_offset = block * BLOCK_LEN;
         let mut cur_rank = self.block_rank(block);
-        debug_assert!(cur_rank <= n);
+        debug_assert!(cur_rank <= k);
 
-        let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
+        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
         let sub_ranks = self.sub_block_ranks(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
             & 0x7;
         cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
-        debug_assert!(cur_rank <= n);
+        debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(self.bv.get_word(word_offset), n - cur_rank)
+        word_offset * 64 + broadword::select_in_word(self.bv.get_word(word_offset), k - cur_rank)
     }
 
-    /// Searches the position of the `n`-th bit unset.
+    /// Searches the position of the `k`-th bit unset.
     ///
     /// # Arguments
     ///
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
     ///
     /// # Examples
     ///
@@ -226,23 +262,21 @@ impl RsBitVector {
     /// assert_eq!(bv.select0(1), 2);
     /// ```
     #[inline(always)]
-    pub fn select0(&self, n: usize) -> usize {
-        debug_assert!(n < self.num_zeros());
+    pub fn select0(&self, k: usize) -> usize {
+        debug_assert!(k < self.num_zeros());
         let block = {
             let (mut a, mut b) = (0, self.num_blocks());
-
-            if !self.select0_hints.is_empty() {
-                let chunk = n / SELECT_ZEROS_PER_HINT;
+            if let Some(select0_hints) = self.select0_hints.as_ref() {
+                let chunk = k / SELECT_ZEROS_PER_HINT;
                 if chunk != 0 {
-                    a = self.select0_hints[chunk - 1];
+                    a = select0_hints[chunk - 1];
                 }
-                b = self.select0_hints[chunk] + 1;
+                b = select0_hints[chunk] + 1;
             }
-
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
                 let x = self.block_rank0(mid);
-                if x <= n {
+                if x <= k {
                     a = mid;
                 } else {
                     b = mid;
@@ -254,19 +288,19 @@ impl RsBitVector {
         debug_assert!(block < self.num_blocks());
         let block_offset = block * BLOCK_LEN;
         let mut cur_rank = self.block_rank0(block);
-        debug_assert!(cur_rank <= n);
+        debug_assert!(cur_rank <= k);
 
-        let rank_in_block_parallel = (n - cur_rank) * broadword::ONES_STEP_9;
+        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
         let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
         let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54
             & 0x7;
         cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
-        debug_assert!(cur_rank <= n);
+        debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(!self.bv.get_word(word_offset), n - cur_rank)
+        word_offset * 64 + broadword::select_in_word(!self.bv.get_word(word_offset), k - cur_rank)
     }
 
     /// Gets the number of bits.
@@ -362,8 +396,8 @@ impl RsBitVector {
         Self {
             bv,
             block_rank_pairs,
-            select1_hints: vec![],
-            select0_hints: vec![],
+            select1_hints: None,
+            select0_hints: None,
         }
     }
 
@@ -379,7 +413,7 @@ impl RsBitVector {
         select1_hints.push(self.num_blocks());
         select1_hints.shrink_to_fit();
 
-        self.select1_hints = select1_hints;
+        self.select1_hints = Some(select1_hints);
         self
     }
 
@@ -395,7 +429,7 @@ impl RsBitVector {
         select0_hints.push(self.num_blocks());
         select0_hints.shrink_to_fit();
 
-        self.select0_hints = select0_hints;
+        self.select0_hints = Some(select0_hints);
         self
     }
 }

@@ -3,8 +3,47 @@
 use crate::{broadword, darray::DArrayIndex, BitVector};
 use serde::{Deserialize, Serialize};
 
-/// Compressed monotone sequence through Elias-Fano encoding.
-///This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+/// Compressed monotone increasing sequence through Elias-Fano encoding.
+///
+/// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
+/// When a sequence stores $`n`$ integers from $`[0, u-1]`$, this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n`$ bits of space.
+/// That is, a sparse sequence can be stored in a very compressed space.
+///
+/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+///
+/// # Example
+///
+/// ```
+/// use sucds::{EliasFano, EliasFanoBuilder};
+///
+/// let mut b = EliasFanoBuilder::new(10, 4);
+/// b.push(2);
+/// b.push(3);
+/// b.push(6);
+/// b.push(9);
+///
+/// let ef = EliasFano::new(b, true);
+/// assert_eq!(ef.select(1), 3);
+/// assert_eq!(ef.select(3), 9);
+///
+/// assert_eq!(ef.rank(5), 2);
+/// assert_eq!(ef.rank(10), 4);
+///
+/// assert_eq!(ef.predecessor(5), Some(3));
+/// assert_eq!(ef.predecessor(1), None);
+///
+/// assert_eq!(ef.successor(4), Some(6));
+/// assert_eq!(ef.successor(10), None);
+/// ```
+///
+/// # References
+///
+///  - P. Elias, "Efficient storage and retrieval by content and address of static files,"
+///    Journal of the ACM, 1974.
+///  - R. Fano, "On the number of bits required to implement an associative memory,"
+///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
+///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
+///    In ALENEX, 2007.
 #[derive(Serialize, Deserialize)]
 pub struct EliasFano {
     high_bits: BitVector,
@@ -32,13 +71,13 @@ impl EliasFano {
     /// b.push(2);
     /// b.push(3);
     /// b.push(6);
-    /// b.push(10);
+    /// b.push(9);
     ///
     /// let ef = EliasFano::new(b, false);
     /// assert_eq!(ef.select(0), 2);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 6);
-    /// assert_eq!(ef.select(3), 10);
+    /// assert_eq!(ef.select(3), 9);
     /// ```
     pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
         let high_bits_d1 = DArrayIndex::new(&b.high_bits, true);
@@ -115,11 +154,15 @@ impl EliasFano {
         Self::new(b, with_rank_index)
     }
 
-    /// Searches the `n`-th iteger.
+    /// Searches the `k`-th iteger.
     ///
     /// # Arguments
     ///
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
     ///
     /// # Examples
     ///
@@ -131,9 +174,9 @@ impl EliasFano {
     /// assert_eq!(ef.select(1), 3);
     /// ```
     #[inline(always)]
-    pub fn select(&self, n: usize) -> usize {
-        ((self.high_bits_d1.select(&self.high_bits, n) - n) << self.low_len)
-            | self.low_bits.get_bits(n * self.low_len, self.low_len)
+    pub fn select(&self, k: usize) -> usize {
+        ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
+            | self.low_bits.get_bits(k * self.low_len, self.low_len)
     }
 
     /// Counts the number of integers less than `pos`.
@@ -141,6 +184,10 @@ impl EliasFano {
     /// # Arguments
     ///
     /// - `pos`: Rank query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///
@@ -155,10 +202,9 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn rank(&self, pos: usize) -> usize {
-        debug_assert!(pos <= self.universe());
         debug_assert!(self.high_bits_d0.is_some());
 
-        if pos == self.universe() {
+        if pos > self.universe() {
             return self.len();
         }
 
@@ -189,6 +235,10 @@ impl EliasFano {
     ///
     /// - `pos`: Predecessor query.
     ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
     /// # Examples
     ///
     /// ```
@@ -211,6 +261,10 @@ impl EliasFano {
     /// # Arguments
     ///
     /// - `pos`: Successor query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///
@@ -241,7 +295,7 @@ impl EliasFano {
         self.len() == 0
     }
 
-    /// Gets the max of stored integers.
+    /// Gets the (exclusive) upper bound of integers.
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
@@ -264,10 +318,9 @@ impl EliasFanoBuilder {
     ///
     /// # Arguments
     ///
-    /// - `universe`: The max of integers to be stored.
+    /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
     /// - `num_ints`: The number of integers to be stored.
     pub fn new(universe: usize, num_ints: usize) -> Self {
-        assert_ne!(universe, 0);
         assert_ne!(num_ints, 0);
         let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
         Self {
@@ -287,7 +340,7 @@ impl EliasFanoBuilder {
     ///
     /// - `i`: Pushed integer that must be no less than the last one.
     pub fn push(&mut self, i: usize) {
-        assert!(i >= self.last && i <= self.universe);
+        assert!(i >= self.last && i < self.universe);
         assert!(self.pos < self.num_ints);
         self.last = i;
         let low_mask = (1 << self.low_len) - 1;

@@ -7,8 +7,24 @@ const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
 const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 
-/// Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
+/// Constant-time select data structure over integer sets through the dense array technique by Okanohara and Sadakane.
+///
 /// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
+///
+/// # Examples
+///
+/// ```
+/// use sucds::DArray;
+///
+/// let da = DArray::from_bits(&[true, false, false, true]);
+/// assert_eq!(da.select(0), 0);
+/// assert_eq!(da.select(1), 3);
+/// ```
+///
+/// # References
+///
+///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
+///    In ALENEX, 2007.
 #[derive(Serialize, Deserialize)]
 pub struct DArray {
     bv: BitVector,
@@ -32,11 +48,15 @@ impl DArray {
         }
     }
 
-    /// Searches the `n`-th iteger.
+    /// Searches the `k`-th iteger.
     ///
     /// # Arguments
     ///
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
     ///
     /// # Examples
     ///
@@ -48,8 +68,8 @@ impl DArray {
     /// assert_eq!(da.select(1), 3);
     /// ```
     #[inline(always)]
-    pub fn select(&self, n: usize) -> usize {
-        self.da.select(&self.bv, n)
+    pub fn select(&self, k: usize) -> usize {
+        self.da.select(&self.bv, k)
     }
 
     /// Gets the number of integers.
@@ -86,12 +106,16 @@ impl DArrayIndex {
         Self::build(bv, over_one)
     }
 
-    /// Searches the `n`-th iteger.
+    /// Searches the `k`-th iteger.
     ///
     /// # Arguments
     ///
     /// - `bv`: Bit vector (used to build).
-    /// - `n`: Select query.
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
     ///
     /// # Examples
     ///
@@ -104,19 +128,19 @@ impl DArrayIndex {
     /// assert_eq!(da.select(&bv, 1), 3);
     /// ```
     #[inline(always)]
-    pub fn select(&self, bv: &BitVector, n: usize) -> usize {
-        debug_assert!(n < self.num_positions);
+    pub fn select(&self, bv: &BitVector, k: usize) -> usize {
+        debug_assert!(k < self.num_positions);
 
-        let block = n / BLOCK_LEN;
+        let block = k / BLOCK_LEN;
         let block_pos = self.block_inventory[block];
 
         if block_pos < 0 {
             let overflow_pos = (-block_pos - 1) as usize;
-            return self.overflow_positions[overflow_pos + (n % BLOCK_LEN)];
+            return self.overflow_positions[overflow_pos + (k % BLOCK_LEN)];
         }
 
-        let subblock = n / SUBBLOCK_LEN;
-        let mut reminder = n % SUBBLOCK_LEN;
+        let subblock = k / SUBBLOCK_LEN;
+        let mut reminder = k % SUBBLOCK_LEN;
         let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
 
         if reminder == 0 {

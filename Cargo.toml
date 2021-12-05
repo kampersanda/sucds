@@ -26,6 +26,12 @@ bincode = "1.3.3"
 default = []
 intrinsics = []
 
+[package.metadata.docs.rs]
+rustdoc-args = [
+    "--html-in-header",
+    "katex.html",
+]
+
 [workspace]
 members = [
     "bench",

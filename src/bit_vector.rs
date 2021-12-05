@@ -3,8 +3,27 @@ use serde::{Deserialize, Serialize};
 
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
-/// Bit vector implementation.
+/// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
+///
 /// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
+///
+/// # Examples
+///
+/// ```
+/// use sucds::BitVector;
+///
+/// let bv = BitVector::from_bits(&[true, false, false, true]);
+///
+/// assert_eq!(bv.get_bit(0), true);
+/// assert_eq!(bv.get_bit(1), false);
+/// assert_eq!(bv.get_bit(2), false);
+/// assert_eq!(bv.get_bit(3), true);
+///
+/// assert_eq!(bv.predecessor1(2), Some(0));
+/// assert_eq!(bv.predecessor0(2), Some(2));
+/// assert_eq!(bv.successor1(1), Some(3));
+/// assert_eq!(bv.successor0(1), Some(1));
+/// ```
 #[derive(Serialize, Deserialize, Default)]
 pub struct BitVector {
     words: Vec<usize>,
