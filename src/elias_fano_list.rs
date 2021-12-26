@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`EliasFanoList`] stores a list of integers by converting it into an increasing sequence
 /// in a prefix-summing manner and representing the sequence through Elias-Fano encoding.
-/// When the list consists of small integers, the representation will very compact.
+/// When the list consists of small integers, the representation will be very compact.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano_list](https://github.com/ot/succinct/blob/master/elias_fano_list.hpp).
 ///
