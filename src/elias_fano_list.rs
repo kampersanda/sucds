@@ -71,6 +71,10 @@ impl EliasFanoList {
     ///
     /// - `i`: Position to get.
     ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
     /// # Examples
     ///
     /// ```
