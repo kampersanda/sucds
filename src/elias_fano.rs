@@ -18,10 +18,7 @@ use serde::{Deserialize, Serialize};
 /// use sucds::{EliasFano, EliasFanoBuilder};
 ///
 /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-/// b.push(2).unwrap();
-/// b.push(3).unwrap();
-/// b.push(6).unwrap();
-/// b.push(9).unwrap();
+/// b.append(&[2, 3, 6, 9]).unwrap();
 ///
 /// let ef = EliasFano::new(b, true);
 /// assert_eq!(ef.select(1), 3);
@@ -69,10 +66,7 @@ impl EliasFano {
     /// use sucds::{EliasFano, EliasFanoBuilder};
     ///
     /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-    /// b.push(2).unwrap();
-    /// b.push(3).unwrap();
-    /// b.push(6).unwrap();
-    /// b.push(9).unwrap();
+    /// b.append(&[2, 3, 6, 9]).unwrap();
     ///
     /// let ef = EliasFano::new(b, false);
     /// assert_eq!(ef.select(0), 2);
@@ -178,7 +172,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[true, false, false, true], true).unwrap();
+    /// let ef = EliasFano::from_bits(&[true, false, false, true], false).unwrap();
     /// assert_eq!(ef.select(0), 0);
     /// assert_eq!(ef.select(1), 3);
     /// ```
@@ -292,6 +286,35 @@ impl EliasFano {
             .map(|i| self.select(i))
     }
 
+    /// Gets the difference between the `k-1`-th and `k`-th integers
+    /// (i.e., `select(k) - select(k-1)`).
+    ///
+    /// # Arguments
+    ///
+    /// - `k`: Select query.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[false, true, false, false, true], false).unwrap();
+    /// assert_eq!(ef.delta(0), 1);
+    /// assert_eq!(ef.delta(1), 3);
+    /// ```
+    #[inline(always)]
+    pub fn delta(&self, k: usize) -> usize {
+        if k == 0 {
+            self.select(k)
+        } else {
+            self.select(k) - self.select(k - 1)
+        }
+    }
+
     /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -358,6 +381,21 @@ impl EliasFanoBuilder {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if the input integer is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sucds::{EliasFano, EliasFanoBuilder};
+    ///
+    /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
+    /// [2, 3, 6, 9].iter().for_each(|&x| b.push(x).unwrap());
+    ///
+    /// let ef = EliasFano::new(b, false);
+    /// assert_eq!(ef.select(0), 2);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 6);
+    /// assert_eq!(ef.select(3), 9);
+    /// ```
     pub fn push(&mut self, i: usize) -> Result<()> {
         if i < self.last {
             return Err(anyhow!(
@@ -388,6 +426,40 @@ impl EliasFanoBuilder {
         self.high_bits.set_bit((i >> self.low_len) + self.pos, true);
         self.pos += 1;
 
+        Ok(())
+    }
+
+    /// Appends integers at the end.
+    ///
+    /// # Arguments
+    ///
+    /// - `ints`: Pushed integers that are increasing.
+    ///
+    /// # Errors
+    ///
+    /// `anyhow::Error` will be returned if the input integers are invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sucds::{EliasFano, EliasFanoBuilder};
+    ///
+    /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
+    /// b.append(&[2, 3, 6, 9]).unwrap();
+    ///
+    /// let ef = EliasFano::new(b, false);
+    /// assert_eq!(ef.select(0), 2);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 6);
+    /// assert_eq!(ef.select(3), 9);
+    /// ```
+    pub fn append<'a, I>(&mut self, ints: I) -> Result<()>
+    where
+        I: IntoIterator<Item = &'a usize>,
+    {
+        for &x in ints {
+            self.push(x)?;
+        }
         Ok(())
     }
 }
@@ -471,5 +543,32 @@ mod tests {
         assert_eq!(ef.universe(), other.universe());
         test_rank_select(&bits, &other);
         test_successor_predecessor(&bits, &other);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_empty_ints() {
+        EliasFanoBuilder::new(10, 0).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_exclusive_universe() {
+        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
+        b.push(10).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_exclusive_ints() {
+        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
+        b.append(&[1, 2, 3, 4, 5]).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_non_increasing() {
+        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
+        b.append(&[1, 2, 3, 2]).unwrap();
     }
 }
