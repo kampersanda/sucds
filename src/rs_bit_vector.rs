@@ -10,8 +10,9 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// Rank/select data structure over a bit vector through Vigna's rank9 and hinted selection techniques.
 ///
 /// [`RsBitVector`] builds rank/select indexes on a bit vector.
-/// The rank index is built with the 25% space overhead.
-/// The select index is built with the 28% space overhead.
+/// For a bit vector of $`n`$ bits,
+///  - the rank index takes $`0.25n`$ bits, and
+///  - the select index takes $`0.03n`$ bits in addition to the space of the rank index.
 ///
 /// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 ///
