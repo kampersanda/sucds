@@ -23,7 +23,7 @@ For a detailed description of each data structure, please see the [respective do
 - [`EliasFanoList`](https://docs.rs/sucds/latest/sucds/elias_fano_list/struct.EliasFanoList.html)
   - Compressed integer list through Elias-Fano gap encoding.
 
-# Usage
+## Usage
 
 To use `sucds`, depend on it in your Cargo manifest:
 
@@ -34,6 +34,6 @@ To use `sucds`, depend on it in your Cargo manifest:
 sucds = "0.1"
 ```
 
-# Licensing
+## Licensing
 
 This library is free software provided under MIT.
