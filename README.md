@@ -21,7 +21,7 @@ For a detailed description of each data structure, please see the [respective do
 - [`EliasFano`](https://docs.rs/sucds/latest/sucds/elias_fano/struct.EliasFano.html)
   - Compressed monotone sequence through Elias-Fano encoding.
 - [`EliasFanoList`](https://docs.rs/sucds/latest/sucds/elias_fano_list/struct.EliasFanoList.html)
-  - Compressed integer list based on through Elias-Fano gap encoding.
+  - Compressed integer list through Elias-Fano gap encoding.
 
 # Usage
 
