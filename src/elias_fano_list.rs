@@ -91,12 +91,17 @@ impl EliasFanoList {
     }
 
     /// Gets the number of integers.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.ef.len()
     }
 
+    /// Checks if the list is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Gets the sum of integers.
-    pub fn sum(&self) -> usize {
+    pub const fn sum(&self) -> usize {
         self.ef.universe() - 1
     }
 }
