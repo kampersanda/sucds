@@ -78,7 +78,7 @@ impl CompactVector {
         for &x in ints {
             width = std::cmp::max(width, needed_bits(x));
         }
-        let mut cv = CompactVector::with_len(ints.len(), width);
+        let mut cv = Self::with_len(ints.len(), width);
         for (i, &x) in ints.iter().enumerate() {
             cv.set(i, x);
         }
