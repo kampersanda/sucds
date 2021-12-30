@@ -38,6 +38,8 @@ sucds = "0.1"
 
 ## Build docs
 
+The document can be compiled with the following command:
+
 ```
 $ RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
 ```
