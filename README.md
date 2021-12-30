@@ -36,6 +36,12 @@ To use `sucds`, depend on it in your Cargo manifest:
 sucds = "0.1"
 ```
 
+## Build Docs
+
+```
+$ RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
+```
+
 ## Licensing
 
 This library is free software provided under MIT.
