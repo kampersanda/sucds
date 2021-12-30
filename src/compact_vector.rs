@@ -82,11 +82,8 @@ impl CompactVector {
     /// assert_eq!(cv.get(3), 10);
     /// ```
     pub fn from_slice(ints: &[usize]) -> Self {
-        let mut width = 0;
-        for &x in ints {
-            width = std::cmp::max(width, needed_bits(x));
-        }
-        let mut cv = Self::with_len(ints.len(), width);
+        let &max_int = ints.iter().max().unwrap();
+        let mut cv = Self::with_len(ints.len(), needed_bits(max_int));
         for (i, &x) in ints.iter().enumerate() {
             cv.set(i, x);
         }

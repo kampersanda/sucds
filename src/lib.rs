@@ -4,21 +4,36 @@
 //!
 //! ## Data structures
 //!
-//! So far, the following data structures are implemented. All of them are yet another Rust ports of implementations of [C++ Succinct library by Ottaviano](https://github.com/ot/succinct).
+//! So far, the following data structures are implemented. Most of them are yet another Rust ports of implementations of [C++ Succinct library by Ottaviano](https://github.com/ot/succinct).
 //! For a detailed description of each data structure, please see the [respective documentation](https://docs.rs/sucds/latest/sucds/).
 //!
 //! - [`BitVector`]
 //!   - Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
-//! - [`RsBitVector`]
-//!   - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection techniques.
 //! - [`CompactVector`]
 //!   - Compact vector in which each integer is represented in the specified number of bits.
+//! - [`RsBitVector`]
+//!   - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection techniques.
 //! - [`DArray`]
 //!   - Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
 //! - [`EliasFano`]
 //!   - Compressed monotone sequence through Elias-Fano encoding.
 //! - [`EliasFanoList`]
 //!   - Compressed integer list through Elias-Fano gap encoding.
+//!
+//! ## Usage
+//!
+//! To use `sucds`, depend on it in your Cargo manifest:
+//!
+//! ```toml
+//! # Cargo.toml
+//!
+//! [dependencies]
+//! sucds = "0.1"
+//! ```
+//!
+//! ## Limitation
+//!
+//! This library is designed to run on 64-bit machines.
 pub mod bit_vector;
 pub mod broadword;
 pub mod compact_vector;
