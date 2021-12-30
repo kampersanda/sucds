@@ -42,7 +42,7 @@ use serde::{Deserialize, Serialize};
 ///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct EliasFano {
     high_bits: BitVector,
     high_bits_d1: DArrayIndex,

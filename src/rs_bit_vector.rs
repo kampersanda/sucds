@@ -32,7 +32,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// # References
 ///
 ///  - S. Vigna, "Broadword implementation of rank/select queries," In WEA, 2008.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct RsBitVector {
     bv: BitVector,
     block_rank_pairs: Vec<usize>,
