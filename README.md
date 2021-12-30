@@ -17,7 +17,7 @@ For a detailed description of each data structure, please see the [respective do
 - [`RsBitVector`](https://docs.rs/sucds/latest/sucds/rs_bit_vector/struct.RsBitVector.html)
   - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection techniques.
 - [`CompactVector`](https://docs.rs/sucds/latest/sucds/compact_vector/struct.CompactVector.html)
-  - Compact vector in which each iteger is represented in the specified number of bits.
+  - Compact vector in which each integer is represented in the specified number of bits.
 - [`DArray`](https://docs.rs/sucds/latest/sucds/darray/struct.DArray.html)
   - Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
 - [`EliasFano`](https://docs.rs/sucds/latest/sucds/elias_fano/struct.EliasFano.html)

@@ -3,7 +3,7 @@
 use crate::{util::needed_bits, BitVector};
 use serde::{Deserialize, Serialize};
 
-/// Compact vector in which each iteger is represented in the specified number of bits.
+/// Compact vector in which each integer is represented in the specified number of bits.
 ///
 /// # Examples
 ///

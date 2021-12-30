@@ -12,7 +12,7 @@
 //! - [`RsBitVector`]
 //!   - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection techniques.
 //! - [`CompactVector`]
-//!   - Compact vector in which each iteger is represented in the specified number of bits.
+//!   - Compact vector in which each integer is represented in the specified number of bits.
 //! - [`DArray`]
 //!   - Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
 //! - [`EliasFano`]
