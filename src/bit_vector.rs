@@ -456,6 +456,19 @@ impl BitVector {
     }
 }
 
+impl std::fmt::Debug for BitVector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut bits = vec![0u8; self.len()];
+        for (i, b) in bits.iter_mut().enumerate() {
+            *b = self.get_bit(i) as u8;
+        }
+        f.debug_struct("BitVector")
+            .field("bits", &bits)
+            .field("len", &self.len)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
