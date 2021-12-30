@@ -242,8 +242,9 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let cv = CompactVector::from_slice(&gen_random_ints(10000, 42));
-        cv.serialize_into(&mut bytes).unwrap();
+        let size = cv.serialize_into(&mut bytes).unwrap();
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);
+        assert_eq!(size, bytes.len());
     }
 }

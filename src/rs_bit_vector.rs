@@ -529,8 +529,9 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let bv = RsBitVector::from_bits(&gen_random_bits(10000, 42), true, true);
-        bv.serialize_into(&mut bytes).unwrap();
+        let size = bv.serialize_into(&mut bytes).unwrap();
         let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
+        assert_eq!(size, bytes.len());
     }
 }

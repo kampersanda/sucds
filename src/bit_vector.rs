@@ -607,8 +607,9 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
-        bv.serialize_into(&mut bytes).unwrap();
+        let size = bv.serialize_into(&mut bytes).unwrap();
         let other = BitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
+        assert_eq!(size, bytes.len());
     }
 }

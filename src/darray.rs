@@ -384,8 +384,9 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let da = DArray::from_bits(&gen_random_bits(10000, 42));
-        da.serialize_into(&mut bytes).unwrap();
+        let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);
+        assert_eq!(size, bytes.len());
     }
 }

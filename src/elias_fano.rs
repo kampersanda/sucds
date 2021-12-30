@@ -581,9 +581,10 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let ef = EliasFano::from_bits(&gen_random_bits(10000, 42), true).unwrap();
-        ef.serialize_into(&mut bytes).unwrap();
+        let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
+        assert_eq!(size, bytes.len());
     }
 
     #[test]

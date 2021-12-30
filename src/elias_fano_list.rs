@@ -151,8 +151,9 @@ mod tests {
     fn test_serialize() {
         let mut bytes = vec![];
         let ef = EliasFanoList::from_slice(&gen_random_ints(10000, 42)).unwrap();
-        ef.serialize_into(&mut bytes).unwrap();
+        let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
+        assert_eq!(size, bytes.len());
     }
 }
