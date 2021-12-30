@@ -3,8 +3,8 @@
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-use anyhow::{anyhow, Result};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use anyhow::Result;
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use crate::{broadword, util, BitVector};
 

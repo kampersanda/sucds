@@ -106,12 +106,12 @@ impl EliasFanoList {
         self.ef.universe() - 1
     }
 
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        self.ef.serialize_into(&mut writer)
+    pub fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
+        self.ef.serialize_into(writer)
     }
 
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let ef = EliasFano::deserialize_from(&mut reader)?;
+    pub fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        let ef = EliasFano::deserialize_from(reader)?;
         Ok(Self { ef })
     }
 }
