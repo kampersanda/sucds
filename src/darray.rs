@@ -25,7 +25,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct DArray {
     bv: BitVector,
     da: DArrayIndex,
@@ -86,7 +86,7 @@ impl DArray {
 }
 
 /// The index implementation of [`DArray`] separated from the bit vector.
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct DArrayIndex {
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,

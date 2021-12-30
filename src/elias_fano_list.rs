@@ -28,7 +28,7 @@ use serde::{Deserialize, Serialize};
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.sum(), 31);
 /// ```
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct EliasFanoList {
     ef: EliasFano,
 }

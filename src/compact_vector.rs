@@ -177,6 +177,20 @@ impl CompactVector {
     }
 }
 
+impl std::fmt::Debug for CompactVector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut ints = vec![0; self.len()];
+        for (i, b) in ints.iter_mut().enumerate() {
+            *b = self.get(i);
+        }
+        f.debug_struct("CompactVector")
+            .field("ints", &ints)
+            .field("len", &self.len)
+            .field("width", &self.width)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
