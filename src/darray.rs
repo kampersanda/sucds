@@ -1,7 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, BitVector};
-use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+use std::mem::size_of;
+
+use anyhow::Result;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{broadword, util, BitVector};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -25,7 +30,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct DArray {
     bv: BitVector,
     da: DArrayIndex,
@@ -83,10 +88,21 @@ impl DArray {
     pub const fn is_empty(&self) -> bool {
         self.da.is_empty()
     }
+
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.bv.serialize_into(&mut writer)? + self.da.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bv = BitVector::deserialize_from(&mut reader)?;
+        let da = DArrayIndex::deserialize_from(&mut reader)?;
+        Ok(Self { bv, da })
+    }
 }
 
 /// The index implementation of [`DArray`] separated from the bit vector.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct DArrayIndex {
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,
@@ -280,6 +296,30 @@ impl DArrayIndex {
     fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
         !bv.get_word(word_idx)
     }
+
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = util::serialize_int_vector(&self.block_inventory, &mut writer)?;
+        mem += util::serialize_int_vector(&self.subblock_inventory, &mut writer)?;
+        mem += util::serialize_int_vector(&self.overflow_positions, &mut writer)?;
+        writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
+        writer.write_u8(self.over_one as u8)?;
+        Ok(mem + size_of::<u64>() + size_of::<u8>())
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let block_inventory = util::deserialize_int_vector(&mut reader)?;
+        let subblock_inventory = util::deserialize_int_vector(&mut reader)?;
+        let overflow_positions = util::deserialize_int_vector(&mut reader)?;
+        let num_positions = reader.read_u64::<LittleEndian>()? as usize;
+        let over_one = reader.read_u8()? != 0;
+        Ok(Self {
+            block_inventory,
+            subblock_inventory,
+            overflow_positions,
+            num_positions,
+            over_one,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -342,11 +382,10 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
-        let da = DArrayIndex::new(&bv, true);
-        let bytes = bincode::serialize(&da).unwrap();
-        let other: DArrayIndex = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(da.len(), other.len());
-        test_select(&bv, &other);
+        let mut bytes = vec![];
+        let da = DArray::from_bits(&gen_random_bits(10000, 42));
+        da.serialize_into(&mut bytes).unwrap();
+        let other = DArray::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(da, other);
     }
 }

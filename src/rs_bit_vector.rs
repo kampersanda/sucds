@@ -1,7 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, BitVector};
-use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+use std::mem::size_of;
+
+use anyhow::{anyhow, Result};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{broadword, util, BitVector};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -32,7 +37,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// # References
 ///
 ///  - S. Vigna, "Broadword implementation of rank/select queries," In WEA, 2008.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct RsBitVector {
     bv: BitVector,
     block_rank_pairs: Vec<usize>,
@@ -328,6 +333,45 @@ impl RsBitVector {
         self.len() - self.num_ones()
     }
 
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = self.bv.serialize_into(&mut writer)?;
+        mem += util::serialize_int_vector(&self.block_rank_pairs, &mut writer)?;
+        if let Some(select1_hints) = &self.select1_hints {
+            writer.write_u8(1)?;
+            mem += util::serialize_int_vector(&select1_hints, &mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        if let Some(select0_hints) = &self.select0_hints {
+            writer.write_u8(1)?;
+            mem += util::serialize_int_vector(&select0_hints, &mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        Ok(mem + size_of::<u8>() * 2)
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bv = BitVector::deserialize_from(&mut reader)?;
+        let block_rank_pairs = util::deserialize_int_vector(&mut reader)?;
+        let select1_hints = if reader.read_u8()? != 0 {
+            Some(util::deserialize_int_vector(&mut reader)?)
+        } else {
+            None
+        };
+        let select0_hints = if reader.read_u8()? != 0 {
+            Some(util::deserialize_int_vector(&mut reader)?)
+        } else {
+            None
+        };
+        Ok(Self {
+            bv,
+            block_rank_pairs,
+            select1_hints,
+            select0_hints,
+        })
+    }
+
     #[inline(always)]
     fn num_blocks(&self) -> usize {
         self.block_rank_pairs.len() / 2 - 1
@@ -483,14 +527,10 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bits = gen_random_bits(10000, 42);
-        let bv = RsBitVector::from_bits(&bits, true, true);
-        let bytes = bincode::serialize(&bv).unwrap();
-        let other: RsBitVector = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(bv.len(), other.len());
-        assert_eq!(bv.num_ones(), other.num_ones());
-        assert_eq!(bv.num_zeros(), other.num_zeros());
-        test_rank_select1(&bits, &other);
-        test_rank_select0(&bits, &other);
+        let mut bytes = vec![];
+        let bv = RsBitVector::from_bits(&gen_random_bits(10000, 42), true, true);
+        bv.serialize_into(&mut bytes).unwrap();
+        let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(bv, other);
     }
 }

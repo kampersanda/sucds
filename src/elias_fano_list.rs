@@ -1,9 +1,10 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{EliasFano, EliasFanoBuilder};
+use std::io::{Read, Write};
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+
+use crate::{EliasFano, EliasFanoBuilder};
 
 /// Compressed integer list based on through Elias-Fano gap encoding.
 ///
@@ -28,7 +29,7 @@ use serde::{Deserialize, Serialize};
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.sum(), 31);
 /// ```
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct EliasFanoList {
     ef: EliasFano,
 }
@@ -104,6 +105,15 @@ impl EliasFanoList {
     pub const fn sum(&self) -> usize {
         self.ef.universe() - 1
     }
+
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        self.ef.serialize_into(&mut writer)
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let ef = EliasFano::deserialize_from(&mut reader)?;
+        Ok(Self { ef })
+    }
 }
 
 #[cfg(test)]
@@ -135,5 +145,14 @@ mod tests {
             let list = EliasFanoList::from_slice(&ints).unwrap();
             test_basic(&ints, &list);
         }
+    }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let ef = EliasFanoList::from_slice(&gen_random_ints(10000, 42)).unwrap();
+        ef.serialize_into(&mut bytes).unwrap();
+        let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(ef, other);
     }
 }

@@ -1,8 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, darray::DArrayIndex, BitVector};
+use std::io::{Read, Write};
+use std::mem::size_of;
+
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{broadword, darray::DArrayIndex, BitVector};
 
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
@@ -42,7 +46,7 @@ use serde::{Deserialize, Serialize};
 ///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct EliasFano {
     high_bits: BitVector,
     high_bits_d1: DArrayIndex,
@@ -336,6 +340,42 @@ impl EliasFano {
     pub const fn universe(&self) -> usize {
         self.universe
     }
+
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = self.high_bits.serialize_into(&mut writer)?;
+        mem += self.high_bits_d1.serialize_into(&mut writer)?;
+        if let Some(high_bits_d0) = &self.high_bits_d0 {
+            writer.write_u8(1)?;
+            mem += high_bits_d0.serialize_into(&mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        mem += self.low_bits.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.low_len as u64)?;
+        writer.write_u64::<LittleEndian>(self.universe as u64)?;
+        Ok(mem + size_of::<u8>() + size_of::<u64>() + size_of::<u64>())
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let high_bits = BitVector::deserialize_from(&mut reader)?;
+        let high_bits_d1 = DArrayIndex::deserialize_from(&mut reader)?;
+        let high_bits_d0 = if reader.read_u8()? != 0 {
+            Some(DArrayIndex::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        let low_bits = BitVector::deserialize_from(&mut reader)?;
+        let low_len = reader.read_u64::<LittleEndian>()? as usize;
+        let universe = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self {
+            high_bits,
+            high_bits_d1,
+            high_bits_d0,
+            low_bits,
+            low_len,
+            universe,
+        })
+    }
 }
 
 /// Builder of EliasFano.
@@ -539,14 +579,11 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bits = gen_random_bits(10000, 42);
-        let ef = EliasFano::from_bits(&bits, true).unwrap();
-        let bytes = bincode::serialize(&ef).unwrap();
-        let other: EliasFano = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(ef.len(), other.len());
-        assert_eq!(ef.universe(), other.universe());
-        test_rank_select(&bits, &other);
-        test_successor_predecessor(&bits, &other);
+        let mut bytes = vec![];
+        let ef = EliasFano::from_bits(&gen_random_bits(10000, 42), true).unwrap();
+        ef.serialize_into(&mut bytes).unwrap();
+        let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(ef, other);
     }
 
     #[test]

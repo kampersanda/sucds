@@ -1,7 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
+use std::io::{Read, Write};
+use std::mem::size_of;
+
+use anyhow::Result;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
 use crate::{util::needed_bits, BitVector};
-use serde::{Deserialize, Serialize};
 
 /// Compact vector in which each integer is represented in the specified number of bits.
 ///
@@ -20,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
 /// ```
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Default, PartialEq, Eq)]
 pub struct CompactVector {
     chunks: BitVector,
     len: usize,
@@ -175,6 +180,20 @@ impl CompactVector {
     pub const fn width(&self) -> usize {
         self.width
     }
+
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.chunks.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + (size_of::<u64>() * 2))
+    }
+
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let chunks = BitVector::deserialize_from(&mut reader)?;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self { chunks, len, width })
+    }
 }
 
 impl std::fmt::Debug for CompactVector {
@@ -217,5 +236,14 @@ mod tests {
             let list = CompactVector::from_slice(&ints);
             test_basic(&ints, &list);
         }
+    }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let cv = CompactVector::from_slice(&gen_random_ints(10000, 42));
+        cv.serialize_into(&mut bytes).unwrap();
+        let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(cv, other);
     }
 }
