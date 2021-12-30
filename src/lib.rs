@@ -20,17 +20,6 @@
 //! - [`EliasFanoList`]
 //!   - Compressed integer list through Elias-Fano gap encoding.
 //!
-//! ## Usage
-//!
-//! To use `sucds`, depend on it in your Cargo manifest:
-//!
-//! ```toml
-//! # Cargo.toml
-//!
-//! [dependencies]
-//! sucds = "0.1"
-//! ```
-//!
 //! ## Limitation
 //!
 //! This library is designed to run on 64-bit machines.

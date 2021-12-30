@@ -338,13 +338,13 @@ impl RsBitVector {
         mem += util::int_vector::serialize_into(&self.block_rank_pairs, &mut writer)?;
         if let Some(select1_hints) = &self.select1_hints {
             writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(&select1_hints, &mut writer)?;
+            mem += util::int_vector::serialize_into(select1_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
         if let Some(select0_hints) = &self.select0_hints {
             writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(&select0_hints, &mut writer)?;
+            mem += util::int_vector::serialize_into(select0_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
@@ -376,17 +376,13 @@ impl RsBitVector {
         self.bv.size_in_bytes()
             + util::int_vector::size_in_bytes(&self.block_rank_pairs)
             + size_of::<u8>()
-            + if let Some(select1_hints) = &self.select1_hints {
+            + self.select1_hints.as_ref().map_or(0, |select1_hints| {
                 util::int_vector::size_in_bytes(select1_hints)
-            } else {
-                0
-            }
+            })
             + size_of::<u8>()
-            + if let Some(select0_hints) = &self.select0_hints {
+            + self.select0_hints.as_ref().map_or(0, |select0_hints| {
                 util::int_vector::size_in_bytes(select0_hints)
-            } else {
-                0
-            }
+            })
     }
 
     #[inline(always)]

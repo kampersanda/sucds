@@ -21,31 +21,31 @@ fn show_memories(p: f64) {
 
     let bytes = {
         let idx = sucds::RsBitVector::from_bits(&bits, false, false);
-        bincode::serialize(&idx).unwrap().len()
+        idx.size_in_bytes()
     };
     print_memory("RsBitVector(false,false)", bytes);
 
     let bytes = {
         let idx = sucds::RsBitVector::from_bits(&bits, true, true);
-        bincode::serialize(&idx).unwrap().len()
+        idx.size_in_bytes()
     };
     print_memory("RsBitVector(true,true)", bytes);
 
     let bytes = {
         let idx = sucds::DArray::from_bits(&bits);
-        bincode::serialize(&idx).unwrap().len()
+        idx.size_in_bytes()
     };
     print_memory("DArray", bytes);
 
     let bytes = {
         let idx = sucds::EliasFano::from_bits(&bits, false).unwrap();
-        bincode::serialize(&idx).unwrap().len()
+        idx.size_in_bytes()
     };
     print_memory("EliasFano(false)", bytes);
 
     let bytes = {
         let idx = sucds::EliasFano::from_bits(&bits, true).unwrap();
-        bincode::serialize(&idx).unwrap().len()
+        idx.size_in_bytes()
     };
     print_memory("EliasFano(true)", bytes);
 }

@@ -381,11 +381,10 @@ impl EliasFano {
         self.high_bits.size_in_bytes()
             + self.high_bits_d1.size_in_bytes()
             + size_of::<u8>()
-            + if let Some(high_bits_d0) = &self.high_bits_d0 {
-                high_bits_d0.size_in_bytes()
-            } else {
-                0
-            }
+            + self
+                .high_bits_d0
+                .as_ref()
+                .map_or(0, |high_bits_d0| high_bits_d0.size_in_bytes())
             + self.low_bits.size_in_bytes()
             + size_of::<u64>()
             + size_of::<u64>()
