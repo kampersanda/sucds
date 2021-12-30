@@ -19,13 +19,16 @@
 //!   - Compressed integer list through Elias-Fano gap encoding.
 pub mod bit_vector;
 pub mod broadword;
+pub mod compact_vector;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
 pub mod intrinsics;
 pub mod rs_bit_vector;
+pub mod util;
 
 pub use bit_vector::BitVector;
+pub use compact_vector::CompactVector;
 pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
