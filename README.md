@@ -36,6 +36,10 @@ To use `sucds`, depend on it in your Cargo manifest:
 sucds = "0.1"
 ```
 
+## Limitation
+
+This library is designed to run on 64-bit machines.
+
 ## Build docs
 
 The document can be compiled with the following command:
@@ -43,10 +47,6 @@ The document can be compiled with the following command:
 ```
 $ RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
 ```
-
-## Limitation
-
-This library is designed to run on 64-bit machines.
 
 ## Licensing
 
