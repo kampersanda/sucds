@@ -99,6 +99,10 @@ impl DArray {
         let da = DArrayIndex::deserialize_from(&mut reader)?;
         Ok(Self { bv, da })
     }
+
+    pub fn size_in_bytes(&self) -> usize {
+        self.bv.size_in_bytes() + self.da.size_in_bytes()
+    }
 }
 
 /// The index implementation of [`DArray`] separated from the bit vector.
@@ -298,18 +302,18 @@ impl DArrayIndex {
     }
 
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = util::serialize_int_vector(&self.block_inventory, &mut writer)?;
-        mem += util::serialize_int_vector(&self.subblock_inventory, &mut writer)?;
-        mem += util::serialize_int_vector(&self.overflow_positions, &mut writer)?;
+        let mut mem = util::int_vector::serialize_into(&self.block_inventory, &mut writer)?;
+        mem += util::int_vector::serialize_into(&self.subblock_inventory, &mut writer)?;
+        mem += util::int_vector::serialize_into(&self.overflow_positions, &mut writer)?;
         writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
         writer.write_u8(self.over_one as u8)?;
         Ok(mem + size_of::<u64>() + size_of::<u8>())
     }
 
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = util::deserialize_int_vector(&mut reader)?;
-        let subblock_inventory = util::deserialize_int_vector(&mut reader)?;
-        let overflow_positions = util::deserialize_int_vector(&mut reader)?;
+        let block_inventory = util::int_vector::deserialize_from(&mut reader)?;
+        let subblock_inventory = util::int_vector::deserialize_from(&mut reader)?;
+        let overflow_positions = util::int_vector::deserialize_from(&mut reader)?;
         let num_positions = reader.read_u64::<LittleEndian>()? as usize;
         let over_one = reader.read_u8()? != 0;
         Ok(Self {
@@ -319,6 +323,14 @@ impl DArrayIndex {
             num_positions,
             over_one,
         })
+    }
+
+    pub fn size_in_bytes(&self) -> usize {
+        util::int_vector::size_in_bytes(&self.block_inventory)
+            + util::int_vector::size_in_bytes(&self.subblock_inventory)
+            + util::int_vector::size_in_bytes(&self.overflow_positions)
+            + size_of::<u64>()
+            + size_of::<u8>()
     }
 }
 
@@ -388,5 +400,6 @@ mod tests {
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, da.size_in_bytes());
     }
 }

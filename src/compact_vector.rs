@@ -6,7 +6,7 @@ use std::mem::size_of;
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::{util::needed_bits, BitVector};
+use crate::{util, BitVector};
 
 /// Compact vector in which each integer is represented in the specified number of bits.
 ///
@@ -88,7 +88,7 @@ impl CompactVector {
     /// ```
     pub fn from_slice(ints: &[usize]) -> Self {
         let &max_int = ints.iter().max().unwrap();
-        let mut cv = Self::with_len(ints.len(), needed_bits(max_int));
+        let mut cv = Self::with_len(ints.len(), util::needed_bits(max_int));
         for (i, &x) in ints.iter().enumerate() {
             cv.set(i, x);
         }
@@ -194,6 +194,10 @@ impl CompactVector {
         let width = reader.read_u64::<LittleEndian>()? as usize;
         Ok(Self { chunks, len, width })
     }
+
+    pub fn size_in_bytes(&self) -> usize {
+        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
+    }
 }
 
 impl std::fmt::Debug for CompactVector {
@@ -246,5 +250,6 @@ mod tests {
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, cv.size_in_bytes());
     }
 }

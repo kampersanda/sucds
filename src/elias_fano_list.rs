@@ -114,6 +114,10 @@ impl EliasFanoList {
         let ef = EliasFano::deserialize_from(reader)?;
         Ok(Self { ef })
     }
+
+    pub fn size_in_bytes(&self) -> usize {
+        self.ef.size_in_bytes()
+    }
 }
 
 #[cfg(test)]
@@ -155,5 +159,6 @@ mod tests {
         let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, ef.size_in_bytes());
     }
 }

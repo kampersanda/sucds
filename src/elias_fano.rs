@@ -376,6 +376,20 @@ impl EliasFano {
             universe,
         })
     }
+
+    pub fn size_in_bytes(&self) -> usize {
+        self.high_bits.size_in_bytes()
+            + self.high_bits_d1.size_in_bytes()
+            + size_of::<u8>()
+            + if let Some(high_bits_d0) = &self.high_bits_d0 {
+                high_bits_d0.size_in_bytes()
+            } else {
+                0
+            }
+            + self.low_bits.size_in_bytes()
+            + size_of::<u64>()
+            + size_of::<u64>()
+    }
 }
 
 /// Builder of EliasFano.
@@ -585,6 +599,7 @@ mod tests {
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, ef.size_in_bytes());
     }
 
     #[test]

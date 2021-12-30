@@ -1,10 +1,10 @@
-use crate::{broadword, util};
-
 use std::io::{Read, Write};
 use std::mem::size_of;
 
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{broadword, util};
 
 const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
@@ -461,15 +461,19 @@ impl BitVector {
     }
 
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = util::serialize_int_vector(&self.words, &mut writer)?;
+        let mem = util::int_vector::serialize_into(&self.words, &mut writer)?;
         writer.write_u64::<LittleEndian>(self.len as u64)?;
         Ok(mem + size_of::<u64>())
     }
 
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = util::deserialize_int_vector(&mut reader)?;
+        let words = util::int_vector::deserialize_from(&mut reader)?;
         let len = reader.read_u64::<LittleEndian>()? as usize;
         Ok(Self { words, len })
+    }
+
+    pub fn size_in_bytes(&self) -> usize {
+        util::int_vector::size_in_bytes(&self.words) + size_of::<u64>()
     }
 }
 
@@ -611,5 +615,6 @@ mod tests {
         let other = BitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, bv.size_in_bytes());
     }
 }

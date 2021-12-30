@@ -335,16 +335,16 @@ impl RsBitVector {
 
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.bv.serialize_into(&mut writer)?;
-        mem += util::serialize_int_vector(&self.block_rank_pairs, &mut writer)?;
+        mem += util::int_vector::serialize_into(&self.block_rank_pairs, &mut writer)?;
         if let Some(select1_hints) = &self.select1_hints {
             writer.write_u8(1)?;
-            mem += util::serialize_int_vector(&select1_hints, &mut writer)?;
+            mem += util::int_vector::serialize_into(&select1_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
         if let Some(select0_hints) = &self.select0_hints {
             writer.write_u8(1)?;
-            mem += util::serialize_int_vector(&select0_hints, &mut writer)?;
+            mem += util::int_vector::serialize_into(&select0_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
@@ -353,14 +353,14 @@ impl RsBitVector {
 
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
-        let block_rank_pairs = util::deserialize_int_vector(&mut reader)?;
+        let block_rank_pairs = util::int_vector::deserialize_from(&mut reader)?;
         let select1_hints = if reader.read_u8()? != 0 {
-            Some(util::deserialize_int_vector(&mut reader)?)
+            Some(util::int_vector::deserialize_from(&mut reader)?)
         } else {
             None
         };
         let select0_hints = if reader.read_u8()? != 0 {
-            Some(util::deserialize_int_vector(&mut reader)?)
+            Some(util::int_vector::deserialize_from(&mut reader)?)
         } else {
             None
         };
@@ -370,6 +370,23 @@ impl RsBitVector {
             select1_hints,
             select0_hints,
         })
+    }
+
+    pub fn size_in_bytes(&self) -> usize {
+        self.bv.size_in_bytes()
+            + util::int_vector::size_in_bytes(&self.block_rank_pairs)
+            + size_of::<u8>()
+            + if let Some(select1_hints) = &self.select1_hints {
+                util::int_vector::size_in_bytes(select1_hints)
+            } else {
+                0
+            }
+            + size_of::<u8>()
+            + if let Some(select0_hints) = &self.select0_hints {
+                util::int_vector::size_in_bytes(select0_hints)
+            } else {
+                0
+            }
     }
 
     #[inline(always)]
@@ -533,5 +550,6 @@ mod tests {
         let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
         assert_eq!(size, bytes.len());
+        assert_eq!(size, bv.size_in_bytes());
     }
 }
