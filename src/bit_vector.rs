@@ -36,6 +36,14 @@ impl BitVector {
         Self::default()
     }
 
+    /// Creates a new [`BitVector`] that `capa` bits are reserved.
+    pub fn with_capacity(capa: usize) -> Self {
+        Self {
+            words: Vec::with_capacity(Self::words_for(capa)),
+            len: 0,
+        }
+    }
+
     /// Creates a new [`BitVector`] of `len` bits.
     pub fn with_len(len: usize) -> Self {
         Self {

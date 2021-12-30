@@ -41,6 +41,15 @@ impl CompactVector {
         }
     }
 
+    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
+    pub fn with_capacity(capa: usize, width: usize) -> Self {
+        Self {
+            chunks: BitVector::with_capacity(capa * width),
+            len: 0,
+            width,
+        }
+    }
+
     /// Creates a new [`CompactVector`] of `len` integers.
     ///
     /// # Arguments
@@ -48,9 +57,8 @@ impl CompactVector {
     /// - `len`: Number of integers to be stored.
     /// - `width`: Number of bits to represent an integer.
     pub fn with_len(len: usize, width: usize) -> Self {
-        let num_bits = len * width;
         Self {
-            chunks: BitVector::with_len(num_bits),
+            chunks: BitVector::with_len(len * width),
             len,
             width,
         }
