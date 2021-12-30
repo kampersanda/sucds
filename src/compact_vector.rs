@@ -11,10 +11,12 @@ use serde::{Deserialize, Serialize};
 /// use sucds::CompactVector;
 ///
 /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
+///
 /// assert_eq!(cv.get(0), 5);
 /// assert_eq!(cv.get(1), 256);
 /// assert_eq!(cv.get(2), 0);
 /// assert_eq!(cv.get(3), 10);
+///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
 /// ```
@@ -167,5 +169,34 @@ impl CompactVector {
     #[inline(always)]
     pub const fn width(&self) -> usize {
         self.width
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaChaRng;
+
+    fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        (0..len).map(|_| rng.gen_range(0..10000)).collect()
+    }
+
+    fn test_basic(ints: &[usize], list: &CompactVector) {
+        for (i, &x) in ints.iter().enumerate() {
+            assert_eq!(x, list.get(i));
+        }
+        assert_eq!(ints.len(), list.len());
+    }
+
+    #[test]
+    fn test_random_ints() {
+        for seed in 0..100 {
+            let ints = gen_random_ints(10000, seed);
+            let list = CompactVector::from_slice(&ints);
+            test_basic(&ints, &list);
+        }
     }
 }
