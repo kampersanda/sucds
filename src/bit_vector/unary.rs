@@ -32,7 +32,7 @@ impl<'a> UnaryIterator<'a> {
 
     /// Gets the current bit position.
     #[inline(always)]
-    pub fn position(&self) -> usize {
+    pub const fn position(&self) -> usize {
         self.pos
     }
 
