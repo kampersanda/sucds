@@ -28,6 +28,13 @@ use crate::{EliasFano, EliasFanoBuilder};
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.sum(), 31);
+///
+/// let mut bytes = vec![];
+/// let size = list.serialize_into(&mut bytes).unwrap();
+/// let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(list, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, list.size_in_bytes());
 /// ```
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct EliasFanoList {
@@ -47,6 +54,7 @@ impl EliasFanoList {
     /// use sucds::EliasFanoList;
     ///
     /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
+    ///
     /// assert_eq!(list.len(), 4);
     /// assert_eq!(list.sum(), 31);
     /// ```
@@ -64,6 +72,31 @@ impl EliasFanoList {
         Ok(Self {
             ef: EliasFano::new(b, false),
         })
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
+        self.ef.serialize_into(writer)
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        let ef = EliasFano::deserialize_from(reader)?;
+        Ok(Self { ef })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.ef.size_in_bytes()
     }
 
     /// Gets the `i`-th integer.
@@ -105,19 +138,6 @@ impl EliasFanoList {
     pub const fn sum(&self) -> usize {
         self.ef.universe() - 1
     }
-
-    pub fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
-        self.ef.serialize_into(writer)
-    }
-
-    pub fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let ef = EliasFano::deserialize_from(reader)?;
-        Ok(Self { ef })
-    }
-
-    pub fn size_in_bytes(&self) -> usize {
-        self.ef.size_in_bytes()
-    }
 }
 
 #[cfg(test)]
@@ -154,11 +174,11 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let ef = EliasFanoList::from_slice(&gen_random_ints(10000, 42)).unwrap();
-        let size = ef.serialize_into(&mut bytes).unwrap();
+        let list = EliasFanoList::from_slice(&gen_random_ints(10000, 42)).unwrap();
+        let size = list.serialize_into(&mut bytes).unwrap();
         let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(ef, other);
+        assert_eq!(list, other);
         assert_eq!(size, bytes.len());
-        assert_eq!(size, ef.size_in_bytes());
+        assert_eq!(size, list.size_in_bytes());
     }
 }

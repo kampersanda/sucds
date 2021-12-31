@@ -11,7 +11,8 @@ use crate::{broadword, darray::DArrayIndex, BitVector};
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
 /// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
-/// When a sequence stores $`n`$ integers from $`[0, u-1]`$, this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n`$ bits of space.
+/// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
+/// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space.
 /// That is, a sparse sequence can be stored in a very compressed space.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
@@ -36,6 +37,13 @@ use crate::{broadword, darray::DArrayIndex, BitVector};
 ///
 /// assert_eq!(ef.successor(4), Some(6));
 /// assert_eq!(ef.successor(10), None);
+///
+/// let mut bytes = vec![];
+/// let size = ef.serialize_into(&mut bytes).unwrap();
+/// let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(ef, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, ef.size_in_bytes());
 /// ```
 ///
 /// # References
@@ -159,6 +167,67 @@ impl EliasFano {
             }
         }
         Ok(Self::new(b, with_rank_index))
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = self.high_bits.serialize_into(&mut writer)?;
+        mem += self.high_bits_d1.serialize_into(&mut writer)?;
+        if let Some(high_bits_d0) = &self.high_bits_d0 {
+            writer.write_u8(1)?;
+            mem += high_bits_d0.serialize_into(&mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        mem += self.low_bits.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.low_len as u64)?;
+        writer.write_u64::<LittleEndian>(self.universe as u64)?;
+        Ok(mem + size_of::<u8>() + size_of::<u64>() + size_of::<u64>())
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let high_bits = BitVector::deserialize_from(&mut reader)?;
+        let high_bits_d1 = DArrayIndex::deserialize_from(&mut reader)?;
+        let high_bits_d0 = if reader.read_u8()? != 0 {
+            Some(DArrayIndex::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        let low_bits = BitVector::deserialize_from(&mut reader)?;
+        let low_len = reader.read_u64::<LittleEndian>()? as usize;
+        let universe = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self {
+            high_bits,
+            high_bits_d1,
+            high_bits_d0,
+            low_bits,
+            low_len,
+            universe,
+        })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.high_bits.size_in_bytes()
+            + self.high_bits_d1.size_in_bytes()
+            + size_of::<u8>()
+            + self
+                .high_bits_d0
+                .as_ref()
+                .map_or(0, |high_bits_d0| high_bits_d0.size_in_bytes())
+            + self.low_bits.size_in_bytes()
+            + size_of::<u64>()
+            + size_of::<u64>()
     }
 
     /// Searches the `k`-th iteger.
@@ -339,55 +408,6 @@ impl EliasFano {
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
-    }
-
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = self.high_bits.serialize_into(&mut writer)?;
-        mem += self.high_bits_d1.serialize_into(&mut writer)?;
-        if let Some(high_bits_d0) = &self.high_bits_d0 {
-            writer.write_u8(1)?;
-            mem += high_bits_d0.serialize_into(&mut writer)?;
-        } else {
-            writer.write_u8(0)?;
-        }
-        mem += self.low_bits.serialize_into(&mut writer)?;
-        writer.write_u64::<LittleEndian>(self.low_len as u64)?;
-        writer.write_u64::<LittleEndian>(self.universe as u64)?;
-        Ok(mem + size_of::<u8>() + size_of::<u64>() + size_of::<u64>())
-    }
-
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let high_bits = BitVector::deserialize_from(&mut reader)?;
-        let high_bits_d1 = DArrayIndex::deserialize_from(&mut reader)?;
-        let high_bits_d0 = if reader.read_u8()? != 0 {
-            Some(DArrayIndex::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
-        let low_bits = BitVector::deserialize_from(&mut reader)?;
-        let low_len = reader.read_u64::<LittleEndian>()? as usize;
-        let universe = reader.read_u64::<LittleEndian>()? as usize;
-        Ok(Self {
-            high_bits,
-            high_bits_d1,
-            high_bits_d0,
-            low_bits,
-            low_len,
-            universe,
-        })
-    }
-
-    pub fn size_in_bytes(&self) -> usize {
-        self.high_bits.size_in_bytes()
-            + self.high_bits_d1.size_in_bytes()
-            + size_of::<u8>()
-            + self
-                .high_bits_d0
-                .as_ref()
-                .map_or(0, |high_bits_d0| high_bits_d0.size_in_bytes())
-            + self.low_bits.size_in_bytes()
-            + size_of::<u64>()
-            + size_of::<u64>()
     }
 }
 

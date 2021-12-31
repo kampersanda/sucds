@@ -24,6 +24,13 @@ use crate::{util, BitVector};
 ///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
+///
+/// let mut bytes = vec![];
+/// let size = cv.serialize_into(&mut bytes).unwrap();
+/// let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(cv, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, cv.size_in_bytes());
 /// ```
 #[derive(Default, PartialEq, Eq)]
 pub struct CompactVector {
@@ -46,15 +53,6 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
-    pub fn with_capacity(capa: usize, width: usize) -> Self {
-        Self {
-            chunks: BitVector::with_capacity(capa * width),
-            len: 0,
-            width,
-        }
-    }
-
     /// Creates a new [`CompactVector`] of `len` integers.
     ///
     /// # Arguments
@@ -65,6 +63,20 @@ impl CompactVector {
         Self {
             chunks: BitVector::with_len(len * width),
             len,
+            width,
+        }
+    }
+
+    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
+    ///
+    /// # Arguments
+    ///
+    /// - `capa`: Number of integers to be reserved.
+    /// - `width`: Number of bits to represent an integer.
+    pub fn with_capacity(capa: usize, width: usize) -> Self {
+        Self {
+            chunks: BitVector::with_capacity(capa * width),
+            len: 0,
             width,
         }
     }
@@ -93,6 +105,36 @@ impl CompactVector {
             cv.set(i, x);
         }
         cv
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.chunks.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + (size_of::<u64>() * 2))
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let chunks = BitVector::deserialize_from(&mut reader)?;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self { chunks, len, width })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
     }
 
     /// Gets the `pos`-th integer.
@@ -179,24 +221,6 @@ impl CompactVector {
     #[inline(always)]
     pub const fn width(&self) -> usize {
         self.width
-    }
-
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = self.chunks.serialize_into(&mut writer)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.width as u64)?;
-        Ok(mem + (size_of::<u64>() * 2))
-    }
-
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let chunks = BitVector::deserialize_from(&mut reader)?;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        let width = reader.read_u64::<LittleEndian>()? as usize;
-        Ok(Self { chunks, len, width })
-    }
-
-    pub fn size_in_bytes(&self) -> usize {
-        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
     }
 }
 

@@ -34,7 +34,7 @@ pub mod int_vector {
     /// # Arguments
     ///
     /// - `vec`: Vector of primitive integers.
-    /// - `writer`: Writer.
+    /// - `writer`: `std::io::Write` variable.
     pub fn serialize_into<W, T>(vec: &[T], mut writer: W) -> Result<usize>
     where
         W: Write,
@@ -76,7 +76,7 @@ pub mod int_vector {
     ///
     /// # Arguments
     ///
-    /// - `reader`: Reader.
+    /// - `reader`: `std::io::Read` variable.
     pub fn deserialize_from<R, T>(mut reader: R) -> Result<Vec<T>>
     where
         R: Read,
@@ -115,7 +115,7 @@ pub mod int_vector {
         Ok(vec)
     }
 
-    /// Returns the size in bytes when the vector is serialized.
+    /// Returns the number of bytes to serialize the vector.
     ///
     /// # Arguments
     ///

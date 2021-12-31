@@ -27,11 +27,19 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// use sucds::RsBitVector;
 ///
 /// let bv = RsBitVector::from_bits(&[true, false, false, true], true, true);
+///
 /// assert_eq!(bv.get_bit(1), false);
 /// assert_eq!(bv.rank1(1), 1);
 /// assert_eq!(bv.rank0(1), 0);
 /// assert_eq!(bv.select1(1), 3);
 /// assert_eq!(bv.select0(0), 1);
+///
+/// let mut bytes = vec![];
+/// let size = bv.serialize_into(&mut bytes).unwrap();
+/// let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(bv, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, bv.size_in_bytes());
 /// ```
 ///
 /// # References
@@ -102,6 +110,70 @@ impl RsBitVector {
         I: IntoIterator<Item = &'a bool>,
     {
         Self::new(BitVector::from_bits(bits), select1_hints, select0_hints)
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = self.bv.serialize_into(&mut writer)?;
+        mem += util::int_vector::serialize_into(&self.block_rank_pairs, &mut writer)?;
+        if let Some(select1_hints) = &self.select1_hints {
+            writer.write_u8(1)?;
+            mem += util::int_vector::serialize_into(select1_hints, &mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        if let Some(select0_hints) = &self.select0_hints {
+            writer.write_u8(1)?;
+            mem += util::int_vector::serialize_into(select0_hints, &mut writer)?;
+        } else {
+            writer.write_u8(0)?;
+        }
+        Ok(mem + size_of::<u8>() * 2)
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bv = BitVector::deserialize_from(&mut reader)?;
+        let block_rank_pairs = util::int_vector::deserialize_from(&mut reader)?;
+        let select1_hints = if reader.read_u8()? != 0 {
+            Some(util::int_vector::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        let select0_hints = if reader.read_u8()? != 0 {
+            Some(util::int_vector::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        Ok(Self {
+            bv,
+            block_rank_pairs,
+            select1_hints,
+            select0_hints,
+        })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.bv.size_in_bytes()
+            + util::int_vector::size_in_bytes(&self.block_rank_pairs)
+            + size_of::<u8>()
+            + self.select1_hints.as_ref().map_or(0, |select1_hints| {
+                util::int_vector::size_in_bytes(select1_hints)
+            })
+            + size_of::<u8>()
+            + self.select0_hints.as_ref().map_or(0, |select0_hints| {
+                util::int_vector::size_in_bytes(select0_hints)
+            })
     }
 
     /// Gets the `pos`-th bit.
@@ -331,58 +403,6 @@ impl RsBitVector {
     #[inline(always)]
     pub fn num_zeros(&self) -> usize {
         self.len() - self.num_ones()
-    }
-
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = self.bv.serialize_into(&mut writer)?;
-        mem += util::int_vector::serialize_into(&self.block_rank_pairs, &mut writer)?;
-        if let Some(select1_hints) = &self.select1_hints {
-            writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(select1_hints, &mut writer)?;
-        } else {
-            writer.write_u8(0)?;
-        }
-        if let Some(select0_hints) = &self.select0_hints {
-            writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(select0_hints, &mut writer)?;
-        } else {
-            writer.write_u8(0)?;
-        }
-        Ok(mem + size_of::<u8>() * 2)
-    }
-
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let bv = BitVector::deserialize_from(&mut reader)?;
-        let block_rank_pairs = util::int_vector::deserialize_from(&mut reader)?;
-        let select1_hints = if reader.read_u8()? != 0 {
-            Some(util::int_vector::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
-        let select0_hints = if reader.read_u8()? != 0 {
-            Some(util::int_vector::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
-        Ok(Self {
-            bv,
-            block_rank_pairs,
-            select1_hints,
-            select0_hints,
-        })
-    }
-
-    pub fn size_in_bytes(&self) -> usize {
-        self.bv.size_in_bytes()
-            + util::int_vector::size_in_bytes(&self.block_rank_pairs)
-            + size_of::<u8>()
-            + self.select1_hints.as_ref().map_or(0, |select1_hints| {
-                util::int_vector::size_in_bytes(select1_hints)
-            })
-            + size_of::<u8>()
-            + self.select0_hints.as_ref().map_or(0, |select0_hints| {
-                util::int_vector::size_in_bytes(select0_hints)
-            })
     }
 
     #[inline(always)]

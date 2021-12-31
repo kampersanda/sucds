@@ -28,6 +28,13 @@ const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.predecessor0(2), Some(2));
 /// assert_eq!(bv.successor1(1), Some(3));
 /// assert_eq!(bv.successor0(1), Some(1));
+///
+/// let mut bytes = vec![];
+/// let size = bv.serialize_into(&mut bytes).unwrap();
+/// let other = BitVector::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(bv, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, bv.size_in_bytes());
 /// ```
 #[derive(Default, PartialEq, Eq)]
 pub struct BitVector {
@@ -41,6 +48,14 @@ impl BitVector {
         Self::default()
     }
 
+    /// Creates a new [`BitVector`] of `len` bits.
+    pub fn with_len(len: usize) -> Self {
+        Self {
+            words: vec![0; Self::words_for(len)],
+            len,
+        }
+    }
+
     /// Creates a new [`BitVector`] that `capa` bits are reserved.
     pub fn with_capacity(capa: usize) -> Self {
         Self {
@@ -49,12 +64,32 @@ impl BitVector {
         }
     }
 
-    /// Creates a new [`BitVector`] of `len` bits.
-    pub fn with_len(len: usize) -> Self {
-        Self {
-            words: vec![0; Self::words_for(len)],
-            len,
-        }
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = util::int_vector::serialize_into(&self.words, &mut writer)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        Ok(mem + size_of::<u64>())
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let words = util::int_vector::deserialize_from(&mut reader)?;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self { words, len })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        util::int_vector::size_in_bytes(&self.words) + size_of::<u64>()
     }
 
     /// Creates a new [`BitVector`] from input bitset `bits`.
@@ -458,22 +493,6 @@ impl BitVector {
     #[inline(always)]
     const fn words_for(n: usize) -> usize {
         (n + WORD_LEN - 1) / WORD_LEN
-    }
-
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = util::int_vector::serialize_into(&self.words, &mut writer)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        Ok(mem + size_of::<u64>())
-    }
-
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = util::int_vector::deserialize_from(&mut reader)?;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        Ok(Self { words, len })
-    }
-
-    pub fn size_in_bytes(&self) -> usize {
-        util::int_vector::size_in_bytes(&self.words) + size_of::<u64>()
     }
 }
 
