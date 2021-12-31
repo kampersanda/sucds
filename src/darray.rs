@@ -1,7 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{broadword, BitVector};
-use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+use std::mem::size_of;
+
+use anyhow::Result;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{broadword, util, BitVector};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -17,15 +22,23 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// use sucds::DArray;
 ///
 /// let da = DArray::from_bits(&[true, false, false, true]);
+///
 /// assert_eq!(da.select(0), 0);
 /// assert_eq!(da.select(1), 3);
+///
+/// let mut bytes = vec![];
+/// let size = da.serialize_into(&mut bytes).unwrap();
+/// let other = DArray::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(da, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, da.size_in_bytes());
 /// ```
 ///
 /// # References
 ///
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct DArray {
     bv: BitVector,
     da: DArrayIndex,
@@ -46,6 +59,33 @@ impl DArray {
             da: DArrayIndex::build(&bv, true),
             bv,
         }
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.bv.serialize_into(&mut writer)? + self.da.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bv = BitVector::deserialize_from(&mut reader)?;
+        let da = DArrayIndex::deserialize_from(&mut reader)?;
+        Ok(Self { bv, da })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.bv.size_in_bytes() + self.da.size_in_bytes()
     }
 
     /// Searches the `k`-th iteger.
@@ -86,7 +126,7 @@ impl DArray {
 }
 
 /// The index implementation of [`DArray`] separated from the bit vector.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct DArrayIndex {
     block_inventory: Vec<isize>,
     subblock_inventory: Vec<u16>,
@@ -104,6 +144,50 @@ impl DArrayIndex {
     /// - `over_one`: Flag to build the index for ones.
     pub fn new(bv: &BitVector, over_one: bool) -> Self {
         Self::build(bv, over_one)
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = util::int_vector::serialize_into(&self.block_inventory, &mut writer)?;
+        mem += util::int_vector::serialize_into(&self.subblock_inventory, &mut writer)?;
+        mem += util::int_vector::serialize_into(&self.overflow_positions, &mut writer)?;
+        writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
+        writer.write_u8(self.over_one as u8)?;
+        Ok(mem + size_of::<u64>() + size_of::<u8>())
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let block_inventory = util::int_vector::deserialize_from(&mut reader)?;
+        let subblock_inventory = util::int_vector::deserialize_from(&mut reader)?;
+        let overflow_positions = util::int_vector::deserialize_from(&mut reader)?;
+        let num_positions = reader.read_u64::<LittleEndian>()? as usize;
+        let over_one = reader.read_u8()? != 0;
+        Ok(Self {
+            block_inventory,
+            subblock_inventory,
+            overflow_positions,
+            num_positions,
+            over_one,
+        })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        util::int_vector::size_in_bytes(&self.block_inventory)
+            + util::int_vector::size_in_bytes(&self.subblock_inventory)
+            + util::int_vector::size_in_bytes(&self.overflow_positions)
+            + size_of::<u64>()
+            + size_of::<u8>()
     }
 
     /// Searches the `k`-th iteger.
@@ -342,11 +426,12 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
-        let da = DArrayIndex::new(&bv, true);
-        let bytes = bincode::serialize(&da).unwrap();
-        let other: DArrayIndex = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(da.len(), other.len());
-        test_select(&bv, &other);
+        let mut bytes = vec![];
+        let da = DArray::from_bits(&gen_random_bits(10000, 42));
+        let size = da.serialize_into(&mut bytes).unwrap();
+        let other = DArray::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(da, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, da.size_in_bytes());
     }
 }

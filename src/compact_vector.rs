@@ -1,7 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::{util::needed_bits, BitVector};
-use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+use std::mem::size_of;
+
+use anyhow::Result;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::{util, BitVector};
 
 /// Compact vector in which each integer is represented in the specified number of bits.
 ///
@@ -19,8 +24,15 @@ use serde::{Deserialize, Serialize};
 ///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
+///
+/// let mut bytes = vec![];
+/// let size = cv.serialize_into(&mut bytes).unwrap();
+/// let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(cv, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, cv.size_in_bytes());
 /// ```
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Default, PartialEq, Eq)]
 pub struct CompactVector {
     chunks: BitVector,
     len: usize,
@@ -41,15 +53,6 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
-    pub fn with_capacity(capa: usize, width: usize) -> Self {
-        Self {
-            chunks: BitVector::with_capacity(capa * width),
-            len: 0,
-            width,
-        }
-    }
-
     /// Creates a new [`CompactVector`] of `len` integers.
     ///
     /// # Arguments
@@ -60,6 +63,20 @@ impl CompactVector {
         Self {
             chunks: BitVector::with_len(len * width),
             len,
+            width,
+        }
+    }
+
+    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
+    ///
+    /// # Arguments
+    ///
+    /// - `capa`: Number of integers to be reserved.
+    /// - `width`: Number of bits to represent an integer.
+    pub fn with_capacity(capa: usize, width: usize) -> Self {
+        Self {
+            chunks: BitVector::with_capacity(capa * width),
+            len: 0,
             width,
         }
     }
@@ -83,11 +100,41 @@ impl CompactVector {
     /// ```
     pub fn from_slice(ints: &[usize]) -> Self {
         let &max_int = ints.iter().max().unwrap();
-        let mut cv = Self::with_len(ints.len(), needed_bits(max_int));
+        let mut cv = Self::with_len(ints.len(), util::needed_bits(max_int));
         for (i, &x) in ints.iter().enumerate() {
             cv.set(i, x);
         }
         cv
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.chunks.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + (size_of::<u64>() * 2))
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let chunks = BitVector::deserialize_from(&mut reader)?;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self { chunks, len, width })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
     }
 
     /// Gets the `pos`-th integer.
@@ -217,5 +264,16 @@ mod tests {
             let list = CompactVector::from_slice(&ints);
             test_basic(&ints, &list);
         }
+    }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let cv = CompactVector::from_slice(&gen_random_ints(10000, 42));
+        let size = cv.serialize_into(&mut bytes).unwrap();
+        let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(cv, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, cv.size_in_bytes());
     }
 }
