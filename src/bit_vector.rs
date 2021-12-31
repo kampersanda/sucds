@@ -1,12 +1,15 @@
+pub mod unary;
+
 use std::io::{Read, Write};
 use std::mem::size_of;
 
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::bit_vector::unary::UnaryIterator;
 use crate::{broadword, util};
 
-const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
 /// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 ///
@@ -312,8 +315,8 @@ impl BitVector {
         } else {
             let cur_word = self.words.last_mut().unwrap();
             *cur_word |= bits << pos_in_word;
-            if len > 64 - pos_in_word {
-                self.words.push(bits >> (64 - pos_in_word));
+            if len > WORD_LEN - pos_in_word {
+                self.words.push(bits >> (WORD_LEN - pos_in_word));
             }
         }
         self.len += len;
@@ -345,7 +348,7 @@ impl BitVector {
         let mut word = (self.words[block] << shift) >> shift;
         loop {
             if let Some(ret) = broadword::msb(word) {
-                return Some(block * 64 + ret);
+                return Some(block * WORD_LEN + ret);
             } else if block == 0 {
                 return None;
             }
@@ -380,7 +383,7 @@ impl BitVector {
         let mut word = (self.words[block] >> shift) << shift;
         loop {
             if let Some(ret) = broadword::lsb(word) {
-                return Some(block * 64 + ret).filter(|&i| i < self.len());
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
             }
             block += 1;
             if block == self.words.len() {
@@ -416,7 +419,7 @@ impl BitVector {
         let mut word = (!self.words[block] << shift) >> shift;
         loop {
             if let Some(ret) = broadword::msb(word) {
-                return Some(block * 64 + ret);
+                return Some(block * WORD_LEN + ret);
             } else if block == 0 {
                 return None;
             }
@@ -451,7 +454,7 @@ impl BitVector {
         let mut word = (!self.words[block] >> shift) << shift;
         loop {
             if let Some(ret) = broadword::lsb(word) {
-                return Some(block * 64 + ret).filter(|&i| i < self.len());
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
             }
             block += 1;
             if block == self.words.len() {
@@ -459,6 +462,10 @@ impl BitVector {
             }
             word = !self.words[block];
         }
+    }
+
+    pub fn unary_iter(&self, pos: usize) -> UnaryIterator {
+        UnaryIterator::new(self, pos)
     }
 
     /// Gets the `word_pos`-th word.
