@@ -464,6 +464,20 @@ impl BitVector {
         }
     }
 
+    /// Creates an iterator for enumerating positions of set bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits(&[false, true, false, false, true]);
+    /// let mut it = bv.unary_iter(1);
+    ///
+    /// assert_eq!(it.next(), Some(1));
+    /// assert_eq!(it.next(), Some(4));
+    /// assert_eq!(it.next(), None);
+    /// ```
     pub fn unary_iter(&self, pos: usize) -> UnaryIterator {
         UnaryIterator::new(self, pos)
     }
