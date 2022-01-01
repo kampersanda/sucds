@@ -32,6 +32,7 @@ pub mod elias_fano_list;
 pub mod intrinsics;
 pub mod rs_bit_vector;
 pub mod util;
+pub mod wavelet_matrix;
 
 pub use bit_vector::BitVector;
 pub use compact_vector::CompactVector;
@@ -40,3 +41,5 @@ pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use elias_fano_list::EliasFanoList;
 pub use rs_bit_vector::RsBitVector;
+pub use wavelet_matrix::WaveletMatrix;
+pub use wavelet_matrix::WaveletMatrixBuilder;
