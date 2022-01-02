@@ -3,6 +3,35 @@ use std::ops::Range;
 
 use crate::{broadword, BitVector, RsBitVector};
 
+/// Time and space efficient index data structures for sequence.
+///
+/// [`WaveletMatrix`] implements stores a sequence of integers and provides myriad operations on sequece.
+/// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
+/// most of the operations run in $`O(log u)`$ , using  $`n log u + o (n log u) + O(log u log n)`$ bits.
+///
+/// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
+///
+/// # Example
+///
+/// ```
+/// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+///
+/// let mut wmb = WaveletMatrixBuilder::new();
+/// let s = "tobeornottobethatisthequestion";
+/// s.chars().for_each(|c| wmb.push(c as usize));
+///
+/// let wm = wmb.build().unwrap();
+/// assert_eq!(wm.num(), s.len());
+/// assert_eq!(wm.dim(), ('u' as usize) + 1);
+///
+/// assert_eq!(wm.lookup(20), 'h' as usize);
+/// assert_eq!(wm.rank(22, 'o' as usize), 4);
+/// assert_eq!(wm.select(2, 't' as usize), 9);
+/// ```
+///
+/// # References
+///
+/// - F. Claude, and G. Navarro, "The Wavelet Matrix," In SPIRE 2012.
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct WaveletMatrix {
     layers: Vec<RsBitVector>,
@@ -13,6 +42,31 @@ pub struct WaveletMatrix {
 
 impl WaveletMatrix {
     /// Creates a new [`WaveletMatrix`].
+    ///
+    /// # Arguments
+    ///
+    /// - `layers`: A sequence of `RsBitVector`.
+    /// - `dim`:
+    /// - `num`: The number of integers to be stored
+    /// - `bit_length `:
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
+    ///
+    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
+    /// assert_eq!(wm.select(2, 't' as usize), 9);
+    /// ```
     pub fn new(layers: Vec<RsBitVector>, dim: usize, num: usize, bit_length: usize) -> Self {
         Self {
             layers,
@@ -22,18 +76,43 @@ impl WaveletMatrix {
         }
     }
 
+    /// Gets the maximum value + 1 in stored integers.
     pub fn dim(&self) -> usize {
         self.dim
     }
 
+    /// Gets the number of intergers stored in the `WaveletMatrix`.
     pub fn num(&self) -> usize {
         self.num
     }
 
+    /// Gets the maximum numbber of bits needed to be stored for each integers.
     pub fn bit_length(&self) -> usize {
         self.bit_length
     }
 
+    /// Gets the integer located in `pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Position to get.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \sigma)`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// ```
     pub fn lookup(&self, pos: usize) -> usize {
         let mut val = 0;
         let mut pos = pos;
@@ -50,11 +129,57 @@ impl WaveletMatrix {
         val
     }
 
+    /// Gets the number of occurrence of `val` in [0, `pos`).
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Position to be searched.
+    /// - `val`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \sigma)`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
+    /// ```
     pub fn rank(&self, pos: usize, val: usize) -> usize {
         let range = self.rank_range(Range { start: 0, end: pos }, val);
         range.len()
     }
 
+    /// Gets the number of occurrence of `val` in the given `range`.
+    ///
+    /// # Arguments
+    ///
+    /// - `range`: Position to be searched.
+    /// - `val`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \sigma)`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.rank_rank(Range{start: 0, end: 22}, 'o' as usize), 4);
+    /// ```
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> Range<usize> {
         let mut start_pos = range.start;
         let mut end_pos = range.end;
@@ -75,6 +200,29 @@ impl WaveletMatrix {
         }
     }
 
+    /// Gets the occurrence position of `rank`-th `val` in [0, n).
+    ///
+    /// # Arguments
+    ///
+    /// - `rank`: Rank to be searched.
+    /// - `val`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \sigma)`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.select(2, 't' as usize), 9);
+    /// ```
     pub fn select(&self, rank: usize, val: usize) -> usize {
         self.select_helper(rank, val, 0, 0)
     }
@@ -99,6 +247,29 @@ impl WaveletMatrix {
         }
     }
 
+    /// Gets `k+1`-th smallest value in the given `range`.
+    ///
+    /// # Arguments
+    ///
+    /// - `range`: Position to be searched.
+    /// - `k`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \sigma)`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.quantile(Range { start: 0, end: 3 }, 0), 'b' as usize); // min in "tob" should be "b"
+    /// ```
     pub fn quantile(&self, range: Range<usize>, k: usize) -> usize {
         let mut val = 0;
         let mut start_pos = range.start;
@@ -123,6 +294,26 @@ impl WaveletMatrix {
         val
     }
 
+    /// Gets the all integers co-occurred more than `k` times in given `ranges`.
+    ///
+    /// # Arguments
+    ///
+    /// - `ranges`: A set of ranges to be searched.
+    /// - `k`: Occurrence threshold.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// let ranges = vec![Range { start: 0, end: 3 }, Range { start: 3, end: 6 }];
+    /// assert_eq!(wm.intersect(ranges, 2), vec!['o' as usize]);
+    /// ```
     pub fn intersect(&self, ranges: Vec<Range<usize>>, k: usize) -> Vec<usize> {
         self.intersect_helper(ranges, k, 0, 0)
     }
@@ -197,20 +388,52 @@ impl WaveletMatrixBuilder {
     ///
     /// # Arguments
     ///
-    /// - ``val`` : Pushed integer.
+    /// - `val` : Integer to be pushed.
     ///
-    /// # Example
+    /// # Examples
     ///
+    /// ```
     /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
     ///
-    /// let mut b = WaveletMatrixBuilder::new();
-    /// [2, 3, 6, 9].iter().for_each(|&x| b.push(x));
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
-    /// let wm = WaveletMatrix::new(b, false);
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
+    ///
+    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
+    /// assert_eq!(wm.select(2, 't' as usize), 9);
+    /// ```
     pub fn push(&mut self, val: usize) {
         self.vals.push(val);
     }
 
+    /// Builds [`WaveletMatrix`] from a sequence of pushed integers.
+    ///
+    /// # Errors
+    ///
+    /// `anyhow:: Error` will be returned if `self.vals` is empty
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::new();
+    /// let s = "tobeornottobethatisthequestion";
+    /// s.chars().for_each(|c| wmb.push(c as usize));
+    ///
+    /// let wm = wmb.build().unwrap();
+    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
+    ///
+    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
+    /// assert_eq!(wm.select(2, 't' as usize), 9);
+    /// ```
     pub fn build(&self) -> Result<WaveletMatrix> {
         if self.vals.is_empty() {
             return Err(anyhow!("vals must not be empty"));
