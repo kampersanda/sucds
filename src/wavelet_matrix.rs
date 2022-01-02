@@ -77,17 +77,17 @@ impl WaveletMatrix {
     }
 
     /// Gets the maximum value + 1 in stored integers.
-    pub fn dim(&self) -> usize {
+    pub const fn dim(&self) -> usize {
         self.dim
     }
 
     /// Gets the number of intergers stored in the `WaveletMatrix`.
-    pub fn num(&self) -> usize {
+    pub const fn num(&self) -> usize {
         self.num
     }
 
     /// Gets the maximum numbber of bits needed to be stored for each integers.
-    pub fn bit_length(&self) -> usize {
+    pub const fn bit_length(&self) -> usize {
         self.bit_length
     }
 
@@ -369,7 +369,7 @@ impl WaveletMatrix {
         ret
     }
 
-    fn get_msb(val: usize, pos: usize, bit_length: usize) -> bool {
+    const fn get_msb(val: usize, pos: usize, bit_length: usize) -> bool {
         ((val >> (bit_length - pos - 1)) & 1) == 1
     }
 }
@@ -380,8 +380,8 @@ pub struct WaveletMatrixBuilder {
 
 impl WaveletMatrixBuilder {
     /// Creates a new [`WaveletMatrixBuilder`].
-    pub fn new() -> Self {
-        WaveletMatrixBuilder { vals: Vec::new() }
+    pub const fn new() -> Self {
+        Self { vals: Vec::new() }
     }
 
     /// Pusheds integer `val` at the end
