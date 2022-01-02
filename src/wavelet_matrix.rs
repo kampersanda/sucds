@@ -178,7 +178,7 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.range_rank(0..22, 'o' as usize), 4);
+    /// assert_eq!(wm.rank_range(0..22, 'o' as usize), 4);
     /// ```
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> Range<usize> {
         let mut start_pos = range.start;
