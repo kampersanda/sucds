@@ -46,9 +46,9 @@ impl WaveletMatrix {
     /// # Arguments
     ///
     /// - `layers`: A sequence of `RsBitVector`.
-    /// - `dim`:
-    /// - `num`: The number of integers to be stored
-    /// - `bit_length `:
+    /// - `dim`: The maximum value + 1 in stored integers.
+    /// - `num`: The number of integers to be stored.
+    /// - `bit_length `: The number of bits needed for storing input integers, i.e. $`log dim`$.
     ///
     /// # Examples
     ///
@@ -153,7 +153,7 @@ impl WaveletMatrix {
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// ```
     pub fn rank(&self, pos: usize, val: usize) -> usize {
-        let range = self.rank_range(Range { start: 0, end: pos }, val);
+        let range = self.rank_range(0..pos, val);
         range.len()
     }
 
@@ -178,7 +178,7 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.rank_rank(Range{start: 0, end: 22}, 'o' as usize), 4);
+    /// assert_eq!(wm.range_rank(0..22, 'o' as usize), 4);
     /// ```
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> Range<usize> {
         let mut start_pos = range.start;
@@ -194,10 +194,7 @@ impl WaveletMatrix {
                 end_pos = rsbv.rank0(end_pos);
             }
         }
-        Range {
-            start: start_pos,
-            end: end_pos,
-        }
+        start_pos..end_pos
     }
 
     /// Gets the occurrence position of `rank`-th `val` in [0, n).
@@ -268,7 +265,7 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.quantile(Range { start: 0, end: 3 }, 0), 'b' as usize); // min in "tob" should be "b"
+    /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // min in "tob" should be "b"
     /// ```
     pub fn quantile(&self, range: Range<usize>, k: usize) -> usize {
         let mut val = 0;
@@ -311,7 +308,7 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// let ranges = vec![Range { start: 0, end: 3 }, Range { start: 3, end: 6 }];
+    /// let ranges = vec![0..3, 3..6];
     /// assert_eq!(wm.intersect(ranges, 2), vec!['o' as usize]);
     /// ```
     pub fn intersect(&self, ranges: Vec<Range<usize>>, k: usize) -> Vec<usize> {
@@ -552,42 +549,12 @@ mod test {
         assert_eq!(wm.rank(22, 'o' as usize), 4);
         assert_eq!(wm.select(2, 't' as usize), 9);
 
-        assert_eq!(
-            wm.quantile(
-                Range {
-                    start: 0,
-                    end: s.len()
-                },
-                0
-            ),
-            'a' as usize
-        ); // min
+        assert_eq!(wm.quantile(0..s.len(), 0), 'a' as usize); // min
+        assert_eq!(wm.quantile(0..s.len(), s.len() / 2), 'o' as usize); // median
+        assert_eq!(wm.quantile(0..s.len(), s.len() - 1), 'u' as usize); // max
+        assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // min in "tob" should be "b"
 
-        assert_eq!(
-            wm.quantile(
-                Range {
-                    start: 0,
-                    end: s.len()
-                },
-                s.len() / 2
-            ),
-            'o' as usize
-        ); // median
-
-        assert_eq!(
-            wm.quantile(
-                Range {
-                    start: 0,
-                    end: s.len()
-                },
-                s.len() - 1
-            ),
-            'u' as usize
-        ); // max
-
-        assert_eq!(wm.quantile(Range { start: 0, end: 3 }, 0), 'b' as usize); // min in "tob" should be "b"
-
-        let ranges = vec![Range { start: 0, end: 3 }, Range { start: 3, end: 6 }];
+        let ranges = vec![0..3, 3..6];
         assert_eq!(wm.intersect(ranges, 2), vec!['o' as usize])
     }
 }
