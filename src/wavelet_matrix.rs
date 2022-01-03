@@ -78,9 +78,8 @@ impl WaveletMatrix {
     /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.lookup(20), 'h' as usize);
     /// ```
-    pub fn lookup(&self, pos: usize) -> usize {
+    pub fn lookup(&self, mut pos: usize) -> usize {
         let mut val = 0;
-        let mut pos = pos;
         for depth in 0..self.bit_length as usize {
             val <<= 1;
             let rsbv = &self.layers[depth];
@@ -188,12 +187,10 @@ impl WaveletMatrix {
         self.select_helper(rank, val, 0, 0)
     }
 
-    fn select_helper(&self, rank: usize, val: usize, pos: usize, depth: usize) -> usize {
+    fn select_helper(&self, mut rank: usize, val: usize, mut pos: usize, depth: usize) -> usize {
         if depth == self.bit_length {
             return pos + rank;
         }
-        let mut pos = pos;
-        let mut rank = rank;
         let bit = Self::get_msb(val, depth, self.bit_length);
         let rsbv = &self.layers[depth];
         if bit {
@@ -231,11 +228,10 @@ impl WaveletMatrix {
     /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // The zero-th in "tob" should be "b"
     /// ```
-    pub fn quantile(&self, range: Range<usize>, k: usize) -> usize {
+    pub fn quantile(&self, range: Range<usize>, mut k: usize) -> usize {
         let mut val = 0;
         let mut start_pos = range.start;
         let mut end_pos = range.end;
-        let mut k = k;
         for depth in 0..self.bit_length {
             val <<= 1;
             let rsbv = &self.layers[depth];
