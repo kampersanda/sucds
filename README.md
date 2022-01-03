@@ -24,6 +24,8 @@ For a detailed description of each data structure, please see the [respective do
   - Compressed monotone sequence through Elias-Fano encoding.
 - [`EliasFanoList`](https://docs.rs/sucds/latest/sucds/elias_fano_list/struct.EliasFanoList.html)
   - Compressed integer list through Elias-Fano gap encoding.
+- [`WaveletMatrix`](https://docs.rs/sucds/latest/sucds/wavelet_matrix/struct.WaveletMatrix.html)
+  - Space efficient data structure providing myriad operations over sequence.
 
 ## Usage
 
