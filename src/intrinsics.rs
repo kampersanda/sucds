@@ -1,3 +1,4 @@
+#![cfg(target_pointer_width = "64")]
 #![cfg(feature = "intrinsics")]
 
 #[inline(always)]

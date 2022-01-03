@@ -1,9 +1,12 @@
-use anyhow::{anyhow, Result};
+#![cfg(target_pointer_width = "64")]
+
 use std::ops::Range;
+
+use anyhow::{anyhow, Result};
 
 use crate::{broadword, BitVector, RsBitVector};
 
-/// Time- and space-efficient data structures for a sequence of integers,
+/// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
@@ -15,7 +18,7 @@ use crate::{broadword, BitVector, RsBitVector};
 /// # Examples
 ///
 /// ```
-/// use sucds::{WaveletMatrix};
+/// use sucds::WaveletMatrix;
 ///
 /// let text = "tobeornottobethatisthequestion";
 /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -49,7 +52,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let ints = vec![20, 7, 13, 2, 11];
     /// let wm = WaveletMatrix::from_ints(&ints).unwrap();
@@ -79,7 +82,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -136,7 +139,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -175,7 +178,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -203,7 +206,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -244,7 +247,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -290,7 +293,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
@@ -337,7 +340,7 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix};
+    /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();

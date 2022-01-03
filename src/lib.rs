@@ -1,3 +1,4 @@
+#![cfg(target_pointer_width = "64")]
 //! # `sucds`: Succinct data structures in Rust
 //!
 //! `sucds` contains some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
@@ -12,13 +13,13 @@
 //! - [`CompactVector`]
 //!   - Compact vector in which each integer is represented in the fixed number of bits.
 //! - [`RsBitVector`]
-//!   - Rank/select data structure over bit vectors through Vigna's rank9 and hinted selection techniques.
+//!   - Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 //! - [`DArray`]
-//!   - Constant-time select data structure over integer sets through the dense array technique by Okanohara and Sadakane.
+//!   - Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
 //! - [`EliasFano`]
-//!   - Compressed monotone sequence through Elias-Fano encoding.
+//!   - Compressed monotone sequence with Elias-Fano encoding.
 //! - [`EliasFanoList`]
-//!   - Compressed integer list through prefix-summed Elias-Fano encoding.
+//!   - Compressed integer list with prefix-summed Elias-Fano encoding.
 //! - [`WaveletMatrix`]
 //!   - Space-efficient data structure providing myriad operations over integer sequences.
 //!

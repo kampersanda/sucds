@@ -12,7 +12,7 @@ const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
-/// Rank/select data structure over bit vectors through Vigna's rank9 and hinted selection techniques.
+/// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 ///
 /// [`RsBitVector`] builds rank/select indexes on a bit vector.
 /// For a bit vector of $`n`$ bits,
