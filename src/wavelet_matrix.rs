@@ -51,6 +51,11 @@ impl WaveletMatrix {
         self.len
     }
 
+    /// Checks if the list of intergers is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Gets the maximum numbber of bits needed to be stored for each integers.
     pub const fn bit_length(&self) -> usize {
         self.bit_length
