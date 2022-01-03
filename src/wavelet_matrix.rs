@@ -8,7 +8,7 @@ use crate::{broadword, BitVector, RsBitVector};
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, \sigma -1]`$,
-/// most of the operations run in $`O(log \sigma)`$ , using  $`n log \sigma + o (n log \sigma ) + O(log \sigma log n)`$ bits.
+/// most of the operations run in $`O(\log \sigma)`$ , using  $`n \log \sigma + o (n \log \sigma ) + O(\log \sigma \log n)`$ bits.
 ///
 /// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
