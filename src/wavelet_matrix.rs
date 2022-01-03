@@ -23,7 +23,7 @@ use crate::{broadword, BitVector, RsBitVector};
 /// assert_eq!(wm.len(), text.chars().count());
 /// assert_eq!(wm.dim(), 'u' as usize + 1);
 ///
-/// assert_eq!(wm.lookup(20), 'h' as usize);
+/// assert_eq!(wm.get(20), 'h' as usize);
 /// assert_eq!(wm.rank(22, 'o' as usize), 4);
 /// assert_eq!(wm.select(2, 't' as usize), 9);
 /// ```
@@ -54,7 +54,7 @@ impl WaveletMatrix {
     /// let ints = vec![20, 7, 13, 2, 11];
     /// let wm = WaveletMatrix::from_ints(&ints).unwrap();
     ///
-    /// assert_eq!(wm.lookup(2), 13);
+    /// assert_eq!(wm.get(2), 13);
     /// assert_eq!(wm.len(), ints.len());
     /// assert_eq!(wm.dim(), 21);
     /// ```
@@ -84,7 +84,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.get(20), 'h' as usize);
     /// assert_eq!(wm.len(), text.chars().count());
     /// assert_eq!(wm.dim(), 'u' as usize + 1);
     /// ```
@@ -137,9 +137,9 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.get(20), 'h' as usize);
     /// ```
-    pub fn lookup(&self, mut pos: usize) -> usize {
+    pub fn get(&self, mut pos: usize) -> usize {
         let mut val = 0;
         for depth in 0..self.bit_length as usize {
             val <<= 1;
@@ -412,7 +412,7 @@ impl WaveletMatrixBuilder {
     /// assert_eq!(wm.len(), text.chars().count());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
-    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.get(20), 'h' as usize);
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// ```
@@ -439,7 +439,7 @@ impl WaveletMatrixBuilder {
     /// assert_eq!(wm.len(), text.chars().count());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
-    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.get(20), 'h' as usize);
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// ```
@@ -549,7 +549,7 @@ mod test {
 
     fn test_lookup(ints: &[usize], wm: &WaveletMatrix) {
         for (i, &v) in ints.iter().enumerate() {
-            assert_eq!(v, wm.lookup(i));
+            assert_eq!(v, wm.get(i));
         }
     }
 
@@ -663,7 +663,7 @@ mod test {
         assert_eq!(wm.len(), len);
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 
-        assert_eq!(wm.lookup(20), 'h' as usize);
+        assert_eq!(wm.get(20), 'h' as usize);
         assert_eq!(wm.rank(22, 'o' as usize), 4);
         assert_eq!(wm.select(2, 't' as usize), 9);
 
