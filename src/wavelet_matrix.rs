@@ -100,21 +100,25 @@ impl WaveletMatrix {
     }
 
     /// Gets the maximum value + 1 in stored integers.
+    #[inline(always)]
     pub const fn dim(&self) -> usize {
         self.dim
     }
 
-    /// Gets the number of intergers stored in the `WaveletMatrix`.
+    /// Gets the number of intergers stored.
+    #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
     }
 
     /// Checks if the list of intergers is empty.
+    #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Gets the maximum numbber of bits needed to be stored for each integers.
+    #[inline(always)]
     pub const fn bit_length(&self) -> usize {
         self.bit_length
     }
@@ -137,8 +141,11 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
+    /// assert_eq!(wm.get(2), 'b' as usize);
+    /// assert_eq!(wm.get(5), 'r' as usize);
     /// assert_eq!(wm.get(20), 'h' as usize);
     /// ```
+    #[inline(always)]
     pub fn get(&self, mut pos: usize) -> usize {
         let mut val = 0;
         for depth in 0..self.bit_length as usize {
@@ -173,8 +180,11 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
+    /// assert_eq!(wm.rank(14, 'b' as usize), 2);
+    /// assert_eq!(wm.rank(14, 'o' as usize), 4);
+    /// assert_eq!(wm.rank(14, 'w' as usize), 0);
     /// ```
+    #[inline(always)]
     pub fn rank(&self, pos: usize, val: usize) -> usize {
         self.rank_range(0..pos, val)
     }
@@ -198,8 +208,11 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// assert_eq!(wm.rank_range(0..22, 'o' as usize), 4);
+    /// assert_eq!(wm.rank_range(0..14, 'o' as usize), 4);
+    /// assert_eq!(wm.rank_range(14..20, 'a' as usize), 1);
+    /// assert_eq!(wm.rank_range(20..24, 'b' as usize), 0);
     /// ```
+    #[inline]
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> usize {
         let mut start_pos = range.start;
         let mut end_pos = range.end;
@@ -217,11 +230,11 @@ impl WaveletMatrix {
         (start_pos..end_pos).len()
     }
 
-    /// Gets the occurrence position of `rank`-th `val` in [0, n).
+    /// Gets the occurrence position of `k`-th `val` in [0, n).
     ///
     /// # Arguments
     ///
-    /// - `rank`: Rank to be searched.
+    /// - `k`: Rank to be searched.
     /// - `val`: Integer to be searched.
     ///
     /// # Complexity
@@ -237,26 +250,29 @@ impl WaveletMatrix {
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
     /// assert_eq!(wm.select(2, 't' as usize), 9);
+    /// assert_eq!(wm.select(0, 'q' as usize), 22);
     /// ```
-    pub fn select(&self, rank: usize, val: usize) -> usize {
-        self.select_helper(rank, val, 0, 0)
+    #[inline(always)]
+    pub fn select(&self, k: usize, val: usize) -> usize {
+        self.select_helper(k, val, 0, 0)
     }
 
-    fn select_helper(&self, mut rank: usize, val: usize, mut pos: usize, depth: usize) -> usize {
+    #[inline]
+    fn select_helper(&self, mut k: usize, val: usize, mut pos: usize, depth: usize) -> usize {
         if depth == self.bit_length {
-            return pos + rank;
+            return pos + k;
         }
         let bit = Self::get_msb(val, depth, self.bit_length);
         let rsbv = &self.layers[depth];
         if bit {
             let zeros = rsbv.num_zeros();
             pos = rsbv.rank1(pos) + zeros;
-            rank = self.select_helper(rank, val, pos, depth + 1);
-            rsbv.select1(rank - zeros)
+            k = self.select_helper(k, val, pos, depth + 1);
+            rsbv.select1(k - zeros)
         } else {
             pos = rsbv.rank0(pos);
-            rank = self.select_helper(rank, val, pos, depth + 1);
-            rsbv.select0(rank)
+            k = self.select_helper(k, val, pos, depth + 1);
+            rsbv.select0(k)
         }
     }
 
@@ -285,6 +301,7 @@ impl WaveletMatrix {
     /// assert_eq!(wm.quantile(0..5, 3), 'o' as usize); // The third in "tobeo" should be "o"
     /// assert_eq!(wm.quantile(0..5, 4), 't' as usize); // The fourth in "tobeo" should be "t"
     /// ```
+    #[inline]
     pub fn quantile(&self, range: Range<usize>, mut k: usize) -> usize {
         assert!(k <= range.len(), "k must be less than range.len().");
 
@@ -329,10 +346,12 @@ impl WaveletMatrix {
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 3), vec!['o' as usize]); // "tob", "o", "ob"
     /// assert_eq!(wm.intersect(&[0..2, 2..4, 14..16], 2), vec![]); // "to", "be", "ha"
     /// ```
+    #[inline(always)]
     pub fn intersect(&self, ranges: &[Range<usize>], k: usize) -> Vec<usize> {
         self.intersect_helper(ranges, k, 0, 0)
     }
 
+    #[inline]
     fn intersect_helper(
         &self,
         ranges: &[Range<usize>],
@@ -377,6 +396,7 @@ impl WaveletMatrix {
         ret
     }
 
+    #[inline(always)]
     const fn get_msb(val: usize, pos: usize, bit_length: usize) -> bool {
         ((val >> (bit_length - pos - 1)) & 1) == 1
     }
