@@ -3,7 +3,8 @@ use std::ops::Range;
 
 use crate::{broadword, BitVector, RsBitVector};
 
-/// Time and space efficient index data structures for a sequence of integers, supporting some queries such as ranking, selection, and intersection.
+/// Time- and space-efficient data structures for a sequence of integers,
+/// supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
