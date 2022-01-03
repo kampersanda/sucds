@@ -411,7 +411,7 @@ impl EliasFano {
     }
 }
 
-/// Builder of EliasFano.
+/// Builder of [`EliasFano`].
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
