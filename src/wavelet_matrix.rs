@@ -510,7 +510,7 @@ mod test {
         assert_eq!(wm.quantile(0..s.len(), 0), 'a' as usize); // min
         assert_eq!(wm.quantile(0..s.len(), s.len() / 2), 'o' as usize); // median
         assert_eq!(wm.quantile(0..s.len(), s.len() - 1), 'u' as usize); // max
-        assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // min in "tob" should be "b"
+        assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // zero-th in "tob" should be "b"
 
         let ranges = vec![0..3, 3..6];
         assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize])
