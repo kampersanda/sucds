@@ -269,15 +269,15 @@ impl WaveletMatrix {
     ///
     /// let wm = wmb.build().unwrap();
     /// let ranges = vec![0..3, 3..6];
-    /// assert_eq!(wm.intersect(ranges, 2), vec!['o' as usize]);
+    /// assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize]);
     /// ```
-    pub fn intersect(&self, ranges: Vec<Range<usize>>, k: usize) -> Vec<usize> {
+    pub fn intersect(&self, ranges: &[Range<usize>], k: usize) -> Vec<usize> {
         self.intersect_helper(ranges, k, 0, 0)
     }
 
     fn intersect_helper(
         &self,
-        ranges: Vec<Range<usize>>,
+        ranges: &[Range<usize>],
         k: usize,
         depth: usize,
         prefix: usize,
@@ -297,26 +297,20 @@ impl WaveletMatrix {
             let one_start_pos = rsbv.num_zeros() + start_pos - zero_start_pos;
             let one_end_pos = rsbv.num_zeros() + end_pos - zero_end_pos;
             if zero_end_pos - zero_start_pos > 0 {
-                zero_ranges.push(Range {
-                    start: zero_start_pos,
-                    end: zero_end_pos,
-                })
+                zero_ranges.push(zero_start_pos..zero_end_pos)
             }
             if one_end_pos - one_start_pos > 0 {
-                one_ranges.push(Range {
-                    start: one_start_pos,
-                    end: one_end_pos,
-                })
+                one_ranges.push(one_start_pos..one_end_pos)
             }
         }
 
         let mut ret = Vec::new();
         if zero_ranges.len() >= k {
-            ret.extend_from_slice(&self.intersect_helper(zero_ranges, k, depth + 1, prefix << 1));
+            ret.extend_from_slice(&self.intersect_helper(&zero_ranges, k, depth + 1, prefix << 1));
         }
         if one_ranges.len() >= k {
             ret.extend_from_slice(&self.intersect_helper(
-                one_ranges,
+                &one_ranges,
                 k,
                 depth + 1,
                 (prefix << 1) | 1,
@@ -519,6 +513,6 @@ mod test {
         assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // min in "tob" should be "b"
 
         let ranges = vec![0..3, 3..6];
-        assert_eq!(wm.intersect(ranges, 2), vec!['o' as usize])
+        assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize])
     }
 }
