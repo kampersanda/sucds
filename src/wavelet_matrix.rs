@@ -3,15 +3,15 @@ use std::ops::Range;
 
 use crate::{broadword, BitVector, RsBitVector};
 
-/// Time and space efficient index data structures for sequence.
+/// Time and space efficient index data structures for a sequence of integers, supporting some queries such as ranking, selection, and intersection. 
 ///
-/// [`WaveletMatrix`] implements stores a sequence of integers and provides myriad operations on sequece.
+/// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
 /// most of the operations run in $`O(log u)`$ , using  $`n log u + o (n log u) + O(log u log n)`$ bits.
 ///
 /// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
@@ -91,7 +91,7 @@ impl WaveletMatrix {
         self.bit_length
     }
 
-    /// Gets the integer located in `pos`.
+    /// Gets the integer located at `pos`.
     ///
     /// # Arguments
     ///
@@ -243,12 +243,12 @@ impl WaveletMatrix {
         }
     }
 
-    /// Gets `k+1`-th smallest value in the given `range`.
+    /// Gets `k`-th smallest value in the given `range`.
     ///
     /// # Arguments
     ///
-    /// - `range`: Position to be searched.
-    /// - `k`: Integer to be searched.
+    /// - `range`: Position range to be searched.
+    /// - `k`: Integer to be searched (`k >= 0`).
     ///
     /// # Complexity
     ///
@@ -264,7 +264,7 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // min in "tob" should be "b"
+    /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // The zero-th in "tob" should be "b"
     /// ```
     pub fn quantile(&self, range: Range<usize>, k: usize) -> usize {
         let mut val = 0;
