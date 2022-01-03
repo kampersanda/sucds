@@ -283,8 +283,7 @@ impl WaveletMatrix {
         prefix: usize,
     ) -> Vec<usize> {
         if depth == self.bit_length {
-            let ret = vec![prefix];
-            return ret;
+            return vec![prefix];
         }
 
         let rsbv = &self.layers[depth];
