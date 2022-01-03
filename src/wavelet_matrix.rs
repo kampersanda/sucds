@@ -21,7 +21,7 @@ use crate::{broadword, BitVector, RsBitVector};
 /// s.chars().for_each(|c| wmb.push(c as usize));
 ///
 /// let wm = wmb.build().unwrap();
-/// assert_eq!(wm.num(), s.len());
+/// assert_eq!(wm.len(), s.len());
 /// assert_eq!(wm.dim(), ('u' as usize) + 1);
 ///
 /// assert_eq!(wm.lookup(20), 'h' as usize);
@@ -36,7 +36,7 @@ use crate::{broadword, BitVector, RsBitVector};
 pub struct WaveletMatrix {
     layers: Vec<RsBitVector>,
     dim: usize,
-    num: usize,
+    len: usize,
     bit_length: usize,
 }
 
@@ -47,7 +47,7 @@ impl WaveletMatrix {
     ///
     /// - `layers`: A sequence of `RsBitVector`.
     /// - `dim`: The maximum value + 1 in stored integers.
-    /// - `num`: The number of integers to be stored.
+    /// - `len`: The number of integers to be stored.
     /// - `bit_length `: The number of bits needed for storing input integers, i.e. $`log dim`$.
     ///
     /// # Examples
@@ -60,18 +60,18 @@ impl WaveletMatrix {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.len(), s.len());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
     /// assert_eq!(wm.lookup(20), 'h' as usize);
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// ```
-    pub fn new(layers: Vec<RsBitVector>, dim: usize, num: usize, bit_length: usize) -> Self {
+    pub fn new(layers: Vec<RsBitVector>, dim: usize, len: usize, bit_length: usize) -> Self {
         Self {
             layers,
             dim,
-            num,
+            len,
             bit_length,
         }
     }
@@ -82,8 +82,8 @@ impl WaveletMatrix {
     }
 
     /// Gets the number of intergers stored in the `WaveletMatrix`.
-    pub const fn num(&self) -> usize {
-        self.num
+    pub const fn len(&self) -> usize {
+        self.len
     }
 
     /// Gets the maximum numbber of bits needed to be stored for each integers.
@@ -396,7 +396,7 @@ impl WaveletMatrixBuilder {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.len(), s.len());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
     /// assert_eq!(wm.lookup(20), 'h' as usize);
@@ -423,7 +423,7 @@ impl WaveletMatrixBuilder {
     /// s.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.num(), s.len());
+    /// assert_eq!(wm.len(), s.len());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
     /// assert_eq!(wm.lookup(20), 'h' as usize);
@@ -541,7 +541,7 @@ mod test {
         s.chars().for_each(|c| wmb.push(c as usize));
 
         let wm = wmb.build().unwrap();
-        assert_eq!(wm.num(), s.len());
+        assert_eq!(wm.len(), s.len());
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 
         assert_eq!(wm.lookup(20), 'h' as usize);
