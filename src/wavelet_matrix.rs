@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use crate::{broadword, BitVector, RsBitVector};
 
-/// Time and space efficient index data structures for a sequence of integers, supporting some queries such as ranking, selection, and intersection. 
+/// Time and space efficient index data structures for a sequence of integers, supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
@@ -41,41 +41,6 @@ pub struct WaveletMatrix {
 }
 
 impl WaveletMatrix {
-    /// Creates a new [`WaveletMatrix`].
-    ///
-    /// # Arguments
-    ///
-    /// - `layers`: A sequence of `RsBitVector`.
-    /// - `dim`: The maximum value + 1 in stored integers.
-    /// - `len`: The number of integers to be stored.
-    /// - `bit_length `: The number of bits needed for storing input integers, i.e. $`log dim`$.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
-    ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
-    ///
-    /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.len(), s.len());
-    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
-    ///
-    /// assert_eq!(wm.lookup(20), 'h' as usize);
-    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
-    /// assert_eq!(wm.select(2, 't' as usize), 9);
-    /// ```
-    pub fn new(layers: Vec<RsBitVector>, dim: usize, len: usize, bit_length: usize) -> Self {
-        Self {
-            layers,
-            dim,
-            len,
-            bit_length,
-        }
-    }
-
     /// Gets the maximum value + 1 in stored integers.
     pub const fn dim(&self) -> usize {
         self.dim
@@ -462,7 +427,12 @@ impl WaveletMatrixBuilder {
             ones = next_ones;
             layers.push(RsBitVector::new(bv, true, true));
         }
-        Ok(WaveletMatrix::new(layers, dim, self.vals.len(), bit_length))
+        Ok(WaveletMatrix {
+            layers,
+            dim,
+            len: self.vals.len(),
+            bit_length,
+        })
     }
 
     fn filter(
