@@ -15,17 +15,17 @@ For a detailed description of each data structure, please see the [respective do
 - [`BitVector`](https://docs.rs/sucds/latest/sucds/bit_vector/struct.BitVector.html)
   - Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 - [`CompactVector`](https://docs.rs/sucds/latest/sucds/compact_vector/struct.CompactVector.html)
-  - Compact vector in which each integer is represented in the specified number of bits.
+  - Compact vector in which each integer is represented in the fixed number of bits.
 - [`RsBitVector`](https://docs.rs/sucds/latest/sucds/rs_bit_vector/struct.RsBitVector.html)
-  - Rank/select data structure over bit vector through Vigna's rank9 and hinted selection techniques.
+  - Rank/select data structure over bit vectors through Vigna's rank9 and hinted selection techniques.
 - [`DArray`](https://docs.rs/sucds/latest/sucds/darray/struct.DArray.html)
-  - Constant-time select data structure over integer set through dense array technique by Okanohara and Sadakane.
+  - Constant-time select data structure over integer sets through the dense array technique by Okanohara and Sadakane.
 - [`EliasFano`](https://docs.rs/sucds/latest/sucds/elias_fano/struct.EliasFano.html)
   - Compressed monotone sequence through Elias-Fano encoding.
 - [`EliasFanoList`](https://docs.rs/sucds/latest/sucds/elias_fano_list/struct.EliasFanoList.html)
-  - Compressed integer list through Elias-Fano gap encoding.
+  - Compressed integer list through prefix-summed Elias-Fano encoding.
 - [`WaveletMatrix`](https://docs.rs/sucds/latest/sucds/wavelet_matrix/struct.WaveletMatrix.html)
-  - Space efficient data structure providing myriad operations over sequence.
+  - Space-efficient data structure providing myriad operations over integer sequences.
 
 ## Usage
 
@@ -35,7 +35,7 @@ To use `sucds`, depend on it in your Cargo manifest:
 # Cargo.toml
 
 [dependencies]
-sucds = "0.1"
+sucds = "0.2"
 ```
 
 ## Limitation

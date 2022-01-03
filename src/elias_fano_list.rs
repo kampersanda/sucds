@@ -6,7 +6,7 @@ use anyhow::Result;
 
 use crate::{EliasFano, EliasFanoBuilder};
 
-/// Compressed integer list based on through Elias-Fano gap encoding.
+/// Compressed integer list through prefix-summed Elias-Fano encoding.
 ///
 /// [`EliasFanoList`] stores a list of integers by converting it into an increasing sequence
 /// in a prefix-summing manner and representing the sequence through Elias-Fano encoding.
