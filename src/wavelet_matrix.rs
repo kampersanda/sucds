@@ -7,23 +7,21 @@ use crate::{broadword, BitVector, RsBitVector};
 /// supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
-/// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
-/// most of the operations run in $`O(log u)`$ , using  $`n log u + o (n log u) + O(log u log n)`$ bits.
+/// When a sequence stores $`n`$ integers from $`[0, \sigma -1]`$,
+/// most of the operations run in $`O(log \sigma)`$ , using  $`n log \sigma + o (n log \sigma ) + O(log \sigma log n)`$ bits.
 ///
 /// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
 /// # Examples
 ///
 /// ```
-/// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+/// use sucds::{WaveletMatrix};
 ///
-/// let mut wmb = WaveletMatrixBuilder::new();
-/// let s = "tobeornottobethatisthequestion";
-/// s.chars().for_each(|c| wmb.push(c as usize));
+/// let text = "tobeornottobethatisthequestion";
+/// let wm = WaveletMatrix::from_text(text).unwrap();
 ///
-/// let wm = wmb.build().unwrap();
-/// assert_eq!(wm.len(), s.len());
-/// assert_eq!(wm.dim(), ('u' as usize) + 1);
+/// assert_eq!(wm.len(), text.chars().count());
+/// assert_eq!(wm.dim(), 'u' as usize + 1);
 ///
 /// assert_eq!(wm.lookup(20), 'h' as usize);
 /// assert_eq!(wm.rank(22, 'o' as usize), 4);
@@ -42,6 +40,65 @@ pub struct WaveletMatrix {
 }
 
 impl WaveletMatrix {
+    /// Builds a [`WaveletMatrix`] from an iterator of integers.
+    ///
+    /// # Arguments
+    ///
+    /// - `ints`: Iterator of integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix};
+    ///
+    /// let ints = vec![20, 7, 13, 2, 11];
+    /// let wm = WaveletMatrix::from_ints(&ints).unwrap();
+    ///
+    /// assert_eq!(wm.lookup(2), 13);
+    /// assert_eq!(wm.len(), ints.len());
+    /// assert_eq!(wm.dim(), 21);
+    /// ```
+    pub fn from_ints<'a, I>(ints: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = &'a usize>,
+    {
+        let mut wmb = WaveletMatrixBuilder::default();
+        for &v in ints {
+            wmb.push(v);
+        }
+        wmb.build()
+    }
+
+    /// Builds a [`WaveletMatrix`] from characters in a string.
+    /// Note that this handles a sequence of `char`, not `u8`.
+    ///
+    /// # Arguments
+    ///
+    /// - `text`: String.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{WaveletMatrix};
+    ///
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    ///
+    /// assert_eq!(wm.lookup(20), 'h' as usize);
+    /// assert_eq!(wm.len(), text.chars().count());
+    /// assert_eq!(wm.dim(), 'u' as usize + 1);
+    /// ```
+    pub fn from_text<S>(text: S) -> Result<Self>
+    where
+        S: AsRef<str>,
+    {
+        let mut wmb = WaveletMatrixBuilder::default();
+        for c in text.as_ref().chars() {
+            wmb.push(c as usize);
+        }
+        wmb.build()
+    }
+
     /// Gets the maximum value + 1 in stored integers.
     pub const fn dim(&self) -> usize {
         self.dim
@@ -75,13 +132,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.lookup(20), 'h' as usize);
     /// ```
     pub fn lookup(&self, mut pos: usize) -> usize {
@@ -113,13 +168,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// ```
     pub fn rank(&self, pos: usize, val: usize) -> usize {
@@ -140,13 +193,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.rank_range(0..22, 'o' as usize), 4);
     /// ```
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> usize {
@@ -180,13 +231,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// ```
     pub fn select(&self, rank: usize, val: usize) -> usize {
@@ -225,13 +274,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // The zero-th in "tob" should be "b"
     /// ```
     pub fn quantile(&self, range: Range<usize>, mut k: usize) -> usize {
@@ -267,13 +314,11 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
+    /// use sucds::{WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let wm = wmb.build().unwrap();
     /// let ranges = vec![0..3, 3..6];
     /// assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize]);
     /// ```
@@ -330,6 +375,7 @@ impl WaveletMatrix {
     }
 }
 
+/// Builder of [`WaveletMatrix`].
 pub struct WaveletMatrixBuilder {
     vals: Vec<usize>,
 }
@@ -352,11 +398,11 @@ impl WaveletMatrixBuilder {
     /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
     ///
     /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// text.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.len(), s.len());
+    /// assert_eq!(wm.len(), text.chars().count());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
     /// assert_eq!(wm.lookup(20), 'h' as usize);
@@ -371,7 +417,7 @@ impl WaveletMatrixBuilder {
     ///
     /// # Errors
     ///
-    /// `anyhow:: Error` will be returned if `self.vals` is empty
+    /// `anyhow::Error` will be returned if `self.vals` is empty
     ///
     /// # Examples
     ///
@@ -379,11 +425,11 @@ impl WaveletMatrixBuilder {
     /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
     ///
     /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let s = "tobeornottobethatisthequestion";
-    /// s.chars().for_each(|c| wmb.push(c as usize));
+    /// let text = "tobeornottobethatisthequestion";
+    /// text.chars().for_each(|c| wmb.push(c as usize));
     ///
     /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.len(), s.len());
+    /// assert_eq!(wm.len(), text.chars().count());
     /// assert_eq!(wm.dim(), ('u' as usize) + 1);
     ///
     /// assert_eq!(wm.lookup(20), 'h' as usize);
@@ -501,21 +547,20 @@ mod test {
         /*
         This test example is from G. Navarro's "Compact Data Structures" P130
         */
-        let mut wmb = WaveletMatrixBuilder::new();
-        let s = "tobeornottobethatisthequestion";
-        s.chars().for_each(|c| wmb.push(c as usize));
+        let text = "tobeornottobethatisthequestion";
+        let len = text.chars().count();
 
-        let wm = wmb.build().unwrap();
-        assert_eq!(wm.len(), s.len());
+        let wm = WaveletMatrix::from_text(text).unwrap();
+        assert_eq!(wm.len(), len);
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 
         assert_eq!(wm.lookup(20), 'h' as usize);
         assert_eq!(wm.rank(22, 'o' as usize), 4);
         assert_eq!(wm.select(2, 't' as usize), 9);
 
-        assert_eq!(wm.quantile(0..s.len(), 0), 'a' as usize); // min
-        assert_eq!(wm.quantile(0..s.len(), s.len() / 2), 'o' as usize); // median
-        assert_eq!(wm.quantile(0..s.len(), s.len() - 1), 'u' as usize); // max
+        assert_eq!(wm.quantile(0..len, 0), 'a' as usize); // min
+        assert_eq!(wm.quantile(0..len, len / 2), 'o' as usize); // median
+        assert_eq!(wm.quantile(0..len, len - 1), 'u' as usize); // max
         assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // zero-th in "tob" should be "b"
 
         let ranges = vec![0..3, 3..6];
