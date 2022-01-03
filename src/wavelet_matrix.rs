@@ -153,8 +153,7 @@ impl WaveletMatrix {
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// ```
     pub fn rank(&self, pos: usize, val: usize) -> usize {
-        let range = self.rank_range(0..pos, val);
-        range.len()
+        self.rank_range(0..pos, val)
     }
 
     /// Gets the number of occurrence of `val` in the given `range`.
@@ -180,7 +179,7 @@ impl WaveletMatrix {
     /// let wm = wmb.build().unwrap();
     /// assert_eq!(wm.rank_range(0..22, 'o' as usize), 4);
     /// ```
-    pub fn rank_range(&self, range: Range<usize>, val: usize) -> Range<usize> {
+    pub fn rank_range(&self, range: Range<usize>, val: usize) -> usize {
         let mut start_pos = range.start;
         let mut end_pos = range.end;
         for depth in 0..self.bit_length as usize {
@@ -194,7 +193,7 @@ impl WaveletMatrix {
                 end_pos = rsbv.rank0(end_pos);
             }
         }
-        start_pos..end_pos
+        (start_pos..end_pos).len()
     }
 
     /// Gets the occurrence position of `rank`-th `val` in [0, n).
