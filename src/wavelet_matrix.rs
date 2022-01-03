@@ -279,9 +279,15 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// assert_eq!(wm.quantile(0..3, 0), 'b' as usize); // The zero-th in "tob" should be "b"
+    /// assert_eq!(wm.quantile(0..5, 0), 'b' as usize); // The zero-th in "tobeo" should be "b"
+    /// assert_eq!(wm.quantile(0..5, 1), 'e' as usize); // The first in "tobeo" should be "e"
+    /// assert_eq!(wm.quantile(0..5, 2), 'o' as usize); // The second in "tobeo" should be "o"
+    /// assert_eq!(wm.quantile(0..5, 3), 'o' as usize); // The third in "tobeo" should be "o"
+    /// assert_eq!(wm.quantile(0..5, 4), 't' as usize); // The fourth in "tobeo" should be "t"
     /// ```
     pub fn quantile(&self, range: Range<usize>, mut k: usize) -> usize {
+        assert!(k <= range.len(), "k must be less than range.len().");
+
         let mut val = 0;
         let mut start_pos = range.start;
         let mut end_pos = range.end;
@@ -319,8 +325,9 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     /// let wm = WaveletMatrix::from_text(text).unwrap();
     ///
-    /// let ranges = vec![0..3, 3..6];
-    /// assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize]);
+    /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 2), vec!['b' as usize, 'o' as usize]); // "tob", "o", "ob"
+    /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 3), vec!['o' as usize]); // "tob", "o", "ob"
+    /// assert_eq!(wm.intersect(&[0..2, 2..4, 14..16], 2), vec![]); // "to", "be", "ha"
     /// ```
     pub fn intersect(&self, ranges: &[Range<usize>], k: usize) -> Vec<usize> {
         self.intersect_helper(ranges, k, 0, 0)
@@ -519,6 +526,108 @@ impl Default for WaveletMatrixBuilder {
 mod test {
     use super::*;
 
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaChaRng;
+
+    const SIGMA: usize = 256;
+
+    fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        (0..len).map(|_| rng.gen_range(0..SIGMA)).collect()
+    }
+
+    fn gen_random_ranges(len: usize, end: usize, seed: u64) -> Vec<Range<usize>> {
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        let mut ranges = vec![];
+        for _ in 0..len {
+            let i = rng.gen_range(0..end);
+            let j = rng.gen_range(i..end);
+            ranges.push(i..j);
+        }
+        ranges
+    }
+
+    fn test_lookup(ints: &[usize], wm: &WaveletMatrix) {
+        for (i, &v) in ints.iter().enumerate() {
+            assert_eq!(v, wm.lookup(i));
+        }
+    }
+
+    fn test_rank_select(ints: &[usize], wm: &WaveletMatrix, val: usize) {
+        let mut cur_rank = 0;
+        for i in 0..ints.len() {
+            assert_eq!(cur_rank, wm.rank(i, val));
+            if ints[i] == val {
+                assert_eq!(i, wm.select(cur_rank, val));
+                cur_rank += 1;
+            }
+        }
+    }
+
+    fn test_rank_range(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>], val: usize) {
+        for rng in ranges {
+            let (i, j) = (rng.start, rng.end);
+            let expected = ints[i..j].iter().filter(|&&x| x == val).count();
+            assert_eq!(expected, wm.rank_range(i..j, val));
+        }
+    }
+
+    fn test_quantile(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>]) {
+        for rng in ranges {
+            let (i, j) = (rng.start, rng.end);
+            let mut tgt = ints[i..j].to_vec();
+            for k in 0..rng.len() {
+                let min_i = {
+                    let exp = tgt.iter().enumerate().min_by_key(|&(_, x)| x).unwrap();
+                    assert_eq!(*exp.1, wm.quantile(i..j, k));
+                    exp.0
+                };
+                tgt.remove(min_i);
+            }
+        }
+    }
+
+    fn test_intersect(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>]) {
+        let mut sets = vec![];
+        for rng in ranges {
+            let mut set = std::collections::BTreeSet::new();
+            ints[rng.start..rng.end].iter().for_each(|&x| {
+                set.insert(x);
+            });
+            sets.push(set);
+        }
+
+        const K: usize = 1;
+
+        for i in 0..ranges.len() - 3 {
+            let q_rngs = &ranges[i..i + 3];
+            let q_sets = &sets[i..i + 3];
+            let expected = {
+                let mut expected = std::collections::BTreeSet::new();
+                for c in 0..SIGMA {
+                    let mut cnt = 0;
+                    for qs in q_sets {
+                        if qs.contains(&c) {
+                            cnt += 1;
+                        }
+                    }
+                    if cnt >= K {
+                        expected.insert(c);
+                    }
+                }
+                expected
+            };
+            let answer = {
+                let mut answer = std::collections::BTreeSet::new();
+                for x in wm.intersect(q_rngs, K) {
+                    answer.insert(x);
+                }
+                answer
+            };
+            assert_eq!(expected, answer);
+        }
+    }
+
     #[test]
     fn test_builder_push() {
         let mut wmb = WaveletMatrixBuilder::new();
@@ -565,5 +674,20 @@ mod test {
 
         let ranges = vec![0..3, 3..6];
         assert_eq!(wm.intersect(&ranges, 2), vec!['o' as usize])
+    }
+
+    #[test]
+    fn test_random_ints() {
+        let ints = gen_random_ints(1000, 13);
+        let ranges = gen_random_ranges(30, ints.len(), 13);
+
+        let wm = WaveletMatrix::from_ints(&ints).unwrap();
+        test_lookup(&ints, &wm);
+        for val in 0..SIGMA {
+            test_rank_select(&ints, &wm, val);
+            test_rank_range(&ints, &wm, &ranges, val);
+        }
+        test_quantile(&ints, &wm, &ranges);
+        test_intersect(&ints, &wm, &ranges);
     }
 }
