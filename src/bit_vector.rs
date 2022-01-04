@@ -39,7 +39,7 @@ pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(size, bytes.len());
 /// assert_eq!(size, bv.size_in_bytes());
 /// ```
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
     words: Vec<usize>,
     len: usize,

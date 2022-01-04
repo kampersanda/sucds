@@ -34,7 +34,7 @@ use crate::{broadword, BitVector, RsBitVector};
 /// # References
 ///
 /// - F. Claude, and G. Navarro, "The Wavelet Matrix," In SPIRE 2012.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix {
     layers: Vec<RsBitVector>,
     dim: usize,

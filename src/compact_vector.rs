@@ -32,7 +32,7 @@ use crate::{util, BitVector};
 /// assert_eq!(size, bytes.len());
 /// assert_eq!(size, cv.size_in_bytes());
 /// ```
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct CompactVector {
     chunks: BitVector,
     len: usize,

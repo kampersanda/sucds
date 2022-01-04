@@ -36,7 +36,7 @@ use crate::{EliasFano, EliasFanoBuilder};
 /// assert_eq!(size, bytes.len());
 /// assert_eq!(size, list.size_in_bytes());
 /// ```
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFanoList {
     ef: EliasFano,
 }
