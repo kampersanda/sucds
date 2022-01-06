@@ -472,7 +472,7 @@ impl EliasFano {
     /// assert_eq!(it.next(), None);
     /// ```
     pub fn iter(&self, k: usize) -> EliasFanoIterator {
-        EliasFanoIterator::new(&self, k)
+        EliasFanoIterator::new(self, k)
     }
 
     /// Gets the number of integers.

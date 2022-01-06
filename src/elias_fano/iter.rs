@@ -20,7 +20,7 @@ impl<'a> EliasFanoIterator<'a> {
     /// Creates an iterator for enumerating integers from position `k`.
     pub fn new(ef: &'a EliasFano, k: usize) -> Self {
         debug_assert!(ef.low_len < 64);
-        debug_assert!(ef.high_bits_d1.len() != 0);
+        debug_assert!(!ef.high_bits_d1.is_empty());
 
         let low_buf = 0;
         let low_mask = (1 << ef.low_len) - 1;
