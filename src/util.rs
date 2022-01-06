@@ -46,7 +46,7 @@ pub mod int_vector {
                 for x in vec {
                     writer.write_u8(
                         x.to_u8()
-                            .ok_or(anyhow!("{:?} could not be converted to u8.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted to u8.", x))?,
                     )?;
                 }
             }
@@ -54,7 +54,7 @@ pub mod int_vector {
                 for x in vec {
                     writer.write_u16::<LittleEndian>(
                         x.to_u16()
-                            .ok_or(anyhow!("{:?} could not be converted to u16.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted to u16.", x))?,
                     )?;
                 }
             }
@@ -62,7 +62,7 @@ pub mod int_vector {
                 for x in vec {
                     writer.write_u32::<LittleEndian>(
                         x.to_u32()
-                            .ok_or(anyhow!("{:?} could not be converted to u32.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted to u32.", x))?,
                     )?;
                 }
             }
@@ -70,7 +70,7 @@ pub mod int_vector {
                 for x in vec {
                     writer.write_u64::<LittleEndian>(
                         x.to_u64()
-                            .ok_or(anyhow!("{:?} could not be converted to u64.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted to u64.", x))?,
                     )?;
                 }
             }
@@ -78,7 +78,7 @@ pub mod int_vector {
                 for x in vec {
                     writer.write_u128::<LittleEndian>(
                         x.to_u128()
-                            .ok_or(anyhow!("{:?} could not be converted to u128.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted to u128.", x))?,
                     )?;
                 }
             }
@@ -104,7 +104,8 @@ pub mod int_vector {
                 for _ in 0..len {
                     let x = reader.read_u8()?;
                     vec.push(
-                        T::from_u8(x).ok_or(anyhow!("{:?} could not be converted from u8.", x))?,
+                        T::from_u8(x)
+                            .ok_or_else(|| anyhow!("{:?} could not be converted from u8.", x))?,
                     );
                 }
             }
@@ -113,7 +114,7 @@ pub mod int_vector {
                     let x = reader.read_u16::<LittleEndian>()?;
                     vec.push(
                         T::from_u16(x)
-                            .ok_or(anyhow!("{:?} could not be converted from u16.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted from u16.", x))?,
                     );
                 }
             }
@@ -122,7 +123,7 @@ pub mod int_vector {
                     let x = reader.read_u32::<LittleEndian>()?;
                     vec.push(
                         T::from_u32(x)
-                            .ok_or(anyhow!("{:?} could not be converted from u32.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted from u32.", x))?,
                     );
                 }
             }
@@ -131,7 +132,7 @@ pub mod int_vector {
                     let x = reader.read_u64::<LittleEndian>()?;
                     vec.push(
                         T::from_u64(x)
-                            .ok_or(anyhow!("{:?} could not be converted from u64.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted from u64.", x))?,
                     );
                 }
             }
@@ -140,7 +141,7 @@ pub mod int_vector {
                     let x = reader.read_u128::<LittleEndian>()?;
                     vec.push(
                         T::from_u128(x)
-                            .ok_or(anyhow!("{:?} could not be converted from u128.", x))?,
+                            .ok_or_else(|| anyhow!("{:?} could not be converted from u128.", x))?,
                     );
                 }
             }
