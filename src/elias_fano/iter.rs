@@ -96,11 +96,13 @@ mod tests {
             .filter(|(_, &b)| b)
             .map(|(i, _)| i)
             .collect();
-        let mut it = ef.iter(0);
-        for exp in expected {
-            assert_eq!(it.next(), Some(exp));
+        for k in (0..expected.len()).step_by(100) {
+            let mut it = ef.iter(k);
+            for &exp in &expected[k..] {
+                assert_eq!(it.next(), Some(exp));
+            }
+            assert_eq!(it.next(), None);
         }
-        assert_eq!(it.next(), None);
     }
 
     #[test]
