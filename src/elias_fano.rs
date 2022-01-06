@@ -1,12 +1,18 @@
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 use std::mem::size_of;
+use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::elias_fano::iter::EliasFanoIterator;
 use crate::{broadword, darray::DArrayIndex, BitVector};
+
+const LINEAR_SCAN_THRESHOLD: usize = 64;
 
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
@@ -159,7 +165,7 @@ impl EliasFano {
         let n = bv.len();
         let m = (0..bv.num_words())
             .into_iter()
-            .fold(0, |acc, i| acc + broadword::popcount(bv.get_word(i)));
+            .fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
             if bv.get_bit(i) {
@@ -390,6 +396,83 @@ impl EliasFano {
         } else {
             ((high_val - k) << self.low_len) | low_val
         }
+    }
+
+    /// Finds the position `k` such that `select(k) == val`.
+    ///
+    /// # Arguments
+    ///
+    /// - `val`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    #[inline(always)]
+    pub fn find(&self, val: usize) -> Option<usize> {
+        self.find_range(0..self.len(), val)
+    }
+
+    /// Finds the position `k` such that `select(k) == val` and `k in range`.
+    ///
+    /// Note that ...
+    ///
+    /// # Arguments
+    ///
+    /// - `range`: Position range to be searched.
+    /// - `val`: Integer to be searched.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic for the range
+    ///
+    #[inline(always)]
+    pub fn find_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+        // Binary search
+        let (mut lo, mut hi) = (range.start, range.end);
+        while hi - lo > LINEAR_SCAN_THRESHOLD {
+            let mi = (lo + hi) / 2;
+            let x = self.select(mi);
+            if val == x {
+                return Some(mi);
+            }
+            if val < x {
+                hi = mi;
+            } else {
+                lo = mi + 1;
+            }
+        }
+
+        // Linear scan
+        let mut it = self.iter(lo);
+        for i in lo..hi {
+            let x = it.next().unwrap();
+            if val == x {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    /// Creates an iterator of [`EliasFanoIterator`] to enumerate integers from the `k`-th one.
+    ///
+    /// # Arguments
+    ///
+    /// - `k`: Select query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_bits(&[false, true, true, false, true], false).unwrap();
+    /// let mut it = ef.iter(1);
+    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), Some(4));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self, k: usize) -> EliasFanoIterator {
+        EliasFanoIterator::new(&self, k)
     }
 
     /// Gets the number of integers.

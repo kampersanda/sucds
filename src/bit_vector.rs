@@ -482,10 +482,20 @@ impl BitVector {
         UnaryIterator::new(self, pos)
     }
 
-    /// Gets the `word_pos`-th word.
+    /// Gets `get_bits(pos, 64)` but it can extend further `len()`, padding with zeros.
     #[inline(always)]
-    pub fn get_word(&self, word_pos: usize) -> usize {
-        self.words[word_pos]
+    pub fn get_word64(&self, pos: usize) -> usize {
+        let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
+        let mut word = self.words[block] >> shift;
+        if shift != 0 && block + 1 < self.words.len() {
+            word |= self.words[block + 1] << (64 - shift);
+        }
+        word
+    }
+
+    /// Gets the slice of raw words.
+    pub fn words(&self) -> &[usize] {
+        &self.words
     }
 
     /// Gets the number of words.

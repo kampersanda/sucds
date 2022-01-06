@@ -228,7 +228,7 @@ impl RsBitVector {
         let (sub_bpos, sub_left) = (pos / 64, pos % 64);
         let mut r = self.sub_block_rank(sub_bpos);
         if sub_left != 0 {
-            r += broadword::popcount(self.bv.get_word(sub_bpos) << (64 - sub_left));
+            r += broadword::popcount(self.bv.words()[sub_bpos] << (64 - sub_left));
         }
         r
     }
@@ -317,7 +317,7 @@ impl RsBitVector {
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(self.bv.get_word(word_offset), k - cur_rank)
+        word_offset * 64 + broadword::select_in_word(self.bv.words()[word_offset], k - cur_rank)
     }
 
     /// Searches the position of the `k`-th bit unset.
@@ -378,7 +378,7 @@ impl RsBitVector {
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(!self.bv.get_word(word_offset), k - cur_rank)
+        word_offset * 64 + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank)
     }
 
     /// Gets the number of bits.
@@ -439,7 +439,7 @@ impl RsBitVector {
         let mut block_rank_pairs = vec![next_rank];
 
         for i in 0..bv.num_words() {
-            let word_pop = broadword::popcount(bv.get_word(i));
+            let word_pop = broadword::popcount(bv.words()[i]);
 
             let shift = i % BLOCK_LEN;
             if shift != 0 {
