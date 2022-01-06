@@ -38,36 +38,51 @@ pub mod int_vector {
     pub fn serialize_into<W, T>(vec: &[T], mut writer: W) -> Result<usize>
     where
         W: Write,
-        T: ToPrimitive,
+        T: ToPrimitive + std::fmt::Debug,
     {
         writer.write_u64::<LittleEndian>(vec.len() as u64)?;
         match size_of::<T>() {
             1 => {
                 for x in vec {
-                    writer.write_u8(x.to_u8().unwrap())?;
+                    writer.write_u8(
+                        x.to_u8()
+                            .ok_or(anyhow!("{:?} could not be converted to u8.", x))?,
+                    )?;
                 }
             }
             2 => {
                 for x in vec {
-                    writer.write_u16::<LittleEndian>(x.to_u16().unwrap())?;
+                    writer.write_u16::<LittleEndian>(
+                        x.to_u16()
+                            .ok_or(anyhow!("{:?} could not be converted to u16.", x))?,
+                    )?;
                 }
             }
             4 => {
                 for x in vec {
-                    writer.write_u32::<LittleEndian>(x.to_u32().unwrap())?;
+                    writer.write_u32::<LittleEndian>(
+                        x.to_u32()
+                            .ok_or(anyhow!("{:?} could not be converted to u32.", x))?,
+                    )?;
                 }
             }
             8 => {
                 for x in vec {
-                    writer.write_u64::<LittleEndian>(x.to_u64().unwrap())?;
+                    writer.write_u64::<LittleEndian>(
+                        x.to_u64()
+                            .ok_or(anyhow!("{:?} could not be converted to u64.", x))?,
+                    )?;
                 }
             }
             16 => {
                 for x in vec {
-                    writer.write_u128::<LittleEndian>(x.to_u128().unwrap())?;
+                    writer.write_u128::<LittleEndian>(
+                        x.to_u128()
+                            .ok_or(anyhow!("{:?} could not be converted to u128.", x))?,
+                    )?;
                 }
             }
-            _ => return Err(anyhow!("Invalid int type.")),
+            _ => return Err(anyhow!("Invalid type: {:?}.", std::any::type_name::<T>())),
         }
         Ok(size_of::<u64>() + (size_of::<T>() * vec.len()))
     }
@@ -87,30 +102,49 @@ pub mod int_vector {
         match size_of::<T>() {
             1 => {
                 for _ in 0..len {
-                    vec.push(T::from_u8(reader.read_u8()?).unwrap());
+                    let x = reader.read_u8()?;
+                    vec.push(
+                        T::from_u8(x).ok_or(anyhow!("{:?} could not be converted from u8.", x))?,
+                    );
                 }
             }
             2 => {
                 for _ in 0..len {
-                    vec.push(T::from_u16(reader.read_u16::<LittleEndian>()?).unwrap());
+                    let x = reader.read_u16::<LittleEndian>()?;
+                    vec.push(
+                        T::from_u16(x)
+                            .ok_or(anyhow!("{:?} could not be converted from u16.", x))?,
+                    );
                 }
             }
             4 => {
                 for _ in 0..len {
-                    vec.push(T::from_u32(reader.read_u32::<LittleEndian>()?).unwrap());
+                    let x = reader.read_u32::<LittleEndian>()?;
+                    vec.push(
+                        T::from_u32(x)
+                            .ok_or(anyhow!("{:?} could not be converted from u32.", x))?,
+                    );
                 }
             }
             8 => {
                 for _ in 0..len {
-                    vec.push(T::from_u64(reader.read_u64::<LittleEndian>()?).unwrap());
+                    let x = reader.read_u64::<LittleEndian>()?;
+                    vec.push(
+                        T::from_u64(x)
+                            .ok_or(anyhow!("{:?} could not be converted from u64.", x))?,
+                    );
                 }
             }
             16 => {
                 for _ in 0..len {
-                    vec.push(T::from_u128(reader.read_u128::<LittleEndian>()?).unwrap());
+                    let x = reader.read_u128::<LittleEndian>()?;
+                    vec.push(
+                        T::from_u128(x)
+                            .ok_or(anyhow!("{:?} could not be converted from u128.", x))?,
+                    );
                 }
             }
-            _ => return Err(anyhow!("Invalid int type.")),
+            _ => return Err(anyhow!("Invalid type: {:?}.", std::any::type_name::<T>())),
         }
         Ok(vec)
     }
