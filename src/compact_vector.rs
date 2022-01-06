@@ -8,7 +8,7 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::{util, BitVector};
 
-/// Compact vector in which each integer is represented in the fixed number of bits.
+/// Compact vector in which each integer is represented in a fixed number of bits.
 ///
 /// # Examples
 ///

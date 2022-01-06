@@ -11,7 +11,7 @@
 //! - [`BitVector`]
 //!   - Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 //! - [`CompactVector`]
-//!   - Compact vector in which each integer is represented in the fixed number of bits.
+//!   - Compact vector in which each integer is represented in a fixed number of bits.
 //! - [`RsBitVector`]
 //!   - Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 //! - [`DArray`]
