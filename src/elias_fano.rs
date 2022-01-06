@@ -60,7 +60,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFano {
     high_bits: BitVector,
     high_bits_d1: DArrayIndex,
