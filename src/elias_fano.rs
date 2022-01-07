@@ -437,6 +437,8 @@ impl EliasFano {
 
     /// Finds the position `k` such that `select(k) == val`.
     ///
+    /// Note that, if there are multiple values of `val`, one of them is returned.
+    ///
     /// # Arguments
     ///
     /// - `val`: Integer to be searched.
@@ -462,7 +464,7 @@ impl EliasFano {
 
     /// Finds the position `k` such that `select(k) == val` and `k in range`.
     ///
-    /// Note that ...
+    /// Note that, if there are multiple values of `val`, one of them is returned.
     ///
     /// # Arguments
     ///
