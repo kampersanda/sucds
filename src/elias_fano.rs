@@ -175,6 +175,37 @@ impl EliasFano {
         Ok(Self::new(b, with_rank_index))
     }
 
+    /// Creates a new [`EliasFano`] from monotone-increased integers.
+    ///
+    /// # Arguments
+    ///
+    /// - `ints`: Slice of monotone-increased integers .
+    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    ///
+    /// # Errors
+    ///
+    /// `anyhow::Error` will be returned if `ints` is empty or is not monotone-increased.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// assert_eq!(ef.select(0), 1);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
+    /// ```
+    pub fn from_ints(ints: &[usize], with_rank_index: bool) -> Result<Self> {
+        if ints.is_empty() {
+            return Err(anyhow!("The input ints must not be empty."));
+        }
+        let mut b = EliasFanoBuilder::new(*ints.last().unwrap() + 1, ints.len())?;
+        b.append(ints)?;
+        Ok(Self::new(b, with_rank_index))
+    }
+
     /// Serializes the data structure into the writer,
     /// returning the number of serialized bytes.
     ///
@@ -408,6 +439,16 @@ impl EliasFano {
     ///
     /// - Logarithmic
     ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+    /// assert_eq!(ef.find(6), Some(3));
+    /// assert_eq!(ef.find(10), Some(5));
+    /// assert_eq!(ef.find(9), None);
+    /// ```
     #[inline(always)]
     pub fn find(&self, val: usize) -> Option<usize> {
         self.find_range(0..self.len(), val)
@@ -426,8 +467,22 @@ impl EliasFano {
     ///
     /// - Logarithmic for the range
     ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+    /// assert_eq!(ef.find_range(1..4, 6), Some(3));
+    /// assert_eq!(ef.find_range(5..6, 10), Some(5));
+    /// assert_eq!(ef.find_range(1..3, 6), None);
+    /// ```
     #[inline(always)]
     pub fn find_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+        if range.is_empty() {
+            return None;
+        }
+
         // Binary search
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
@@ -636,6 +691,47 @@ mod tests {
         (0..len).map(|_| rng.gen::<bool>()).collect()
     }
 
+    fn gen_random_queries(bits: &[bool], len: usize, seed: u64) -> Vec<(usize, Option<usize>)> {
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        let mut queries = vec![];
+        for _ in 0..len {
+            let v = rng.gen_range(0..bits.len());
+            queries.push(if bits[v] {
+                let rank = bits[..v].iter().fold(0, |acc, &b| acc + b as usize);
+                (v, Some(rank))
+            } else {
+                (v, None)
+            })
+        }
+        queries
+    }
+
+    fn gen_random_range_queries(
+        bits: &[bool],
+        len: usize,
+        seed: u64,
+    ) -> Vec<(usize, Range<usize>, Option<usize>)> {
+        let ints: Vec<usize> = bits
+            .iter()
+            .enumerate()
+            .filter(|(_, &b)| b)
+            .map(|(i, _)| i)
+            .collect();
+        let mut rng = ChaChaRng::seed_from_u64(seed);
+        let mut queries = vec![];
+        for _ in 0..len {
+            let v = rng.gen_range(0..bits.len());
+            let i = rng.gen_range(0..ints.len());
+            let j = rng.gen_range(i..ints.len());
+            queries.push(if let Some(p) = ints[i..j].iter().position(|&x| x == v) {
+                (v, i..j, Some(p + i))
+            } else {
+                (v, i..j, None)
+            })
+        }
+        queries
+    }
+
     fn test_rank_select(bits: &[bool], ef: &EliasFano) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
@@ -673,14 +769,41 @@ mod tests {
         debug_assert!(pos == ef.universe() || ef.predecessor(pos).is_none());
     }
 
+    fn test_find(ef: &EliasFano, queries: &[(usize, Option<usize>)]) {
+        for &(val, expected) in queries {
+            assert_eq!(ef.find(val), expected);
+        }
+    }
+
+    fn test_find_range(ef: &EliasFano, queries: &[(usize, Range<usize>, Option<usize>)]) {
+        for (val, rng, expected) in queries.iter().cloned() {
+            assert_eq!(ef.find_range(rng, val), expected);
+        }
+    }
+
     #[test]
     fn test_tiny_bits() {
-        let ef =
-            EliasFano::from_bits(&[true, false, false, true, false, true, true], false).unwrap();
-        assert_eq!(ef.select(0), 0);
+        let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+        assert_eq!(ef.select(0), 1);
         assert_eq!(ef.select(1), 3);
-        assert_eq!(ef.select(2), 5);
+        assert_eq!(ef.select(2), 3);
         assert_eq!(ef.select(3), 6);
+        assert_eq!(ef.select(4), 7);
+        assert_eq!(ef.select(5), 10);
+
+        assert_eq!(ef.find(1), Some(0));
+        assert_eq!(ef.find(6), Some(3));
+        assert_eq!(ef.find(7), Some(4));
+        assert_eq!(ef.find(10), Some(5));
+        assert_eq!(ef.find(0), None);
+        assert_eq!(ef.find(9), None);
+        assert_eq!(ef.find(100), None);
+
+        assert_eq!(ef.find_range(1..4, 6), Some(3));
+        assert_eq!(ef.find_range(1..3, 6), None);
+        assert_eq!(ef.find_range(4..6, 6), None);
+        assert_eq!(ef.find_range(5..6, 10), Some(5));
+        assert_eq!(ef.find_range(5..5, 10), None);
     }
 
     #[test]
@@ -690,6 +813,10 @@ mod tests {
             let ef = EliasFano::from_bits(&bits, true).unwrap();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
+            let queries = gen_random_queries(&bits, 100, seed + 100);
+            test_find(&ef, &queries);
+            let queries = gen_random_range_queries(&bits, 100, seed + 200);
+            test_find_range(&ef, &queries);
         }
     }
 
