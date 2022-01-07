@@ -153,7 +153,7 @@ impl DArrayIndex {
     ///
     /// - `writer`: `std::io::Write` variable.
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = util::int_vector::serialize_into(&self.block_inventory, &mut writer)?;
+        let mut mem = util::int_vector::singed::serialize_into(&self.block_inventory, &mut writer)?;
         mem += util::int_vector::serialize_into(&self.subblock_inventory, &mut writer)?;
         mem += util::int_vector::serialize_into(&self.overflow_positions, &mut writer)?;
         writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
@@ -167,7 +167,7 @@ impl DArrayIndex {
     ///
     /// - `reader`: `std::io::Read` variable.
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = util::int_vector::deserialize_from(&mut reader)?;
+        let block_inventory = util::int_vector::singed::deserialize_from(&mut reader)?;
         let subblock_inventory = util::int_vector::deserialize_from(&mut reader)?;
         let overflow_positions = util::int_vector::deserialize_from(&mut reader)?;
         let num_positions = reader.read_u64::<LittleEndian>()? as usize;
@@ -373,9 +373,9 @@ mod tests {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaChaRng;
 
-    fn gen_random_bits(len: usize, seed: u64) -> Vec<bool> {
+    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
         let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen::<bool>()).collect()
+        (0..len).map(|_| rng.gen_bool(p)).collect()
     }
 
     fn test_select(bv: &BitVector, da: &DArrayIndex) {
@@ -414,9 +414,9 @@ mod tests {
     }
 
     #[test]
-    fn test_random_bits() {
+    fn test_random_bits_dense() {
         for seed in 0..100 {
-            let bv = BitVector::from_bits(&gen_random_bits(10000, seed));
+            let bv = BitVector::from_bits(&gen_random_bits(10000, 0.5, seed));
             let da = DArrayIndex::new(&bv, true);
             test_select(&bv, &da);
             let da = DArrayIndex::new(&bv, false);
@@ -425,9 +425,31 @@ mod tests {
     }
 
     #[test]
-    fn test_serialize() {
+    fn test_random_bits_sparse() {
+        for seed in 0..100 {
+            let bv = BitVector::from_bits(&gen_random_bits(10000, 0.01, seed));
+            let da = DArrayIndex::new(&bv, true);
+            test_select(&bv, &da);
+            let da = DArrayIndex::new(&bv, false);
+            test_select0(&bv, &da);
+        }
+    }
+
+    #[test]
+    fn test_serialize_dense() {
         let mut bytes = vec![];
-        let da = DArray::from_bits(&gen_random_bits(10000, 42));
+        let da = DArray::from_bits(&gen_random_bits(10000, 0.5, 42));
+        let size = da.serialize_into(&mut bytes).unwrap();
+        let other = DArray::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(da, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, da.size_in_bytes());
+    }
+
+    #[test]
+    fn test_serialize_sparse() {
+        let mut bytes = vec![];
+        let da = DArray::from_bits(&gen_random_bits(10000, 0.01, 42));
         let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);

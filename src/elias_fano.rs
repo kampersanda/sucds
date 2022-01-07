@@ -695,9 +695,9 @@ mod tests {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaChaRng;
 
-    fn gen_random_bits(len: usize, seed: u64) -> Vec<bool> {
+    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
         let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen::<bool>()).collect()
+        (0..len).map(|_| rng.gen_bool(p)).collect()
     }
 
     fn gen_random_queries(bits: &[bool], len: usize, seed: u64) -> Vec<(usize, Option<usize>)> {
@@ -816,9 +816,9 @@ mod tests {
     }
 
     #[test]
-    fn test_random_bits() {
+    fn test_random_bits_dense() {
         for seed in 0..100 {
-            let bits = gen_random_bits(10000, seed);
+            let bits = gen_random_bits(10000, 0.5, seed);
             let ef = EliasFano::from_bits(&bits, true).unwrap();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
@@ -830,9 +830,34 @@ mod tests {
     }
 
     #[test]
-    fn test_serialize() {
+    fn test_random_bits_sparse() {
+        for seed in 0..100 {
+            let bits = gen_random_bits(10000, 0.01, seed);
+            let ef = EliasFano::from_bits(&bits, true).unwrap();
+            test_rank_select(&bits, &ef);
+            test_successor_predecessor(&bits, &ef);
+            let queries = gen_random_queries(&bits, 100, seed + 100);
+            test_find(&ef, &queries);
+            let queries = gen_random_range_queries(&bits, 100, seed + 200);
+            test_find_range(&ef, &queries);
+        }
+    }
+
+    #[test]
+    fn test_serialize_dense() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(&gen_random_bits(10000, 42), true).unwrap();
+        let ef = EliasFano::from_bits(&gen_random_bits(10000, 0.5, 42), true).unwrap();
+        let size = ef.serialize_into(&mut bytes).unwrap();
+        let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(ef, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, ef.size_in_bytes());
+    }
+
+    #[test]
+    fn test_serialize_sparse() {
+        let mut bytes = vec![];
+        let ef = EliasFano::from_bits(&gen_random_bits(10000, 0.01, 42), true).unwrap();
         let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
