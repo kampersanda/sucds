@@ -134,7 +134,7 @@ where
 /// # Arguments
 ///
 /// - `vec`: Vector of primitive integers.
-pub fn size_in_bytes<T>(vec: &[T]) -> usize {
+pub const fn size_in_bytes<T>(vec: &[T]) -> usize {
     size_of::<u64>() + (size_of::<T>() * vec.len())
 }
 
