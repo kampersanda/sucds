@@ -15,7 +15,7 @@ For a detailed description of each data structure, please see the [respective do
 - [`BitVector`](https://docs.rs/sucds/latest/sucds/bit_vector/struct.BitVector.html)
   - Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 - [`CompactVector`](https://docs.rs/sucds/latest/sucds/compact_vector/struct.CompactVector.html)
-  - Compact vector in which each integer is represented in the fixed number of bits.
+  - Compact vector in which each integer is represented in a fixed number of bits.
 - [`RsBitVector`](https://docs.rs/sucds/latest/sucds/rs_bit_vector/struct.RsBitVector.html)
   - Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 - [`DArray`](https://docs.rs/sucds/latest/sucds/darray/struct.DArray.html)

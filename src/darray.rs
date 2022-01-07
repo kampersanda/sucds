@@ -358,11 +358,11 @@ impl DArrayIndex {
     }
 
     fn get_word_over_one(bv: &BitVector, word_idx: usize) -> usize {
-        bv.get_word(word_idx)
+        bv.words()[word_idx]
     }
 
     fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
-        !bv.get_word(word_idx)
+        !bv.words()[word_idx]
     }
 }
 

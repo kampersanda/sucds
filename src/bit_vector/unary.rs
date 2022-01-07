@@ -25,8 +25,8 @@ pub struct UnaryIterator<'a> {
 impl<'a> UnaryIterator<'a> {
     /// Creates the iterator from the given bit position.
     pub fn new(bv: &'a BitVector, pos: usize) -> Self {
-        let buf = bv.get_word(pos / WORD_LEN)
-            & (usize::max_value().wrapping_shl((pos % WORD_LEN) as u32));
+        let buf =
+            bv.words()[pos / WORD_LEN] & (usize::max_value().wrapping_shl((pos % WORD_LEN) as u32));
         Self { bv, pos, buf }
     }
 
@@ -65,7 +65,7 @@ impl<'a> UnaryIterator<'a> {
             if self.bv.num_words() <= word_pos {
                 return None;
             }
-            buf = self.bv.get_word(word_pos);
+            buf = self.bv.words()[word_pos];
         }
         debug_assert!(buf != 0);
         let pos_in_word = broadword::select_in_word(buf, k - skipped);
@@ -104,7 +104,7 @@ impl<'a> UnaryIterator<'a> {
             if self.bv.num_words() <= word_pos {
                 return None;
             }
-            buf = !self.bv.get_word(word_pos);
+            buf = !self.bv.words()[word_pos];
         }
         debug_assert!(buf != 0);
         let pos_in_word = broadword::select_in_word(buf, k - skipped);
@@ -126,7 +126,7 @@ impl<'a> Iterator for UnaryIterator<'a> {
             if self.bv.num_words() <= word_pos {
                 return None;
             }
-            buf = self.bv.get_word(word_pos);
+            buf = self.bv.words()[word_pos];
         }
         let pos_in_word = broadword::lsb(buf).unwrap();
         self.buf = buf & (buf - 1); // clear LSB
