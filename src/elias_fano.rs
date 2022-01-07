@@ -282,9 +282,11 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[true, false, false, true], false).unwrap();
-    /// assert_eq!(ef.select(0), 0);
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
     /// ```
     #[inline(always)]
     pub fn select(&self, k: usize) -> usize {
@@ -307,11 +309,11 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[true, false, false, true], true).unwrap();
-    /// assert_eq!(ef.rank(1), 1);
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// assert_eq!(ef.rank(1), 0);
     /// assert_eq!(ef.rank(2), 1);
     /// assert_eq!(ef.rank(3), 1);
-    /// assert_eq!(ef.rank(4), 2);
+    /// assert_eq!(ef.rank(4), 3);
     /// ```
     #[inline(always)]
     pub fn rank(&self, pos: usize) -> usize {
@@ -357,9 +359,10 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[false, true, false, false, true], true).unwrap();
-    /// assert_eq!(ef.predecessor(4), Some(4));
-    /// assert_eq!(ef.predecessor(3), Some(1));
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// assert_eq!(ef.predecessor(4), Some(3));
+    /// assert_eq!(ef.predecessor(3), Some(3));
+    /// assert_eq!(ef.predecessor(2), Some(1));
     /// assert_eq!(ef.predecessor(0), None);
     /// ```
     #[inline(always)]
@@ -384,10 +387,11 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[true, false, false, true, false], true).unwrap();
-    /// assert_eq!(ef.successor(0), Some(0));
-    /// assert_eq!(ef.successor(1), Some(3));
-    /// assert_eq!(ef.successor(4), None);
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// assert_eq!(ef.successor(0), Some(1));
+    /// assert_eq!(ef.successor(2), Some(3));
+    /// assert_eq!(ef.successor(3), Some(3));
+    /// assert_eq!(ef.successor(8), None);
     /// ```
     #[inline(always)]
     pub fn successor(&self, pos: usize) -> Option<usize> {
@@ -412,9 +416,11 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[false, true, false, false, true], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
     /// assert_eq!(ef.delta(0), 1);
-    /// assert_eq!(ef.delta(1), 3);
+    /// assert_eq!(ef.delta(1), 2);
+    /// assert_eq!(ef.delta(2), 0);
+    /// assert_eq!(ef.delta(3), 4);
     /// ```
     #[inline(always)]
     pub fn delta(&self, k: usize) -> usize {
@@ -520,10 +526,11 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[false, true, true, false, true], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
     /// let mut it = ef.iter(1);
-    /// assert_eq!(it.next(), Some(2));
-    /// assert_eq!(it.next(), Some(4));
+    /// assert_eq!(it.next(), Some(3));
+    /// assert_eq!(it.next(), Some(3));
+    /// assert_eq!(it.next(), Some(7));
     /// assert_eq!(it.next(), None);
     /// ```
     pub fn iter(&self, k: usize) -> EliasFanoIterator {

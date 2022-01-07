@@ -4,8 +4,6 @@ use crate::bit_vector::unary::UnaryIterator;
 use crate::EliasFano;
 
 /// Iterator for enumerating integers stored in [`EliasFano`].
-///
-/// The implementation is from [tongrams::fast_ef_sequence](https://github.com/jermp/tongrams/blob/master/include/sequences/fast_ef_sequence.hpp).
 pub struct EliasFanoIterator<'a> {
     ef: &'a EliasFano,
     k: usize,
