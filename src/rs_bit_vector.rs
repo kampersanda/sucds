@@ -120,16 +120,16 @@ impl RsBitVector {
     /// - `writer`: `std::io::Write` variable.
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.bv.serialize_into(&mut writer)?;
-        mem += util::int_vector::serialize_into(&self.block_rank_pairs, &mut writer)?;
+        mem += util::vec_io::serialize_usize(&self.block_rank_pairs, &mut writer)?;
         if let Some(select1_hints) = &self.select1_hints {
             writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(select1_hints, &mut writer)?;
+            mem += util::vec_io::serialize_usize(select1_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
         if let Some(select0_hints) = &self.select0_hints {
             writer.write_u8(1)?;
-            mem += util::int_vector::serialize_into(select0_hints, &mut writer)?;
+            mem += util::vec_io::serialize_usize(select0_hints, &mut writer)?;
         } else {
             writer.write_u8(0)?;
         }
@@ -143,14 +143,14 @@ impl RsBitVector {
     /// - `reader`: `std::io::Read` variable.
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
-        let block_rank_pairs = util::int_vector::deserialize_from(&mut reader)?;
+        let block_rank_pairs = util::vec_io::deserialize_usize(&mut reader)?;
         let select1_hints = if reader.read_u8()? != 0 {
-            Some(util::int_vector::deserialize_from(&mut reader)?)
+            Some(util::vec_io::deserialize_usize(&mut reader)?)
         } else {
             None
         };
         let select0_hints = if reader.read_u8()? != 0 {
-            Some(util::int_vector::deserialize_from(&mut reader)?)
+            Some(util::vec_io::deserialize_usize(&mut reader)?)
         } else {
             None
         };
@@ -165,14 +165,14 @@ impl RsBitVector {
     /// Returns the number of bytes to serialize the data structure.
     pub fn size_in_bytes(&self) -> usize {
         self.bv.size_in_bytes()
-            + util::int_vector::size_in_bytes(&self.block_rank_pairs)
+            + util::vec_io::size_in_bytes(&self.block_rank_pairs)
             + size_of::<u8>()
             + self.select1_hints.as_ref().map_or(0, |select1_hints| {
-                util::int_vector::size_in_bytes(select1_hints)
+                util::vec_io::size_in_bytes(select1_hints)
             })
             + size_of::<u8>()
             + self.select0_hints.as_ref().map_or(0, |select0_hints| {
-                util::int_vector::size_in_bytes(select0_hints)
+                util::vec_io::size_in_bytes(select0_hints)
             })
     }
 

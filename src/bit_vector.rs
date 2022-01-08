@@ -74,7 +74,7 @@ impl BitVector {
     ///
     /// - `writer`: `std::io::Write` variable.
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = util::int_vector::serialize_into(&self.words, &mut writer)?;
+        let mem = util::vec_io::serialize_usize(&self.words, &mut writer)?;
         writer.write_u64::<LittleEndian>(self.len as u64)?;
         Ok(mem + size_of::<u64>())
     }
@@ -85,14 +85,14 @@ impl BitVector {
     ///
     /// - `reader`: `std::io::Read` variable.
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = util::int_vector::deserialize_from(&mut reader)?;
+        let words = util::vec_io::deserialize_usize(&mut reader)?;
         let len = reader.read_u64::<LittleEndian>()? as usize;
         Ok(Self { words, len })
     }
 
     /// Returns the number of bytes to serialize the data structure.
     pub fn size_in_bytes(&self) -> usize {
-        util::int_vector::size_in_bytes(&self.words) + size_of::<u64>()
+        util::vec_io::size_in_bytes(&self.words) + size_of::<u64>()
     }
 
     /// Creates a new [`BitVector`] from input bitset `bits`.

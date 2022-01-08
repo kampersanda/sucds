@@ -153,9 +153,9 @@ impl DArrayIndex {
     ///
     /// - `writer`: `std::io::Write` variable.
     pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = util::int_vector::singed::serialize_into(&self.block_inventory, &mut writer)?;
-        mem += util::int_vector::serialize_into(&self.subblock_inventory, &mut writer)?;
-        mem += util::int_vector::serialize_into(&self.overflow_positions, &mut writer)?;
+        let mut mem = util::vec_io::serialize_isize(&self.block_inventory, &mut writer)?;
+        mem += util::vec_io::serialize_u16(&self.subblock_inventory, &mut writer)?;
+        mem += util::vec_io::serialize_usize(&self.overflow_positions, &mut writer)?;
         writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
         writer.write_u8(self.over_one as u8)?;
         Ok(mem + size_of::<u64>() + size_of::<u8>())
@@ -167,9 +167,9 @@ impl DArrayIndex {
     ///
     /// - `reader`: `std::io::Read` variable.
     pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = util::int_vector::singed::deserialize_from(&mut reader)?;
-        let subblock_inventory = util::int_vector::deserialize_from(&mut reader)?;
-        let overflow_positions = util::int_vector::deserialize_from(&mut reader)?;
+        let block_inventory = util::vec_io::deserialize_isize(&mut reader)?;
+        let subblock_inventory = util::vec_io::deserialize_u16(&mut reader)?;
+        let overflow_positions = util::vec_io::deserialize_usize(&mut reader)?;
         let num_positions = reader.read_u64::<LittleEndian>()? as usize;
         let over_one = reader.read_u8()? != 0;
         Ok(Self {
@@ -183,9 +183,9 @@ impl DArrayIndex {
 
     /// Returns the number of bytes to serialize the data structure.
     pub fn size_in_bytes(&self) -> usize {
-        util::int_vector::size_in_bytes(&self.block_inventory)
-            + util::int_vector::size_in_bytes(&self.subblock_inventory)
-            + util::int_vector::size_in_bytes(&self.overflow_positions)
+        util::vec_io::size_in_bytes(&self.block_inventory)
+            + util::vec_io::size_in_bytes(&self.subblock_inventory)
+            + util::vec_io::size_in_bytes(&self.overflow_positions)
             + size_of::<u64>()
             + size_of::<u8>()
     }
