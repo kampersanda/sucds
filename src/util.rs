@@ -1,7 +1,7 @@
 #![cfg(target_pointer_width = "64")]
 
 /// Utilities for integer vectors.
-pub mod int_vector;
+pub mod vec_io;
 
 use crate::broadword;
 
