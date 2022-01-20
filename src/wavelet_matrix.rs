@@ -1,8 +1,11 @@
 #![cfg(target_pointer_width = "64")]
 
+use std::io::{Read, Write};
+use std::mem::size_of;
 use std::ops::Range;
 
 use anyhow::{anyhow, Result};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::{broadword, BitVector, RsBitVector};
 
@@ -29,6 +32,13 @@ use crate::{broadword, BitVector, RsBitVector};
 /// assert_eq!(wm.get(20), 'h' as usize);
 /// assert_eq!(wm.rank(22, 'o' as usize), 4);
 /// assert_eq!(wm.select(2, 't' as usize), 9);
+///
+/// let mut bytes = vec![];
+/// let size = wm.serialize_into(&mut bytes).unwrap();
+/// let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
+/// assert_eq!(wm, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, wm.size_in_bytes());
 /// ```
 ///
 /// # References
@@ -72,6 +82,35 @@ impl WaveletMatrix {
         wmb.build()
     }
 
+    /// Builds a [`WaveletMatrix`] from an iterator of bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `bytes`: Iterator of bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::WaveletMatrix;
+    ///
+    /// let bytes = b"abaabb";
+    /// let wm = WaveletMatrix::from_bytes(bytes).unwrap();
+    ///
+    /// assert_eq!(wm.get(2), b'a' as usize);
+    /// assert_eq!(wm.len(), bytes.len());
+    /// assert_eq!(wm.dim(), b'b' as usize + 1);
+    /// ```
+    pub fn from_bytes<'a, I>(bytes: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = &'a u8>,
+    {
+        let mut wmb = WaveletMatrixBuilder::default();
+        for &v in bytes {
+            wmb.push(v as usize);
+        }
+        wmb.build()
+    }
+
     /// Builds a [`WaveletMatrix`] from characters in a string.
     /// Note that this handles a sequence of `char`, not `u8`.
     ///
@@ -100,6 +139,58 @@ impl WaveletMatrix {
             wmb.push(c as usize);
         }
         wmb.build()
+    }
+
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = 0;
+        writer.write_u64::<LittleEndian>(self.layers.len() as u64)?;
+        for layer in &self.layers {
+            mem += layer.serialize_into(&mut writer)?;
+        }
+        writer.write_u64::<LittleEndian>(self.dim as u64)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.bit_length as u64)?;
+        Ok(mem + size_of::<u64>() * 4)
+    }
+
+    /// Deserializes the data structure from the reader.
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let layers = {
+            let len = reader.read_u64::<LittleEndian>()? as usize;
+            let mut layers = Vec::with_capacity(len);
+            for _ in 0..len {
+                layers.push(RsBitVector::deserialize_from(&mut reader)?);
+            }
+            layers
+        };
+        let dim = reader.read_u64::<LittleEndian>()? as usize;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let bit_length = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self {
+            layers,
+            dim,
+            len,
+            bit_length,
+        })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        let mut mem = 0;
+        for layer in &self.layers {
+            mem += layer.size_in_bytes();
+        }
+        mem + size_of::<u64>() * 4
     }
 
     /// Gets the maximum value + 1 in stored integers.
