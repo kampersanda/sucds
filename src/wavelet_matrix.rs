@@ -82,6 +82,35 @@ impl WaveletMatrix {
         wmb.build()
     }
 
+    /// Builds a [`WaveletMatrix`] from an iterator of bytes.
+    ///
+    /// # Arguments
+    ///
+    /// - `bytes`: Iterator of bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::WaveletMatrix;
+    ///
+    /// let bytes = b"abaabb";
+    /// let wm = WaveletMatrix::from_bytes(bytes).unwrap();
+    ///
+    /// assert_eq!(wm.get(2), b'a' as usize);
+    /// assert_eq!(wm.len(), bytes.len());
+    /// assert_eq!(wm.dim(), b'b' as usize + 1);
+    /// ```
+    pub fn from_bytes<'a, I>(bytes: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = &'a u8>,
+    {
+        let mut wmb = WaveletMatrixBuilder::default();
+        for &v in bytes {
+            wmb.push(v as usize);
+        }
+        wmb.build()
+    }
+
     /// Builds a [`WaveletMatrix`] from characters in a string.
     /// Note that this handles a sequence of `char`, not `u8`.
     ///
