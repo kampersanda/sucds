@@ -21,7 +21,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// ```
 /// use sucds::DArray;
 ///
-/// let da = DArray::from_bits(&[true, false, false, true]);
+/// let da = DArray::from_bits([true, false, false, true]);
 ///
 /// assert_eq!(da.select(0), 0);
 /// assert_eq!(da.select(1), 3);
@@ -50,9 +50,9 @@ impl DArray {
     /// # Arguments
     ///
     /// - `bits`: List of bits.
-    pub fn from_bits<'a, I>(bits: I) -> Self
+    pub fn from_bits<I>(bits: I) -> Self
     where
-        I: IntoIterator<Item = &'a bool>,
+        I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
         Self {
@@ -103,7 +103,7 @@ impl DArray {
     /// ```
     /// use sucds::DArray;
     ///
-    /// let da = DArray::from_bits(&[true, false, false, true]);
+    /// let da = DArray::from_bits([true, false, false, true]);
     /// assert_eq!(da.select(0), 0);
     /// assert_eq!(da.select(1), 3);
     /// ```
@@ -206,7 +206,7 @@ impl DArrayIndex {
     /// ```
     /// use sucds::{BitVector, darray::DArrayIndex};
     ///
-    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
     /// assert_eq!(da.select(&bv, 0), 0);
     /// assert_eq!(da.select(&bv, 1), 3);
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_tiny_bits() {
-        let bv = BitVector::from_bits(&[true, false, false, true, false, true, true]);
+        let bv = BitVector::from_bits([true, false, false, true, false, true, true]);
         let da = DArrayIndex::new(&bv, true);
         assert_eq!(da.select(&bv, 0), 0);
         assert_eq!(da.select(&bv, 1), 3);
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn test_random_bits_dense() {
         for seed in 0..100 {
-            let bv = BitVector::from_bits(&gen_random_bits(10000, 0.5, seed));
+            let bv = BitVector::from_bits(gen_random_bits(10000, 0.5, seed));
             let da = DArrayIndex::new(&bv, true);
             test_select(&bv, &da);
             let da = DArrayIndex::new(&bv, false);
@@ -427,7 +427,7 @@ mod tests {
     #[test]
     fn test_random_bits_sparse() {
         for seed in 0..100 {
-            let bv = BitVector::from_bits(&gen_random_bits(10000, 0.01, seed));
+            let bv = BitVector::from_bits(gen_random_bits(10000, 0.01, seed));
             let da = DArrayIndex::new(&bv, true);
             test_select(&bv, &da);
             let da = DArrayIndex::new(&bv, false);
@@ -438,7 +438,7 @@ mod tests {
     #[test]
     fn test_serialize_dense() {
         let mut bytes = vec![];
-        let da = DArray::from_bits(&gen_random_bits(10000, 0.5, 42));
+        let da = DArray::from_bits(gen_random_bits(10000, 0.5, 42));
         let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);
@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn test_serialize_sparse() {
         let mut bytes = vec![];
-        let da = DArray::from_bits(&gen_random_bits(10000, 0.01, 42));
+        let da = DArray::from_bits(gen_random_bits(10000, 0.01, 42));
         let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);

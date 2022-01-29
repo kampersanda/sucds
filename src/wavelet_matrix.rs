@@ -65,18 +65,18 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let ints = vec![20, 7, 13, 2, 11];
-    /// let wm = WaveletMatrix::from_ints(&ints).unwrap();
+    /// let wm = WaveletMatrix::from_ints(ints.iter().cloned()).unwrap();
     ///
     /// assert_eq!(wm.get(2), 13);
     /// assert_eq!(wm.len(), ints.len());
     /// assert_eq!(wm.dim(), 21);
     /// ```
-    pub fn from_ints<'a, I>(ints: I) -> Result<Self>
+    pub fn from_ints<I>(ints: I) -> Result<Self>
     where
-        I: IntoIterator<Item = &'a usize>,
+        I: IntoIterator<Item = usize>,
     {
         let mut wmb = WaveletMatrixBuilder::default();
-        for &v in ints {
+        for v in ints {
             wmb.push(v);
         }
         wmb.build()
@@ -94,18 +94,18 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let bytes = b"abaabb";
-    /// let wm = WaveletMatrix::from_bytes(bytes).unwrap();
+    /// let wm = WaveletMatrix::from_bytes(bytes.iter().cloned()).unwrap();
     ///
     /// assert_eq!(wm.get(2), b'a' as usize);
     /// assert_eq!(wm.len(), bytes.len());
     /// assert_eq!(wm.dim(), b'b' as usize + 1);
     /// ```
-    pub fn from_bytes<'a, I>(bytes: I) -> Result<Self>
+    pub fn from_bytes<I>(bytes: I) -> Result<Self>
     where
-        I: IntoIterator<Item = &'a u8>,
+        I: IntoIterator<Item = u8>,
     {
         let mut wmb = WaveletMatrixBuilder::default();
-        for &v in bytes {
+        for v in bytes {
             wmb.push(v as usize);
         }
         wmb.build()
@@ -795,7 +795,7 @@ mod test {
         let ints = gen_random_ints(1000, 13);
         let ranges = gen_random_ranges(30, ints.len(), 13);
 
-        let wm = WaveletMatrix::from_ints(&ints).unwrap();
+        let wm = WaveletMatrix::from_ints(ints.iter().cloned()).unwrap();
         test_lookup(&ints, &wm);
         for val in 0..SIGMA {
             test_rank_select(&ints, &wm, val);
