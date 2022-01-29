@@ -112,7 +112,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bit(2), false);
     /// assert_eq!(bv.get_bit(3), true);
     /// ```
-    pub fn from_bits<'a, I>(bits: I) -> Self
+    pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
     {

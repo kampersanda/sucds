@@ -105,7 +105,7 @@ impl RsBitVector {
     /// assert_eq!(bv.select1(1), 3);
     /// assert_eq!(bv.select0(0), 1);
     /// ```
-    pub fn from_bits<'a, I>(bits: I, select1_hints: bool, select0_hints: bool) -> Self
+    pub fn from_bits<I>(bits: I, select1_hints: bool, select0_hints: bool) -> Self
     where
         I: IntoIterator<Item = bool>,
     {

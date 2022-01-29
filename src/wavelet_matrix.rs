@@ -71,7 +71,7 @@ impl WaveletMatrix {
     /// assert_eq!(wm.len(), ints.len());
     /// assert_eq!(wm.dim(), 21);
     /// ```
-    pub fn from_ints<'a, I>(ints: I) -> Result<Self>
+    pub fn from_ints<I>(ints: I) -> Result<Self>
     where
         I: IntoIterator<Item = usize>,
     {
@@ -100,7 +100,7 @@ impl WaveletMatrix {
     /// assert_eq!(wm.len(), bytes.len());
     /// assert_eq!(wm.dim(), b'b' as usize + 1);
     /// ```
-    pub fn from_bytes<'a, I>(bytes: I) -> Result<Self>
+    pub fn from_bytes<I>(bytes: I) -> Result<Self>
     where
         I: IntoIterator<Item = u8>,
     {

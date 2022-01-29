@@ -50,7 +50,7 @@ impl DArray {
     /// # Arguments
     ///
     /// - `bits`: List of bits.
-    pub fn from_bits<'a, I>(bits: I) -> Self
+    pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
     {

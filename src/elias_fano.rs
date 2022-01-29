@@ -131,7 +131,7 @@ impl EliasFano {
     /// assert_eq!(ef.predecessor(2), Some(0));
     /// assert_eq!(ef.successor(1), Some(3));
     /// ```
-    pub fn from_bits<'a, I>(bits: I, with_rank_index: bool) -> Result<Self>
+    pub fn from_bits<I>(bits: I, with_rank_index: bool) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
     {
