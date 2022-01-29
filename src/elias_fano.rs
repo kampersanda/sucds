@@ -125,7 +125,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits(&[true, false, false, true], true).unwrap();
+    /// let ef = EliasFano::from_bits([true, false, false, true], true).unwrap();
     /// assert_eq!(ef.rank(2), 1);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.predecessor(2), Some(0));
@@ -133,7 +133,7 @@ impl EliasFano {
     /// ```
     pub fn from_bits<'a, I>(bits: I, with_rank_index: bool) -> Result<Self>
     where
-        I: IntoIterator<Item = &'a bool>,
+        I: IntoIterator<Item = bool>,
     {
         Self::from_bitvec(&BitVector::from_bits(bits), with_rank_index)
     }
@@ -154,7 +154,7 @@ impl EliasFano {
     /// ```
     /// use sucds::{EliasFano, BitVector};
     ///
-    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let ef = EliasFano::from_bitvec(&bv, true).unwrap();
     /// assert_eq!(ef.rank(2), 1);
     /// assert_eq!(ef.select(1), 3);
@@ -819,7 +819,7 @@ mod tests {
     fn test_random_bits_dense() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, 0.5, seed);
-            let ef = EliasFano::from_bits(&bits, true).unwrap();
+            let ef = EliasFano::from_bits(bits.iter().cloned(), true).unwrap();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
             let queries = gen_random_queries(&bits, 100, seed + 100);
@@ -833,7 +833,7 @@ mod tests {
     fn test_random_bits_sparse() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, 0.01, seed);
-            let ef = EliasFano::from_bits(&bits, true).unwrap();
+            let ef = EliasFano::from_bits(bits.iter().cloned(), true).unwrap();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
             let queries = gen_random_queries(&bits, 100, seed + 100);
@@ -846,7 +846,7 @@ mod tests {
     #[test]
     fn test_serialize_dense() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(&gen_random_bits(10000, 0.5, 42), true).unwrap();
+        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.5, 42), true).unwrap();
         let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
@@ -857,7 +857,7 @@ mod tests {
     #[test]
     fn test_serialize_sparse() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(&gen_random_bits(10000, 0.01, 42), true).unwrap();
+        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.01, 42), true).unwrap();
         let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);

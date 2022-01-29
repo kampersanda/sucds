@@ -20,7 +20,7 @@ pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// ```
 /// use sucds::BitVector;
 ///
-/// let bv = BitVector::from_bits(&[true, false, false, true]);
+/// let bv = BitVector::from_bits([true, false, false, true]);
 ///
 /// assert_eq!(bv.get_bit(0), true);
 /// assert_eq!(bv.get_bit(1), false);
@@ -106,7 +106,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.get_bit(0), true);
     /// assert_eq!(bv.get_bit(1), false);
     /// assert_eq!(bv.get_bit(2), false);
@@ -114,10 +114,10 @@ impl BitVector {
     /// ```
     pub fn from_bits<'a, I>(bits: I) -> Self
     where
-        I: IntoIterator<Item = &'a bool>,
+        I: IntoIterator<Item = bool>,
     {
         let mut this = Self::new();
-        bits.into_iter().for_each(|&b| this.push_bit(b));
+        bits.into_iter().for_each(|b| this.push_bit(b));
         this
     }
 
@@ -132,7 +132,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[true, false, false, true]);
+    /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.get_bit(0), true);
     /// assert_eq!(bv.get_bit(1), false);
     /// assert_eq!(bv.get_bit(2), false);
@@ -157,7 +157,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let mut bv = BitVector::from_bits(&[false, true, true, false]);
+    /// let mut bv = BitVector::from_bits([false, true, true, false]);
     /// bv.set_bit(0, true);
     /// bv.set_bit(2, false);
     /// assert_eq!(bv.get_bit(0), true);
@@ -215,7 +215,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[true, false, true, false, true]);
+    /// let bv = BitVector::from_bits([true, false, true, false, true]);
     /// assert_eq!(bv.get_bits(1, 4), 0b1010);
     /// ```
     #[inline(always)]
@@ -334,7 +334,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[false, true, false, true]);
+    /// let bv = BitVector::from_bits([false, true, false, true]);
     /// assert_eq!(bv.predecessor1(3), Some(3));
     /// assert_eq!(bv.predecessor1(2), Some(1));
     /// assert_eq!(bv.predecessor1(1), Some(1));
@@ -369,7 +369,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[true, false, true, false]);
+    /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.successor1(0), Some(0));
     /// assert_eq!(bv.successor1(1), Some(2));
     /// assert_eq!(bv.successor1(2), Some(2));
@@ -405,7 +405,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[true, false, true, false]);
+    /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.predecessor0(3), Some(3));
     /// assert_eq!(bv.predecessor0(2), Some(1));
     /// assert_eq!(bv.predecessor0(1), Some(1));
@@ -440,7 +440,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[false, true, false, true]);
+    /// let bv = BitVector::from_bits([false, true, false, true]);
     /// assert_eq!(bv.successor0(0), Some(0));
     /// assert_eq!(bv.successor0(1), Some(2));
     /// assert_eq!(bv.successor0(2), Some(2));
@@ -471,7 +471,7 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[false, true, false, false, true]);
+    /// let bv = BitVector::from_bits([false, true, false, false, true]);
     /// let mut it = bv.unary_iter(1);
     ///
     /// assert_eq!(it.next(), Some(1));
@@ -559,7 +559,7 @@ mod tests {
     }
 
     fn test_bit_vector(bits: &[bool]) {
-        let bv = BitVector::from_bits(bits);
+        let bv = BitVector::from_bits(bits.iter().cloned());
         assert_eq!(bits.len(), bv.len());
         for i in 0..bits.len() {
             assert_eq!(bits[i], bv.get_bit(i));
@@ -660,7 +660,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let bv = BitVector::from_bits(&gen_random_bits(10000, 42));
+        let bv = BitVector::from_bits(gen_random_bits(10000, 42));
         let size = bv.serialize_into(&mut bytes).unwrap();
         let other = BitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);

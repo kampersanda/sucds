@@ -9,7 +9,7 @@ use crate::BitVector;
 /// ```
 /// use sucds::BitVector;
 ///
-/// let bv = BitVector::from_bits(&[false, true, false, false, true]);
+/// let bv = BitVector::from_bits([false, true, false, false, true]);
 /// let mut it = bv.unary_iter(1);
 ///
 /// assert_eq!(it.next(), Some(1));
@@ -43,7 +43,7 @@ impl<'a> UnaryIterator<'a> {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[false, true, false, false, true, true]);
+    /// let bv = BitVector::from_bits([false, true, false, false, true, true]);
     /// let mut it = bv.unary_iter(0);
     ///
     /// assert_eq!(it.skip1(0), Some(1));
@@ -81,7 +81,7 @@ impl<'a> UnaryIterator<'a> {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits(&[false, true, false, false, true, true]);
+    /// let bv = BitVector::from_bits([false, true, false, false, true, true]);
     /// let mut it = bv.unary_iter(0);
     ///
     /// assert_eq!(it.skip0(0), Some(0));
@@ -150,7 +150,7 @@ mod tests {
     }
 
     fn test_unary_iter(bits: &[bool], pos: usize) {
-        let bv = BitVector::from_bits(bits);
+        let bv = BitVector::from_bits(bits.iter().cloned());
 
         let mut expected = vec![];
         for (i, &b) in bits[pos..].iter().enumerate() {
@@ -166,7 +166,7 @@ mod tests {
     }
 
     fn test_skip1(bits: &[bool], mut pos: usize) {
-        let bv = BitVector::from_bits(bits);
+        let bv = BitVector::from_bits(bits.iter().cloned());
         pos = bv.successor1(pos).unwrap();
 
         let mut it = bv.unary_iter(pos);
@@ -178,7 +178,7 @@ mod tests {
     }
 
     fn test_skip0(bits: &[bool], mut pos: usize) {
-        let bv = BitVector::from_bits(bits);
+        let bv = BitVector::from_bits(bits.iter().cloned());
         pos = bv.successor0(pos).unwrap();
 
         let mut it = bv.unary_iter(pos);
