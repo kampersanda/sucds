@@ -52,3 +52,11 @@ jobs:
           command: test
           args: --release --all-features
           
+      - name: Run cargo doc
+        uses: actions-rs/cargo@v1
+        continue-on-error: ${{ matrix.rust == 'nightly' }}
+        with:
+          command: doc
+          args: --no-deps
+        env:
+          RUSTDOCFLAGS: '--html-in-header katex.html'
