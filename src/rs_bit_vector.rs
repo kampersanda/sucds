@@ -113,6 +113,7 @@ impl RsBitVector {
     /// assert_eq!(bv.select1(0), 0);
     /// assert_eq!(bv.select1(1), 3);
     /// ```
+    #[must_use]
     pub fn select1_hints(self) -> Self {
         self.build_select1()
     }
@@ -128,6 +129,7 @@ impl RsBitVector {
     /// assert_eq!(bv.select0(0), 1);
     /// assert_eq!(bv.select0(1), 2);
     /// ```
+    #[must_use]
     pub fn select0_hints(self) -> Self {
         self.build_select0()
     }
