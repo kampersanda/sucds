@@ -587,7 +587,11 @@ impl WaveletMatrixBuilder {
             );
             zeros = next_zeros;
             ones = next_ones;
-            layers.push(RsBitVector::new(bv, true, true));
+            layers.push(
+                RsBitVector::new(bv)
+                    .enable_select1_hints()
+                    .enable_select0_hints(),
+            );
         }
         Ok(WaveletMatrix {
             layers,
