@@ -26,13 +26,14 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// ```
 /// use sucds::RsBitVector;
 ///
-/// let bv = RsBitVector::from_bits([true, false, false, true], true, true);
+/// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints().select0_hints();
 ///
 /// assert_eq!(bv.get_bit(1), false);
 /// assert_eq!(bv.rank1(1), 1);
 /// assert_eq!(bv.rank0(1), 0);
 /// assert_eq!(bv.select1(1), 3);
 /// assert_eq!(bv.select0(0), 1);
+/// assert_eq!(bv.len(), 4);
 ///
 /// let mut bytes = vec![];
 /// let size = bv.serialize_into(&mut bytes).unwrap();
@@ -59,30 +60,21 @@ impl RsBitVector {
     /// # Arguments
     ///
     /// - `bv`: Input bit vector.
-    /// - `select1_hints`: Flag to build the index for select1.
-    /// - `select0_hints`: Flag to build the index for select0.
     ///
     /// # Examples
     ///
     /// ```
     /// use sucds::{BitVector, RsBitVector};
     ///
-    /// let bv = RsBitVector::new(BitVector::from_bits([true, false, false, true]), true, true);
+    /// let bv = RsBitVector::new(BitVector::from_bits([true, false, false, true]));
+    /// assert_eq!(bv.get_bit(0), true);
     /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.rank1(1), 1);
-    /// assert_eq!(bv.rank0(1), 0);
-    /// assert_eq!(bv.select1(1), 3);
-    /// assert_eq!(bv.select0(0), 1);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), true);
+    /// assert_eq!(bv.len(), 4);
     /// ```
-    pub fn new(bv: BitVector, select1_hints: bool, select0_hints: bool) -> Self {
-        let mut this = Self::build_rank(bv);
-        if select1_hints {
-            this = this.build_select0();
-        }
-        if select0_hints {
-            this = this.build_select1();
-        }
-        this
+    pub fn new(bv: BitVector) -> Self {
+        Self::build_rank(bv)
     }
 
     /// Creates a new [`RsBitVector`] from input bitset `bits`.
@@ -90,26 +82,56 @@ impl RsBitVector {
     /// # Arguments
     ///
     /// - `bits`: List of bits.
-    /// - `select1_hints`: Flag to build the index for select1.
-    /// - `select0_hints`: Flag to build the index for select0.
     ///
     /// # Examples
     ///
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], true, true);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.get_bit(0), true);
     /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.rank1(1), 1);
-    /// assert_eq!(bv.rank0(1), 0);
-    /// assert_eq!(bv.select1(1), 3);
-    /// assert_eq!(bv.select0(0), 1);
+    /// assert_eq!(bv.get_bit(2), false);
+    /// assert_eq!(bv.get_bit(3), true);
+    /// assert_eq!(bv.len(), 4);
     /// ```
-    pub fn from_bits<I>(bits: I, select1_hints: bool, select0_hints: bool) -> Self
+    pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
     {
-        Self::new(BitVector::from_bits(bits), select1_hints, select0_hints)
+        Self::new(BitVector::from_bits(bits))
+    }
+
+    /// Builds an index for faster `select1`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
+    /// assert_eq!(bv.select1(0), 0);
+    /// assert_eq!(bv.select1(1), 3);
+    /// ```
+    #[must_use]
+    pub fn select1_hints(self) -> Self {
+        self.build_select1()
+    }
+
+    /// Builds an index for faster `select0`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
+    /// assert_eq!(bv.select0(0), 1);
+    /// assert_eq!(bv.select0(1), 2);
+    /// ```
+    #[must_use]
+    pub fn select0_hints(self) -> Self {
+        self.build_select0()
     }
 
     /// Serializes the data structure into the writer,
@@ -187,7 +209,7 @@ impl RsBitVector {
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], false, false);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.get_bit(0), true);
     /// assert_eq!(bv.get_bit(1), false);
     /// assert_eq!(bv.get_bit(2), false);
@@ -213,7 +235,7 @@ impl RsBitVector {
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], false, false);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank1(1), 1);
     /// assert_eq!(bv.rank1(2), 1);
     /// assert_eq!(bv.rank1(3), 1);
@@ -248,7 +270,7 @@ impl RsBitVector {
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], false, false);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank0(1), 0);
     /// assert_eq!(bv.rank0(2), 1);
     /// assert_eq!(bv.rank0(3), 2);
@@ -274,7 +296,7 @@ impl RsBitVector {
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], true, false);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
     /// assert_eq!(bv.select1(0), 0);
     /// assert_eq!(bv.select1(1), 3);
     /// ```
@@ -335,7 +357,7 @@ impl RsBitVector {
     /// ```
     /// use sucds::RsBitVector;
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true], false, true);
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
     /// assert_eq!(bv.select0(0), 1);
     /// assert_eq!(bv.select0(1), 2);
     /// ```
@@ -552,7 +574,9 @@ mod tests {
     fn test_random_bits() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, seed);
-            let bv = RsBitVector::from_bits(bits.iter().cloned(), true, true);
+            let bv = RsBitVector::from_bits(bits.iter().cloned())
+                .select1_hints()
+                .select0_hints();
             test_rank_select1(&bits, &bv);
             test_rank_select0(&bits, &bv);
         }
@@ -561,7 +585,9 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let bv = RsBitVector::from_bits(gen_random_bits(10000, 42), true, true);
+        let bv = RsBitVector::from_bits(gen_random_bits(10000, 42))
+            .select1_hints()
+            .select0_hints();
         let size = bv.serialize_into(&mut bytes).unwrap();
         let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
