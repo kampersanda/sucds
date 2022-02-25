@@ -31,7 +31,6 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
-///
 /// assert_eq!(ef.select(0), 1);
 /// assert_eq!(ef.select(1), 3);
 /// assert_eq!(ef.select(2), 3);
@@ -39,7 +38,6 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
-///
 /// assert_eq!(ef.rank(3), 1);
 /// assert_eq!(ef.rank(4), 3);
 /// assert_eq!(ef.predecessor(4), Some(3));
