@@ -28,21 +28,22 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// ```
 /// use sucds::{EliasFano, EliasFanoBuilder};
 ///
-/// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-/// b.append(&[2, 3, 6, 9]).unwrap();
+/// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
+/// b.append(&[1, 3, 3, 7]).unwrap();
 ///
-/// let ef = EliasFano::new(b, true);
+/// let ef = EliasFano::new(b);
+/// assert_eq!(ef.select(0), 1);
 /// assert_eq!(ef.select(1), 3);
-/// assert_eq!(ef.select(3), 9);
+/// assert_eq!(ef.select(2), 3);
+/// assert_eq!(ef.select(3), 7);
 ///
-/// assert_eq!(ef.rank(5), 2);
-/// assert_eq!(ef.rank(10), 4);
-///
-/// assert_eq!(ef.predecessor(5), Some(3));
-/// assert_eq!(ef.predecessor(1), None);
-///
-/// assert_eq!(ef.successor(4), Some(6));
-/// assert_eq!(ef.successor(10), None);
+/// let ef = ef.enable_rank();
+/// assert_eq!(ef.rank(3), 1);
+/// assert_eq!(ef.rank(4), 3);
+/// assert_eq!(ef.predecessor(4), Some(3));
+/// assert_eq!(ef.predecessor(3), Some(3));
+/// assert_eq!(ef.successor(3), Some(3));
+/// assert_eq!(ef.successor(4), Some(7));
 ///
 /// let mut bytes = vec![];
 /// let size = ef.serialize_into(&mut bytes).unwrap();
@@ -71,50 +72,42 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
-    /// Creates a new [`EliasFano`] from builder `b`.
+    /// Creates a new [`EliasFano`] from a builder [`EliasFanoBuilder`].
     ///
     /// # Arguments
     ///
     /// - `b`: Builder.
-    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
     ///
     /// # Examples
     ///
     /// ```
     /// use sucds::{EliasFano, EliasFanoBuilder};
     ///
-    /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-    /// b.append(&[2, 3, 6, 9]).unwrap();
+    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
+    /// b.append(&[1, 3, 3, 7]).unwrap();
     ///
-    /// let ef = EliasFano::new(b, false);
-    /// assert_eq!(ef.select(0), 2);
+    /// let ef = EliasFano::new(b);
+    /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 6);
-    /// assert_eq!(ef.select(3), 9);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
     /// ```
-    pub fn new(b: EliasFanoBuilder, with_rank_index: bool) -> Self {
-        let high_bits_d1 = DArrayIndex::new(&b.high_bits, true);
-        let high_bits_d0 = if with_rank_index {
-            Some(DArrayIndex::new(&b.high_bits, false))
-        } else {
-            None
-        };
+    pub fn new(b: EliasFanoBuilder) -> Self {
         Self {
+            high_bits_d1: DArrayIndex::new(&b.high_bits, true),
             high_bits: b.high_bits,
-            high_bits_d1,
-            high_bits_d0,
+            high_bits_d0: None,
             low_bits: b.low_bits,
             low_len: b.low_len,
             universe: b.universe,
         }
     }
 
-    /// Creates a new [`EliasFano`] from input bitset `bits`.
+    /// Creates a new [`EliasFano`] from a bit stream.
     ///
     /// # Arguments
     ///
-    /// - `bits`: List of bits.
-    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    /// - `bits`: Bit stream.
     ///
     /// # Errors
     ///
@@ -125,25 +118,22 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_bits([true, false, false, true], true).unwrap();
-    /// assert_eq!(ef.rank(2), 1);
+    /// let ef = EliasFano::from_bits([true, false, false, true]).unwrap();
+    /// assert_eq!(ef.select(0), 0);
     /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.predecessor(2), Some(0));
-    /// assert_eq!(ef.successor(1), Some(3));
     /// ```
-    pub fn from_bits<I>(bits: I, with_rank_index: bool) -> Result<Self>
+    pub fn from_bits<I>(bits: I) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
     {
-        Self::from_bitvec(&BitVector::from_bits(bits), with_rank_index)
+        Self::from_bitvec(&BitVector::from_bits(bits))
     }
 
-    /// Creates a new [`EliasFano`] from input bit vector `bv`.
+    /// Creates a new [`EliasFano`] from a bit vector [`BitVector`].
     ///
     /// # Arguments
     ///
-    /// - `bv`: Input bit vector.
-    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    /// - `bv`: Bit vector.
     ///
     /// # Errors
     ///
@@ -155,13 +145,11 @@ impl EliasFano {
     /// use sucds::{EliasFano, BitVector};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let ef = EliasFano::from_bitvec(&bv, true).unwrap();
-    /// assert_eq!(ef.rank(2), 1);
+    /// let ef = EliasFano::from_bitvec(&bv).unwrap();
+    /// assert_eq!(ef.select(0), 0);
     /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.predecessor(2), Some(0));
-    /// assert_eq!(ef.successor(1), Some(3));
     /// ```
-    pub fn from_bitvec(bv: &BitVector, with_rank_index: bool) -> Result<Self> {
+    pub fn from_bitvec(bv: &BitVector) -> Result<Self> {
         let n = bv.len();
         let m = (0..bv.num_words())
             .into_iter()
@@ -172,38 +160,42 @@ impl EliasFano {
                 b.push(i)?;
             }
         }
-        Ok(Self::new(b, with_rank_index))
+        Ok(Self::new(b))
     }
 
-    /// Creates a new [`EliasFano`] from monotone-increased integers.
+    /// Creates a new [`EliasFano`] from a list of monotone increasing integers.
     ///
     /// # Arguments
     ///
-    /// - `ints`: Slice of monotone-increased integers .
-    /// - `with_rank_index`: Flag to build the index for rank, predecessor and successor.
+    /// - `ints`: List of monotone increasing integers .
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if `ints` is empty or is not monotone-increased.
+    /// `anyhow::Error` will be returned if `ints` is empty or is not monotone increasing.
     ///
     /// # Examples
     ///
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
     /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 3);
     /// assert_eq!(ef.select(3), 7);
     /// ```
-    pub fn from_ints(ints: &[usize], with_rank_index: bool) -> Result<Self> {
+    pub fn from_ints(ints: &[usize]) -> Result<Self> {
         if ints.is_empty() {
             return Err(anyhow!("The input ints must not be empty."));
         }
         let mut b = EliasFanoBuilder::new(*ints.last().unwrap() + 1, ints.len())?;
         b.append(ints)?;
-        Ok(Self::new(b, with_rank_index))
+        Ok(Self::new(b))
+    }
+
+    pub fn enable_rank(mut self) -> Self {
+        self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
+        self
     }
 
     /// Serializes the data structure into the writer,
@@ -282,7 +274,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
     /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 3);
@@ -309,7 +301,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
     /// assert_eq!(ef.rank(1), 0);
     /// assert_eq!(ef.rank(2), 1);
     /// assert_eq!(ef.rank(3), 1);
@@ -359,7 +351,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
     /// assert_eq!(ef.predecessor(4), Some(3));
     /// assert_eq!(ef.predecessor(3), Some(3));
     /// assert_eq!(ef.predecessor(2), Some(1));
@@ -387,7 +379,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], true).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
     /// assert_eq!(ef.successor(0), Some(1));
     /// assert_eq!(ef.successor(2), Some(3));
     /// assert_eq!(ef.successor(3), Some(3));
@@ -416,7 +408,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
     /// assert_eq!(ef.delta(0), 1);
     /// assert_eq!(ef.delta(1), 2);
     /// assert_eq!(ef.delta(2), 0);
@@ -452,7 +444,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
     /// assert_eq!(ef.find(6), Some(3));
     /// assert_eq!(ef.find(10), Some(5));
     /// assert_eq!(ef.find(9), None);
@@ -480,7 +472,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
     /// assert_eq!(ef.find_range(1..4, 6), Some(3));
     /// assert_eq!(ef.find_range(5..6, 10), Some(5));
     /// assert_eq!(ef.find_range(1..3, 6), None);
@@ -528,7 +520,7 @@ impl EliasFano {
     /// ```
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7], false).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
     /// let mut it = ef.iter(1);
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(3));
@@ -611,14 +603,14 @@ impl EliasFanoBuilder {
     /// ```
     /// use sucds::{EliasFano, EliasFanoBuilder};
     ///
-    /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-    /// [2, 3, 6, 9].iter().for_each(|&x| b.push(x).unwrap());
+    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
+    /// [1, 3, 3, 7].iter().for_each(|&x| b.push(x).unwrap());
     ///
-    /// let ef = EliasFano::new(b, false);
-    /// assert_eq!(ef.select(0), 2);
+    /// let ef = EliasFano::new(b);
+    /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 6);
-    /// assert_eq!(ef.select(3), 9);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
     /// ```
     pub fn push(&mut self, i: usize) -> Result<()> {
         if i < self.last {
@@ -668,14 +660,14 @@ impl EliasFanoBuilder {
     /// ```
     /// use sucds::{EliasFano, EliasFanoBuilder};
     ///
-    /// let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-    /// b.append(&[2, 3, 6, 9]).unwrap();
+    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
+    /// b.append(&[1, 3, 3, 7]).unwrap();
     ///
-    /// let ef = EliasFano::new(b, false);
-    /// assert_eq!(ef.select(0), 2);
+    /// let ef = EliasFano::new(b);
+    /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 6);
-    /// assert_eq!(ef.select(3), 9);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
     /// ```
     pub fn append<'a, I>(&mut self, ints: I) -> Result<()>
     where
@@ -792,7 +784,7 @@ mod tests {
 
     #[test]
     fn test_tiny_bits() {
-        let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10], false).unwrap();
+        let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
         assert_eq!(ef.select(0), 1);
         assert_eq!(ef.select(1), 3);
         assert_eq!(ef.select(2), 3);
@@ -819,7 +811,9 @@ mod tests {
     fn test_random_bits_dense() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, 0.5, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned(), true).unwrap();
+            let ef = EliasFano::from_bits(bits.iter().cloned())
+                .unwrap()
+                .enable_rank();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
             let queries = gen_random_queries(&bits, 100, seed + 100);
@@ -833,7 +827,9 @@ mod tests {
     fn test_random_bits_sparse() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, 0.01, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned(), true).unwrap();
+            let ef = EliasFano::from_bits(bits.iter().cloned())
+                .unwrap()
+                .enable_rank();
             test_rank_select(&bits, &ef);
             test_successor_predecessor(&bits, &ef);
             let queries = gen_random_queries(&bits, 100, seed + 100);
@@ -846,7 +842,9 @@ mod tests {
     #[test]
     fn test_serialize_dense() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.5, 42), true).unwrap();
+        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.5, 42))
+            .unwrap()
+            .enable_rank();
         let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);
@@ -857,7 +855,9 @@ mod tests {
     #[test]
     fn test_serialize_sparse() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.01, 42), true).unwrap();
+        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.01, 42))
+            .unwrap()
+            .enable_rank();
         let size = ef.serialize_into(&mut bytes).unwrap();
         let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(ef, other);

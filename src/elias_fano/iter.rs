@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_tiny_bits() {
-        let ef = EliasFano::from_bits([true, false, true, true, false, true, true], false).unwrap();
+        let ef = EliasFano::from_bits([true, false, true, true, false, true, true]).unwrap();
         let mut it = ef.iter(0);
         assert_eq!(it.next(), Some(0));
         assert_eq!(it.next(), Some(2));
@@ -119,7 +119,7 @@ mod tests {
     fn test_random_bits() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned(), false).unwrap();
+            let ef = EliasFano::from_bits(bits.iter().cloned()).unwrap();
             test_iter(&bits, &ef);
         }
     }

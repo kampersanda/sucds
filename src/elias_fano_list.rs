@@ -70,7 +70,7 @@ impl EliasFanoList {
             b.push(cur)?;
         }
         Ok(Self {
-            ef: EliasFano::new(b, false),
+            ef: EliasFano::new(b),
         })
     }
 
