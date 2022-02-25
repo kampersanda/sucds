@@ -49,7 +49,7 @@ pub struct WaveletMatrix {
     layers: Vec<RsBitVector>,
     dim: usize,
     len: usize,
-    bit_length: usize,
+    width: usize,
 }
 
 impl WaveletMatrix {
@@ -155,7 +155,7 @@ impl WaveletMatrix {
         }
         writer.write_u64::<LittleEndian>(self.dim as u64)?;
         writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.bit_length as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
         Ok(mem + size_of::<u64>() * 4)
     }
 
@@ -175,12 +175,12 @@ impl WaveletMatrix {
         };
         let dim = reader.read_u64::<LittleEndian>()? as usize;
         let len = reader.read_u64::<LittleEndian>()? as usize;
-        let bit_length = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
         Ok(Self {
             layers,
             dim,
             len,
-            bit_length,
+            width,
         })
     }
 
@@ -211,10 +211,10 @@ impl WaveletMatrix {
         self.len() == 0
     }
 
-    /// Gets the maximum numbber of bits needed to be stored for each integers.
+    /// Gets the maximum number of bits needed to be stored for each integers.
     #[inline(always)]
-    pub const fn bit_length(&self) -> usize {
-        self.bit_length
+    pub const fn width(&self) -> usize {
+        self.width
     }
 
     /// Gets the integer located at `pos`.
@@ -242,7 +242,7 @@ impl WaveletMatrix {
     #[inline(always)]
     pub fn get(&self, mut pos: usize) -> usize {
         let mut val = 0;
-        for depth in 0..self.bit_length as usize {
+        for depth in 0..self.width as usize {
             val <<= 1;
             let rsbv = &self.layers[depth];
             if rsbv.get_bit(pos) {
@@ -310,8 +310,8 @@ impl WaveletMatrix {
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> usize {
         let mut start_pos = range.start;
         let mut end_pos = range.end;
-        for depth in 0..self.bit_length as usize {
-            let bit = Self::get_msb(val, depth, self.bit_length);
+        for depth in 0..self.width as usize {
+            let bit = Self::get_msb(val, depth, self.width);
             let rsbv = &self.layers[depth];
             if bit {
                 start_pos = rsbv.rank1(start_pos) + rsbv.num_zeros();
@@ -353,10 +353,10 @@ impl WaveletMatrix {
 
     #[inline]
     fn select_helper(&self, mut k: usize, val: usize, mut pos: usize, depth: usize) -> usize {
-        if depth == self.bit_length {
+        if depth == self.width {
             return pos + k;
         }
-        let bit = Self::get_msb(val, depth, self.bit_length);
+        let bit = Self::get_msb(val, depth, self.width);
         let rsbv = &self.layers[depth];
         if bit {
             let zeros = rsbv.num_zeros();
@@ -402,7 +402,7 @@ impl WaveletMatrix {
         let mut val = 0;
         let mut start_pos = range.start;
         let mut end_pos = range.end;
-        for depth in 0..self.bit_length {
+        for depth in 0..self.width {
             val <<= 1;
             let rsbv = &self.layers[depth];
             let zero_start_pos = rsbv.rank0(start_pos);
@@ -453,13 +453,13 @@ impl WaveletMatrix {
         depth: usize,
         prefix: usize,
     ) -> Vec<usize> {
-        if depth == self.bit_length {
+        if depth == self.width {
             return vec![prefix];
         }
 
         let rsbv = &self.layers[depth];
-        let mut zero_ranges = Vec::new();
-        let mut one_ranges = Vec::new();
+        let mut zero_ranges = vec![];
+        let mut one_ranges = vec![];
         for range in ranges {
             let start_pos = range.start;
             let end_pos = range.end;
@@ -475,7 +475,7 @@ impl WaveletMatrix {
             }
         }
 
-        let mut ret = Vec::new();
+        let mut ret = vec![];
         if zero_ranges.len() >= k {
             ret.extend_from_slice(&self.intersect_helper(&zero_ranges, k, depth + 1, prefix << 1));
         }
@@ -491,8 +491,8 @@ impl WaveletMatrix {
     }
 
     #[inline(always)]
-    const fn get_msb(val: usize, pos: usize, bit_length: usize) -> bool {
-        ((val >> (bit_length - pos - 1)) & 1) == 1
+    const fn get_msb(val: usize, pos: usize, width: usize) -> bool {
+        ((val >> (width - pos - 1)) & 1) == 1
     }
 }
 
@@ -504,7 +504,7 @@ pub struct WaveletMatrixBuilder {
 impl WaveletMatrixBuilder {
     /// Creates a new [`WaveletMatrixBuilder`].
     pub const fn new() -> Self {
-        Self { vals: Vec::new() }
+        Self { vals: vec![] }
     }
 
     /// Pusheds integer `val` at the end
@@ -562,25 +562,28 @@ impl WaveletMatrixBuilder {
             return Err(anyhow!("vals must not be empty"));
         }
 
-        let dim = self.get_dim()?;
-        let bit_length = Self::get_bit_length(dim)?;
-        let mut zeros: Vec<usize> = self.vals.clone();
-        let mut ones: Vec<usize> = Vec::new();
-        let mut layers: Vec<RsBitVector> = Vec::new();
-        for depth in 0..bit_length {
-            let mut next_zeros: Vec<usize> = Vec::with_capacity(self.vals.len());
-            let mut next_ones: Vec<usize> = Vec::with_capacity(self.vals.len());
+        let len = self.vals.len();
+        let dim = self.get_dim();
+        let width = Self::get_width(dim);
+
+        let mut zeros = self.vals.clone(); // TODO: Remove this clone
+        let mut ones = vec![];
+        let mut layers = vec![];
+
+        for depth in 0..width {
+            let mut next_zeros = Vec::with_capacity(len);
+            let mut next_ones = Vec::with_capacity(len);
             let mut bv = BitVector::new();
             Self::filter(
                 &zeros,
-                bit_length - depth - 1,
+                width - depth - 1,
                 &mut next_zeros,
                 &mut next_ones,
                 &mut bv,
             );
             Self::filter(
                 &ones,
-                bit_length - depth - 1,
+                width - depth - 1,
                 &mut next_zeros,
                 &mut next_ones,
                 &mut bv,
@@ -589,11 +592,12 @@ impl WaveletMatrixBuilder {
             ones = next_ones;
             layers.push(RsBitVector::new(bv).select1_hints().select0_hints());
         }
+
         Ok(WaveletMatrix {
             layers,
             dim,
-            len: self.vals.len(),
-            bit_length,
+            len,
+            width,
         })
     }
 
@@ -604,29 +608,23 @@ impl WaveletMatrixBuilder {
         next_ones: &mut Vec<usize>,
         bv: &mut BitVector,
     ) {
-        for val in vals {
-            let bit = ((*val >> shift) & 1) == 1;
+        for &val in vals {
+            let bit = ((val >> shift) & 1) == 1;
             bv.push_bit(bit);
             if bit {
-                next_ones.push(*val);
+                next_ones.push(val);
             } else {
-                next_zeros.push(*val);
+                next_zeros.push(val);
             }
         }
     }
 
-    fn get_dim(&self) -> Result<usize> {
-        match self.vals.iter().max() {
-            Some(i) => Ok(*i + 1),
-            None => Err(anyhow!("cannot extract max value")),
-        }
+    fn get_dim(&self) -> usize {
+        *self.vals.iter().max().unwrap() + 1
     }
 
-    fn get_bit_length(val: usize) -> Result<usize> {
-        match broadword::msb(val) {
-            Some(i) => Ok(i + 1),
-            None => Err(anyhow!("cannot calculate msb")),
-        }
+    fn get_width(val: usize) -> usize {
+        broadword::msb(val).unwrap() + 1
     }
 }
 
@@ -746,7 +744,7 @@ mod test {
     fn test_builder_push() {
         let mut wmb = WaveletMatrixBuilder::new();
         wmb.push(123);
-        assert_eq!(wmb.get_dim().unwrap(), 124);
+        assert_eq!(wmb.get_dim(), 124);
     }
 
     #[test]
@@ -755,7 +753,7 @@ mod test {
         wmb.push(123);
         wmb.push(7777);
         wmb.push(987);
-        assert_eq!(wmb.get_dim().unwrap(), 7778);
+        assert_eq!(wmb.get_dim(), 7778);
     }
 
     #[test]
