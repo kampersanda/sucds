@@ -557,7 +557,7 @@ impl WaveletMatrixBuilder {
     /// assert_eq!(wm.rank(22, 'o' as usize), 4);
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// ```
-    pub fn build(&self) -> Result<WaveletMatrix> {
+    pub fn build(self) -> Result<WaveletMatrix> {
         if self.vals.is_empty() {
             return Err(anyhow!("vals must not be empty"));
         }
@@ -566,7 +566,7 @@ impl WaveletMatrixBuilder {
         let dim = self.get_dim();
         let width = Self::get_width(dim);
 
-        let mut zeros = self.vals.clone(); // TODO: Remove this clone
+        let mut zeros = self.vals;
         let mut ones = vec![];
         let mut layers = vec![];
 
