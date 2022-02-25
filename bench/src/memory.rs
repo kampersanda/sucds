@@ -20,34 +20,38 @@ fn show_memories(p: f64) {
     println!("[p = {}]", p);
 
     let bytes = {
-        let idx = sucds::RsBitVector::from_bits(&bits, false, false);
+        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
-    print_memory("RsBitVector(false,false)", bytes);
+    print_memory("RsBitVector", bytes);
 
     let bytes = {
-        let idx = sucds::RsBitVector::from_bits(&bits, true, true);
+        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned())
+            .select1_hints()
+            .select0_hints();
         idx.size_in_bytes()
     };
-    print_memory("RsBitVector(true,true)", bytes);
+    print_memory("RsBitVector (with select hints)", bytes);
 
     let bytes = {
-        let idx = sucds::DArray::from_bits(&bits);
+        let idx = sucds::DArray::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
     print_memory("DArray", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(&bits, false).unwrap();
+        let idx = sucds::EliasFano::from_bits(bits.iter().cloned()).unwrap();
         idx.size_in_bytes()
     };
-    print_memory("EliasFano(false)", bytes);
+    print_memory("EliasFano", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(&bits, true).unwrap();
+        let idx = sucds::EliasFano::from_bits(bits.iter().cloned())
+            .unwrap()
+            .enable_rank();
         idx.size_in_bytes()
     };
-    print_memory("EliasFano(true)", bytes);
+    print_memory("EliasFano (with rank index)", bytes);
 }
 
 fn print_memory(name: &str, bytes: usize) {

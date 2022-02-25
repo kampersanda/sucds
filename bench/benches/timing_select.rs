@@ -72,7 +72,7 @@ fn criterion_select_1(c: &mut Criterion) {
 
 fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
     group.bench_function("sucds/RsBitVector", |b| {
-        let idx = sucds::RsBitVector::from_bits(bits, true, false);
+        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned()).select1_hints();
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
@@ -85,7 +85,7 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
     });
 
     group.bench_function("sucds/DArray", |b| {
-        let idx = sucds::DArray::from_bits(bits);
+        let idx = sucds::DArray::from_bits(bits.iter().cloned());
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
@@ -98,7 +98,7 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
     });
 
     group.bench_function("sucds/EliasFano", |b| {
-        let idx = sucds::EliasFano::from_bits(bits, false).unwrap();
+        let idx = sucds::EliasFano::from_bits(bits.iter().cloned()).unwrap();
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {

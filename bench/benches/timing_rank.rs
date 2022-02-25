@@ -68,7 +68,7 @@ fn criterion_rank_1(c: &mut Criterion) {
 
 fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
     group.bench_function("sucds/RsBitVector", |b| {
-        let idx = sucds::RsBitVector::from_bits(bits, false, false);
+        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned());
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
@@ -81,7 +81,9 @@ fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[
     });
 
     group.bench_function("sucds/EliasFano", |b| {
-        let idx = sucds::EliasFano::from_bits(bits, true).unwrap();
+        let idx = sucds::EliasFano::from_bits(bits.iter().cloned())
+            .unwrap()
+            .enable_rank();
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
