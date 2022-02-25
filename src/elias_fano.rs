@@ -26,18 +26,20 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Example
 ///
 /// ```
-/// use sucds::{EliasFano, EliasFanoBuilder};
+/// use sucds::EliasFano;
 ///
-/// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-/// b.append(&[1, 3, 3, 7]).unwrap();
+/// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+/// assert_eq!(ef.len(), 4);
+/// assert_eq!(ef.universe(), 8);
 ///
-/// let ef = EliasFano::new(b);
 /// assert_eq!(ef.select(0), 1);
 /// assert_eq!(ef.select(1), 3);
 /// assert_eq!(ef.select(2), 3);
 /// assert_eq!(ef.select(3), 7);
 ///
+/// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
+///
 /// assert_eq!(ef.rank(3), 1);
 /// assert_eq!(ef.rank(4), 3);
 /// assert_eq!(ef.predecessor(4), Some(3));
@@ -72,37 +74,6 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
-    /// Creates a new [`EliasFano`] from a builder [`EliasFanoBuilder`].
-    ///
-    /// # Arguments
-    ///
-    /// - `b`: Builder.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{EliasFano, EliasFanoBuilder};
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// b.append(&[1, 3, 3, 7]).unwrap();
-    ///
-    /// let ef = EliasFano::new(b);
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    pub fn new(b: EliasFanoBuilder) -> Self {
-        Self {
-            high_bits_d1: DArrayIndex::new(&b.high_bits, true),
-            high_bits: b.high_bits,
-            high_bits_d0: None,
-            low_bits: b.low_bits,
-            low_len: b.low_len,
-            universe: b.universe,
-        }
-    }
-
     /// Creates a new [`EliasFano`] from a bit stream.
     ///
     /// # Arguments
@@ -160,7 +131,7 @@ impl EliasFano {
                 b.push(i)?;
             }
         }
-        Ok(Self::new(b))
+        Ok(b.build())
     }
 
     /// Creates a new [`EliasFano`] from a list of monotone increasing integers.
@@ -190,10 +161,10 @@ impl EliasFano {
         }
         let mut b = EliasFanoBuilder::new(*ints.last().unwrap() + 1, ints.len())?;
         b.append(ints)?;
-        Ok(Self::new(b))
+        Ok(b.build())
     }
 
-    /// Enables operations [`EliasFano::rank`],
+    /// Builds an index to enable operations [`EliasFano::rank`],
     /// [`EliasFano::predecessor`], and [`EliasFano::successor`].
     ///
     /// # Examples
@@ -616,12 +587,12 @@ impl EliasFanoBuilder {
     /// # Example
     ///
     /// ```
-    /// use sucds::{EliasFano, EliasFanoBuilder};
+    /// use sucds::EliasFanoBuilder;
     ///
     /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
     /// [1, 3, 3, 7].iter().for_each(|&x| b.push(x).unwrap());
     ///
-    /// let ef = EliasFano::new(b);
+    /// let ef = b.build();
     /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 3);
@@ -673,12 +644,12 @@ impl EliasFanoBuilder {
     /// # Example
     ///
     /// ```
-    /// use sucds::{EliasFano, EliasFanoBuilder};
+    /// use sucds::EliasFanoBuilder;
     ///
     /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
     /// b.append(&[1, 3, 3, 7]).unwrap();
     ///
-    /// let ef = EliasFano::new(b);
+    /// let ef = b.build();
     /// assert_eq!(ef.select(0), 1);
     /// assert_eq!(ef.select(1), 3);
     /// assert_eq!(ef.select(2), 3);
@@ -692,6 +663,33 @@ impl EliasFanoBuilder {
             self.push(x)?;
         }
         Ok(())
+    }
+
+    /// Builds [`EliasFano`] from the pushed integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFanoBuilder;
+    ///
+    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
+    /// b.append(&[1, 3, 3, 7]).unwrap();
+    ///
+    /// let ef = b.build();
+    /// assert_eq!(ef.select(0), 1);
+    /// assert_eq!(ef.select(1), 3);
+    /// assert_eq!(ef.select(2), 3);
+    /// assert_eq!(ef.select(3), 7);
+    /// ```
+    pub fn build(self) -> EliasFano {
+        EliasFano {
+            high_bits_d1: DArrayIndex::new(&self.high_bits, true),
+            high_bits: self.high_bits,
+            high_bits_d0: None,
+            low_bits: self.low_bits,
+            low_len: self.low_len,
+            universe: self.universe,
+        }
     }
 }
 

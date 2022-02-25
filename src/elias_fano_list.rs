@@ -69,9 +69,7 @@ impl EliasFanoList {
             cur += x;
             b.push(cur)?;
         }
-        Ok(Self {
-            ef: EliasFano::new(b),
-        })
+        Ok(Self { ef: b.build() })
     }
 
     /// Serializes the data structure into the writer,
