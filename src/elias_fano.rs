@@ -193,6 +193,21 @@ impl EliasFano {
         Ok(Self::new(b))
     }
 
+    /// Enables operations [`EliasFano::rank`],
+    /// [`EliasFano::predecessor`], and [`EliasFano::successor`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFano;
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// assert_eq!(ef.rank(1), 0);
+    /// assert_eq!(ef.rank(2), 1);
+    /// assert_eq!(ef.rank(3), 1);
+    /// assert_eq!(ef.rank(4), 3);
+    /// ```
+    #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
         self
