@@ -1,11 +1,14 @@
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 use std::mem::size_of;
 
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::darray::iter::Iter;
 use crate::{broadword, util, BitVector};
 
 const BLOCK_LEN: usize = 1024;
@@ -110,6 +113,24 @@ impl DArray {
     #[inline(always)]
     pub fn select(&self, k: usize) -> usize {
         self.da.select(&self.bv, k)
+    }
+
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::DArray;
+    ///
+    /// let da = DArray::from_bits([true, false, false, true]);
+    /// let mut it = da.iter();
+    ///
+    /// assert_eq!(it.next(), Some(0));
+    /// assert_eq!(it.next(), Some(3));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 
     /// Gets the number of integers.
