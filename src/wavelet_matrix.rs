@@ -514,7 +514,7 @@ impl WaveletMatrix {
     /// assert_eq!(it.next(), Some(2));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter {
         Iter::new(self)
     }
 }

@@ -8,7 +8,7 @@ pub struct Iter<'a> {
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub fn new(bv: &'a BitVector) -> Self {
+    pub const fn new(bv: &'a BitVector) -> Self {
         Self { bv, pos: 0 }
     }
 }

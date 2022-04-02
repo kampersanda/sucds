@@ -8,7 +8,7 @@ pub struct Iter<'a> {
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub fn new(da: &'a DArray) -> Self {
+    pub const fn new(da: &'a DArray) -> Self {
         Self { da, pos: 0 }
     }
 }

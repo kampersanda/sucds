@@ -8,7 +8,7 @@ pub struct Iter<'a> {
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub fn new(cv: &'a CompactVector) -> Self {
+    pub const fn new(cv: &'a CompactVector) -> Self {
         Self { cv, pos: 0 }
     }
 }

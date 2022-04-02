@@ -483,7 +483,7 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(true));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter {
         Iter::new(self)
     }
 

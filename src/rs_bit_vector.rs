@@ -404,7 +404,7 @@ impl RsBitVector {
     }
 
     /// Gets the reference of the internal bit vector.
-    pub fn bit_vector(&self) -> &BitVector {
+    pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
 

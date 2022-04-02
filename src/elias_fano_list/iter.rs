@@ -8,7 +8,7 @@ pub struct Iter<'a> {
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub fn new(efl: &'a EliasFanoList) -> Self {
+    pub const fn new(efl: &'a EliasFanoList) -> Self {
         Self { efl, pos: 0 }
     }
 }

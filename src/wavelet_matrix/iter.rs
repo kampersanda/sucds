@@ -8,7 +8,7 @@ pub struct Iter<'a> {
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub fn new(wm: &'a WaveletMatrix) -> Self {
+    pub const fn new(wm: &'a WaveletMatrix) -> Self {
         Self { wm, pos: 0 }
     }
 }
