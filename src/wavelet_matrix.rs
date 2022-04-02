@@ -1,5 +1,7 @@
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 use std::mem::size_of;
 use std::ops::Range;
@@ -7,6 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::wavelet_matrix::iter::Iter;
 use crate::{broadword, BitVector, RsBitVector};
 
 /// Time- and space-efficient data structure for a sequence of integers,
@@ -493,6 +496,26 @@ impl WaveletMatrix {
     #[inline(always)]
     const fn get_msb(val: usize, pos: usize, width: usize) -> bool {
         ((val >> (width - pos - 1)) & 1) == 1
+    }
+
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::WaveletMatrix;
+    ///
+    /// let wm = WaveletMatrix::from_ints([20, 7, 13, 2]).unwrap();
+    /// let mut it = wm.iter();
+    ///
+    /// assert_eq!(it.next(), Some(20));
+    /// assert_eq!(it.next(), Some(7));
+    /// assert_eq!(it.next(), Some(13));
+    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 }
 
