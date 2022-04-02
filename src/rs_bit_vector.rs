@@ -403,6 +403,11 @@ impl RsBitVector {
         word_offset * 64 + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank)
     }
 
+    /// Gets the reference of the internal bit vector.
+    pub fn bit_vector(&self) -> &BitVector {
+        &self.bv
+    }
+
     /// Gets the number of bits.
     #[inline(always)]
     pub const fn len(&self) -> usize {
