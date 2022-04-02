@@ -1,19 +1,6 @@
 use crate::BitVector;
 
 /// Iterator for enumerating bits, created by [`BitVector::iter`].
-///
-/// # Examples
-///
-/// ```
-/// use sucds::BitVector;
-///
-/// let bv = BitVector::from_bits([false, true, false, false, true]);
-/// let mut it = bv.unary_iter(1);
-///
-/// assert_eq!(it.next(), Some(1));
-/// assert_eq!(it.next(), Some(4));
-/// assert_eq!(it.next(), None);
-/// ```
 pub struct Iter<'a> {
     bv: &'a BitVector,
     pos: usize,
