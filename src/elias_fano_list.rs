@@ -1,3 +1,4 @@
+//! Compressed integer list with prefix-summed Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
 pub mod iter;

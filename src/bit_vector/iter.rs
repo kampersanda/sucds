@@ -1,3 +1,4 @@
+//! Iterator on bit vectors.
 use crate::BitVector;
 
 /// Iterator for enumerating bits, created by [`BitVector::iter`].

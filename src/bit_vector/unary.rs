@@ -1,3 +1,4 @@
+//! Unary iterator on bit vectors.
 use crate::bit_vector::WORD_LEN;
 use crate::broadword;
 use crate::BitVector;

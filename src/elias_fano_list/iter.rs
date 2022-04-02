@@ -1,3 +1,5 @@
+//! Iterator on EliasFanoList.
+
 use crate::EliasFanoList;
 
 /// Iterator for enumerating integers, created by [`EliasFanoList::iter`].

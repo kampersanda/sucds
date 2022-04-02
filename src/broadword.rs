@@ -1,42 +1,48 @@
+//! Broadword tools.
 #![cfg(target_pointer_width = "64")]
 
 #[cfg(feature = "intrinsics")]
 use crate::intrinsics;
 
-pub const ONES_STEP_4: usize = 0x1111111111111111;
-pub const ONES_STEP_8: usize = 0x0101010101010101;
-pub const ONES_STEP_9: usize = 1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
-pub const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
-pub const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
-pub const INV_COUNT_STEP_9: usize = 1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
+pub(crate) const ONES_STEP_4: usize = 0x1111111111111111;
+pub(crate) const ONES_STEP_8: usize = 0x0101010101010101;
+pub(crate) const ONES_STEP_9: usize =
+    1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
+pub(crate) const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
+pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
+pub(crate) const INV_COUNT_STEP_9: usize =
+    1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
 
+#[allow(dead_code)]
 #[inline(always)]
-pub const fn leq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
+#[allow(dead_code)]
 #[inline(always)]
-pub const fn uleq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_8(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub const fn uleq_step_9(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_9(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_9) - (x & !MSBS_STEP_9)) | (x ^ y)) ^ (x & !y)) & MSBS_STEP_9) >> 8
 }
 
 #[inline(always)]
-pub const fn byte_counts(mut x: usize) -> usize {
+pub(crate) const fn byte_counts(mut x: usize) -> usize {
     x = x - ((x & (0xa * ONES_STEP_4)) >> 1);
     x = (x & (3 * ONES_STEP_4)) + ((x >> 2) & (3 * ONES_STEP_4));
     (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
 #[inline(always)]
-pub const fn bytes_sum(x: usize) -> usize {
+pub(crate) const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
 }
 
+/// Counts the number of set bits.
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub const fn popcount(x: usize) -> usize {
@@ -48,6 +54,7 @@ pub const fn popcount(x: usize) -> usize {
     intrinsics::popcount(x)
 }
 
+/// Searches the position of the `k`-th bit set.
 #[inline(always)]
 pub fn select_in_word(x: usize, k: usize) -> usize {
     debug_assert!(k < popcount(x));
@@ -69,11 +76,12 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
 }
 
 #[inline(always)]
-pub fn bit_position(x: usize) -> usize {
+pub(crate) fn bit_position(x: usize) -> usize {
     debug_assert!(popcount(x) == 1);
     DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
 }
 
+/// Gets the least significant bit.
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub fn lsb(x: usize) -> Option<usize> {
@@ -89,6 +97,7 @@ pub const fn lsb(x: usize) -> Option<usize> {
     intrinsics::bsf64(x)
 }
 
+/// Gets the most significant bit.
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub fn msb(mut x: usize) -> Option<usize> {

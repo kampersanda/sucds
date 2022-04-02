@@ -1,3 +1,5 @@
+//! Iterator on WaveletMatrix.
+
 use crate::WaveletMatrix;
 
 /// Iterator for enumerating integers, created by [`WaveletMatrix::iter`].
