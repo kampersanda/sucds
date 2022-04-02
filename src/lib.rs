@@ -26,6 +26,7 @@
 //!
 //! This library is designed to run on 64-bit machines.
 #![deny(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("`target_pointer_width` must be 64");
