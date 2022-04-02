@@ -3,8 +3,8 @@
 use crate::bit_vector::unary::UnaryIter;
 use crate::EliasFano;
 
-/// Iterator for enumerating integers stored in [`EliasFano`].
-pub struct EliasFanoIterator<'a> {
+/// Iterator for enumerating integers stored in [`EliasFano`], created by [`EliasFano::iter`].
+pub struct Iter<'a> {
     ef: &'a EliasFano,
     k: usize,
     high_iter: Option<UnaryIter<'a>>,
@@ -14,7 +14,7 @@ pub struct EliasFanoIterator<'a> {
     chunks_avail: usize,
 }
 
-impl<'a> EliasFanoIterator<'a> {
+impl<'a> Iter<'a> {
     /// Creates an iterator for enumerating integers from position `k`.
     pub fn new(ef: &'a EliasFano, k: usize) -> Self {
         debug_assert!(ef.low_len < 64);
@@ -48,7 +48,7 @@ impl<'a> EliasFanoIterator<'a> {
     }
 }
 
-impl<'a> Iterator for EliasFanoIterator<'a> {
+impl<'a> Iterator for Iter<'a> {
     type Item = usize;
 
     #[inline(always)]

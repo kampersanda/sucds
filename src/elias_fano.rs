@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::elias_fano::iter::EliasFanoIterator;
+use crate::elias_fano::iter::Iter;
 use crate::{broadword, darray::DArrayIndex, BitVector};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
@@ -493,7 +493,7 @@ impl EliasFano {
         None
     }
 
-    /// Creates an iterator of [`EliasFanoIterator`] to enumerate integers from the `k`-th one.
+    /// Creates an iterator of [`Iter`] to enumerate integers from the `k`-th one.
     ///
     /// # Arguments
     ///
@@ -511,8 +511,8 @@ impl EliasFano {
     /// assert_eq!(it.next(), Some(7));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn iter(&self, k: usize) -> EliasFanoIterator {
-        EliasFanoIterator::new(self, k)
+    pub fn iter(&self, k: usize) -> Iter {
+        Iter::new(self, k)
     }
 
     /// Gets the number of integers.
