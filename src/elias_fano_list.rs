@@ -1,9 +1,12 @@
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 
 use anyhow::Result;
 
+use crate::elias_fano_list::iter::Iter;
 use crate::{EliasFano, EliasFanoBuilder};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
@@ -120,6 +123,26 @@ impl EliasFanoList {
     /// ```
     pub fn get(&self, i: usize) -> usize {
         self.ef.delta(i)
+    }
+
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFanoList;
+    ///
+    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
+    /// let mut it = list.iter();
+    ///
+    /// assert_eq!(it.next(), Some(5));
+    /// assert_eq!(it.next(), Some(14));
+    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), Some(10));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 
     /// Gets the number of integers.
