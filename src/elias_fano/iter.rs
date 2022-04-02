@@ -1,3 +1,4 @@
+//! Iterator on EliasFano.
 #![cfg(target_pointer_width = "64")]
 
 use crate::bit_vector::unary::UnaryIter;

@@ -1,3 +1,4 @@
+//! Iterator on DArray.
 use crate::DArray;
 
 /// Iterator for enumerating integers, created by [`DArray::iter`].

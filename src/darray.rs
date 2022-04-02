@@ -1,3 +1,4 @@
+//! Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
 #![cfg(target_pointer_width = "64")]
 
 pub mod iter;

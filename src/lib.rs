@@ -1,4 +1,3 @@
-#![cfg(target_pointer_width = "64")]
 //! # `sucds`: Succinct data structures in Rust
 //!
 //! `sucds` contains some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
@@ -26,13 +25,19 @@
 //! ## Limitation
 //!
 //! This library is designed to run on 64-bit machines.
+#![deny(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(target_pointer_width = "64"))]
+compile_error!("`target_pointer_width` must be 64");
+
 pub mod bit_vector;
 pub mod broadword;
 pub mod compact_vector;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
-pub mod intrinsics;
+mod intrinsics;
 pub mod rs_bit_vector;
 pub mod util;
 pub mod wavelet_matrix;

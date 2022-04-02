@@ -1,3 +1,4 @@
+//! Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 pub mod iter;
 pub mod unary;
 

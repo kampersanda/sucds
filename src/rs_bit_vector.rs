@@ -1,3 +1,4 @@
+//! Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};

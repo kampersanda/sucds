@@ -1,3 +1,4 @@
+//! Compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
 pub mod iter;

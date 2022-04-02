@@ -1,3 +1,4 @@
+//! Compressed monotone increasing sequence through Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
 pub mod iter;

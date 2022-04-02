@@ -1,3 +1,5 @@
+//! Utilities.
+
 #![cfg(target_pointer_width = "64")]
 
 /// Utilities for integer vectors.

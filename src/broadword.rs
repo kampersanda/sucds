@@ -1,53 +1,83 @@
+//! Broadword tools.
 #![cfg(target_pointer_width = "64")]
 
 #[cfg(feature = "intrinsics")]
 use crate::intrinsics;
 
-pub const ONES_STEP_4: usize = 0x1111111111111111;
-pub const ONES_STEP_8: usize = 0x0101010101010101;
-pub const ONES_STEP_9: usize = 1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
-pub const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
-pub const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
-pub const INV_COUNT_STEP_9: usize = 1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
+pub(crate) const ONES_STEP_4: usize = 0x1111111111111111;
+pub(crate) const ONES_STEP_8: usize = 0x0101010101010101;
+pub(crate) const ONES_STEP_9: usize =
+    1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
+pub(crate) const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
+pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
+pub(crate) const INV_COUNT_STEP_9: usize =
+    1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
 
+#[allow(dead_code)]
 #[inline(always)]
-pub const fn leq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
+#[allow(dead_code)]
 #[inline(always)]
-pub const fn uleq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_8(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub const fn uleq_step_9(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_9(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_9) - (x & !MSBS_STEP_9)) | (x ^ y)) ^ (x & !y)) & MSBS_STEP_9) >> 8
 }
 
 #[inline(always)]
-pub const fn byte_counts(mut x: usize) -> usize {
+pub(crate) const fn byte_counts(mut x: usize) -> usize {
     x = x - ((x & (0xa * ONES_STEP_4)) >> 1);
     x = (x & (3 * ONES_STEP_4)) + ((x >> 2) & (3 * ONES_STEP_4));
     (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
+#[allow(dead_code)]
 #[inline(always)]
-pub const fn bytes_sum(x: usize) -> usize {
+pub(crate) const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
 }
 
+/// Counts the number of set bits.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::popcount;
+///
+/// assert_eq!(popcount(0), 0);
+/// assert_eq!(popcount(usize::MAX), 64);
+/// assert_eq!(popcount(0b1010110011), 6);
+/// ```
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
 pub const fn popcount(x: usize) -> usize {
-    bytes_sum(byte_counts(x))
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn popcount(x: usize) -> usize {
-    intrinsics::popcount(x)
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        bytes_sum(byte_counts(x))
+    }
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::popcount(x)
+    }
 }
 
+/// Searches the position of the `k`-th bit set.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::select_in_word;
+///
+/// assert_eq!(select_in_word(0b1010011, 0), 0);
+/// assert_eq!(select_in_word(0b1010011, 1), 1);
+/// assert_eq!(select_in_word(0b1010011, 2), 4);
+/// assert_eq!(select_in_word(0b1010011, 3), 6);
+/// ```
 #[inline(always)]
 pub fn select_in_word(x: usize, k: usize) -> usize {
     debug_assert!(k < popcount(x));
@@ -68,50 +98,74 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
 
+#[allow(dead_code)]
 #[inline(always)]
-pub fn bit_position(x: usize) -> usize {
+pub(crate) fn bit_position(x: usize) -> usize {
     debug_assert!(popcount(x) == 1);
     DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
 }
 
+/// Gets the least significant bit.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::lsb;
+///
+/// assert_eq!(lsb(0b101100), Some(2));
+/// assert_eq!(lsb(0b0), None);
+/// ```
+#[allow(clippy::missing_const_for_fn)]
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
 pub fn lsb(x: usize) -> Option<usize> {
-    if x == 0 {
-        None
-    } else {
-        Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        if x == 0 {
+            None
+        } else {
+            Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+        }
+    }
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::bsf64(x)
     }
 }
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn lsb(x: usize) -> Option<usize> {
-    intrinsics::bsf64(x)
-}
 
+/// Gets the most significant bit.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::msb;
+///
+/// assert_eq!(msb(0b101100), Some(5));
+/// assert_eq!(msb(0b0), None);
+/// ```
+#[allow(clippy::missing_const_for_fn)]
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
-pub fn msb(mut x: usize) -> Option<usize> {
-    if x == 0 {
-        return None;
+pub fn msb(x: usize) -> Option<usize> {
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        if x == 0 {
+            return None;
+        }
+        // right-saturate the word
+        let mut x = x;
+        x |= x >> 1;
+        x |= x >> 2;
+        x |= x >> 4;
+        x |= x >> 8;
+        x |= x >> 16;
+        x |= x >> 32;
+        // isolate the MSB
+        x ^= x >> 1;
+        Some(bit_position(x))
     }
-
-    // right-saturate the word
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-
-    // isolate the MSB
-    x ^= x >> 1;
-    Some(bit_position(x))
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn msb(x: usize) -> Option<usize> {
-    intrinsics::bsr64(x)
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::bsr64(x)
+    }
 }
 
 const SELECT_IN_BYTE: [u8; 2048] = [

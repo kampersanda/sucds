@@ -1,3 +1,5 @@
+//! Time- and space-efficient data structure for a sequence of integers,
+//! supporting some queries such as ranking, selection, and intersection.
 #![cfg(target_pointer_width = "64")]
 
 pub mod iter;
