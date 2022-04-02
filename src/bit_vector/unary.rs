@@ -3,13 +3,13 @@ use crate::broadword;
 use crate::BitVector;
 
 /// Iterator for enumerating positions of set bits, created by [`BitVector::unary_iter`].
-pub struct UnaryIterator<'a> {
+pub struct UnaryIter<'a> {
     bv: &'a BitVector,
     pos: usize,
     buf: usize,
 }
 
-impl<'a> UnaryIterator<'a> {
+impl<'a> UnaryIter<'a> {
     /// Creates the iterator from the given bit position.
     pub fn new(bv: &'a BitVector, pos: usize) -> Self {
         let buf =
@@ -101,7 +101,7 @@ impl<'a> UnaryIterator<'a> {
     }
 }
 
-impl<'a> Iterator for UnaryIterator<'a> {
+impl<'a> Iterator for UnaryIter<'a> {
     type Item = usize;
 
     #[inline(always)]

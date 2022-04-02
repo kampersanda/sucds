@@ -1,13 +1,13 @@
 #![cfg(target_pointer_width = "64")]
 
-use crate::bit_vector::unary::UnaryIterator;
+use crate::bit_vector::unary::UnaryIter;
 use crate::EliasFano;
 
 /// Iterator for enumerating integers stored in [`EliasFano`].
 pub struct EliasFanoIterator<'a> {
     ef: &'a EliasFano,
     k: usize,
-    high_iter: Option<UnaryIterator<'a>>,
+    high_iter: Option<UnaryIter<'a>>,
     low_buf: usize,
     low_mask: usize,
     chunks_in_word: usize,

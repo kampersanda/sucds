@@ -8,7 +8,7 @@ use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::bit_vector::iter::Iter;
-use crate::bit_vector::unary::UnaryIterator;
+use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, util};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -501,8 +501,8 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(4));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn unary_iter(&self, pos: usize) -> UnaryIterator {
-        UnaryIterator::new(self, pos)
+    pub fn unary_iter(&self, pos: usize) -> UnaryIter {
+        UnaryIter::new(self, pos)
     }
 
     /// Gets `get_bits(pos, 64)` but it can extend further `len()`, padding with zeros.
