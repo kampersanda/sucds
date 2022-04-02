@@ -587,6 +587,9 @@ mod tests {
         for i in 0..bits.len() {
             assert_eq!(bits[i], bv.get_bit(i));
         }
+        for (i, x) in bv.iter().enumerate() {
+            assert_eq!(bits[i], x);
+        }
 
         let mut other = BitVector::with_len(bits.len());
         assert_eq!(bv.len(), other.len());

@@ -181,6 +181,9 @@ mod tests {
         }
         assert_eq!(ints.len(), list.len());
         assert_eq!(acc, list.sum());
+        for (i, x) in list.iter().enumerate() {
+            assert_eq!(ints[i], x);
+        }
     }
 
     #[test]

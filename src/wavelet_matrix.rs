@@ -688,6 +688,12 @@ mod test {
         }
     }
 
+    fn test_iter(ints: &[usize], wm: &WaveletMatrix) {
+        for (i, x) in wm.iter().enumerate() {
+            assert_eq!(ints[i], x);
+        }
+    }
+
     fn test_rank_select(ints: &[usize], wm: &WaveletMatrix, val: usize) {
         let mut cur_rank = 0;
         for i in 0..ints.len() {
@@ -818,6 +824,7 @@ mod test {
 
         let wm = WaveletMatrix::from_ints(ints.iter().cloned()).unwrap();
         test_lookup(&ints, &wm);
+        test_iter(&ints, &wm);
         for val in 0..SIGMA {
             test_rank_select(&ints, &wm, val);
             test_rank_range(&ints, &wm, &ranges, val);

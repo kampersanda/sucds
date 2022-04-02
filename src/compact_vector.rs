@@ -277,6 +277,9 @@ mod tests {
         for (i, &x) in ints.iter().enumerate() {
             assert_eq!(x, list.get(i));
         }
+        for (i, x) in list.iter().enumerate() {
+            assert_eq!(ints[i], x);
+        }
         assert_eq!(ints.len(), list.len());
     }
 
