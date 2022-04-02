@@ -1,11 +1,14 @@
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 use std::mem::size_of;
 
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::compact_vector::iter::Iter;
 use crate::{util, BitVector};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
@@ -203,6 +206,26 @@ impl CompactVector {
     pub fn push(&mut self, value: usize) {
         self.chunks.push_bits(value, self.width);
         self.len += 1;
+    }
+
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::CompactVector;
+    ///
+    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
+    /// let mut it = cv.iter();
+    ///
+    /// assert_eq!(it.next(), Some(5));
+    /// assert_eq!(it.next(), Some(256));
+    /// assert_eq!(it.next(), Some(0));
+    /// assert_eq!(it.next(), Some(10));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 
     /// Gets the number of ints.
