@@ -25,9 +25,9 @@ rand_chacha = "0.3.1"
 
 [features]
 default = ["std"]
-intrinsics = []
 
 std = []
+intrinsics = []
 
 [package.metadata.docs.rs]
 rustdoc-args = [

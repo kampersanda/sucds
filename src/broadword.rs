@@ -37,6 +37,7 @@ pub(crate) const fn byte_counts(mut x: usize) -> usize {
     (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
+#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
@@ -97,6 +98,7 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
 
+#[allow(dead_code)]
 #[inline(always)]
 pub(crate) fn bit_position(x: usize) -> usize {
     debug_assert!(popcount(x) == 1);
@@ -113,6 +115,7 @@ pub(crate) fn bit_position(x: usize) -> usize {
 /// assert_eq!(lsb(0b101100), Some(2));
 /// assert_eq!(lsb(0b0), None);
 /// ```
+#[allow(clippy::missing_const_for_fn)]
 #[inline(always)]
 pub fn lsb(x: usize) -> Option<usize> {
     #[cfg(not(feature = "intrinsics"))]
@@ -139,14 +142,16 @@ pub fn lsb(x: usize) -> Option<usize> {
 /// assert_eq!(msb(0b101100), Some(5));
 /// assert_eq!(msb(0b0), None);
 /// ```
+#[allow(clippy::missing_const_for_fn)]
 #[inline(always)]
-pub fn msb(mut x: usize) -> Option<usize> {
+pub fn msb(x: usize) -> Option<usize> {
     #[cfg(not(feature = "intrinsics"))]
     {
         if x == 0 {
             return None;
         }
         // right-saturate the word
+        let mut x = x;
         x |= x >> 1;
         x |= x >> 2;
         x |= x >> 4;

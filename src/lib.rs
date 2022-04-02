@@ -37,7 +37,7 @@ pub mod compact_vector;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
-pub mod intrinsics;
+mod intrinsics;
 pub mod rs_bit_vector;
 pub mod util;
 pub mod wavelet_matrix;
