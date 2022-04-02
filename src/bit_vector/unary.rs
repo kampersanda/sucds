@@ -2,27 +2,14 @@ use crate::bit_vector::WORD_LEN;
 use crate::broadword;
 use crate::BitVector;
 
-/// Iterator for enumerating positions of set bits.
-///
-/// # Examples
-///
-/// ```
-/// use sucds::BitVector;
-///
-/// let bv = BitVector::from_bits([false, true, false, false, true]);
-/// let mut it = bv.unary_iter(1);
-///
-/// assert_eq!(it.next(), Some(1));
-/// assert_eq!(it.next(), Some(4));
-/// assert_eq!(it.next(), None);
-/// ```
-pub struct UnaryIterator<'a> {
+/// Iterator for enumerating positions of set bits, created by [`BitVector::unary_iter`].
+pub struct UnaryIter<'a> {
     bv: &'a BitVector,
     pos: usize,
     buf: usize,
 }
 
-impl<'a> UnaryIterator<'a> {
+impl<'a> UnaryIter<'a> {
     /// Creates the iterator from the given bit position.
     pub fn new(bv: &'a BitVector, pos: usize) -> Self {
         let buf =
@@ -114,7 +101,7 @@ impl<'a> UnaryIterator<'a> {
     }
 }
 
-impl<'a> Iterator for UnaryIterator<'a> {
+impl<'a> Iterator for UnaryIter<'a> {
     type Item = usize;
 
     #[inline(always)]

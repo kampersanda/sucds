@@ -1,3 +1,4 @@
+pub mod iter;
 pub mod unary;
 
 use std::io::{Read, Write};
@@ -6,7 +7,8 @@ use std::mem::size_of;
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::bit_vector::unary::UnaryIterator;
+use crate::bit_vector::iter::Iter;
+use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, util};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -464,6 +466,27 @@ impl BitVector {
         }
     }
 
+    /// Creates an iterator for enumerating bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits([false, true, false, false, true]);
+    /// let mut it = bv.iter();
+    ///
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(true));
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(true));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub const fn iter(&self) -> Iter {
+        Iter::new(self)
+    }
+
     /// Creates an iterator for enumerating positions of set bits.
     ///
     /// # Examples
@@ -478,8 +501,8 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(4));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn unary_iter(&self, pos: usize) -> UnaryIterator {
-        UnaryIterator::new(self, pos)
+    pub fn unary_iter(&self, pos: usize) -> UnaryIter {
+        UnaryIter::new(self, pos)
     }
 
     /// Gets `get_bits(pos, 64)` but it can extend further `len()`, padding with zeros.
@@ -563,6 +586,9 @@ mod tests {
         assert_eq!(bits.len(), bv.len());
         for i in 0..bits.len() {
             assert_eq!(bits[i], bv.get_bit(i));
+        }
+        for (i, x) in bv.iter().enumerate() {
+            assert_eq!(bits[i], x);
         }
 
         let mut other = BitVector::with_len(bits.len());
