@@ -54,14 +54,15 @@ pub(crate) const fn bytes_sum(x: usize) -> usize {
 /// assert_eq!(popcount(0b1010110011), 6);
 /// ```
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
 pub const fn popcount(x: usize) -> usize {
-    bytes_sum(byte_counts(x))
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn popcount(x: usize) -> usize {
-    intrinsics::popcount(x)
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        bytes_sum(byte_counts(x))
+    }
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::popcount(x)
+    }
 }
 
 /// Searches the position of the `k`-th bit set.
@@ -113,18 +114,19 @@ pub(crate) fn bit_position(x: usize) -> usize {
 /// assert_eq!(lsb(0b0), None);
 /// ```
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
 pub fn lsb(x: usize) -> Option<usize> {
-    if x == 0 {
-        None
-    } else {
-        Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        if x == 0 {
+            None
+        } else {
+            Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+        }
     }
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn lsb(x: usize) -> Option<usize> {
-    intrinsics::bsf64(x)
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::bsf64(x)
+    }
 }
 
 /// Gets the most significant bit.
@@ -138,28 +140,27 @@ pub const fn lsb(x: usize) -> Option<usize> {
 /// assert_eq!(msb(0b0), None);
 /// ```
 #[inline(always)]
-#[cfg(not(feature = "intrinsics"))]
 pub fn msb(mut x: usize) -> Option<usize> {
-    if x == 0 {
-        return None;
+    #[cfg(not(feature = "intrinsics"))]
+    {
+        if x == 0 {
+            return None;
+        }
+        // right-saturate the word
+        x |= x >> 1;
+        x |= x >> 2;
+        x |= x >> 4;
+        x |= x >> 8;
+        x |= x >> 16;
+        x |= x >> 32;
+        // isolate the MSB
+        x ^= x >> 1;
+        Some(bit_position(x))
     }
-
-    // right-saturate the word
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-
-    // isolate the MSB
-    x ^= x >> 1;
-    Some(bit_position(x))
-}
-#[inline(always)]
-#[cfg(feature = "intrinsics")]
-pub const fn msb(x: usize) -> Option<usize> {
-    intrinsics::bsr64(x)
+    #[cfg(feature = "intrinsics")]
+    {
+        intrinsics::bsr64(x)
+    }
 }
 
 const SELECT_IN_BYTE: [u8; 2048] = [
