@@ -43,6 +43,16 @@ pub(crate) const fn bytes_sum(x: usize) -> usize {
 }
 
 /// Counts the number of set bits.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::popcount;
+///
+/// assert_eq!(popcount(0), 0);
+/// assert_eq!(popcount(usize::MAX), 64);
+/// assert_eq!(popcount(0b1010110011), 6);
+/// ```
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub const fn popcount(x: usize) -> usize {
@@ -55,6 +65,17 @@ pub const fn popcount(x: usize) -> usize {
 }
 
 /// Searches the position of the `k`-th bit set.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::select_in_word;
+///
+/// assert_eq!(select_in_word(0b1010011, 0), 0);
+/// assert_eq!(select_in_word(0b1010011, 1), 1);
+/// assert_eq!(select_in_word(0b1010011, 2), 4);
+/// assert_eq!(select_in_word(0b1010011, 3), 6);
+/// ```
 #[inline(always)]
 pub fn select_in_word(x: usize, k: usize) -> usize {
     debug_assert!(k < popcount(x));
@@ -82,6 +103,15 @@ pub(crate) fn bit_position(x: usize) -> usize {
 }
 
 /// Gets the least significant bit.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::lsb;
+///
+/// assert_eq!(lsb(0b101100), Some(2));
+/// assert_eq!(lsb(0b0), None);
+/// ```
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub fn lsb(x: usize) -> Option<usize> {
@@ -98,6 +128,15 @@ pub const fn lsb(x: usize) -> Option<usize> {
 }
 
 /// Gets the most significant bit.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::broadword::msb;
+///
+/// assert_eq!(msb(0b101100), Some(5));
+/// assert_eq!(msb(0b0), None);
+/// ```
 #[inline(always)]
 #[cfg(not(feature = "intrinsics"))]
 pub fn msb(mut x: usize) -> Option<usize> {
