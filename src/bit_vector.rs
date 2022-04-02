@@ -1,3 +1,4 @@
+pub mod iter;
 pub mod unary;
 
 use std::io::{Read, Write};
@@ -6,6 +7,7 @@ use std::mem::size_of;
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIterator;
 use crate::{broadword, util};
 
@@ -462,6 +464,27 @@ impl BitVector {
             }
             word = !self.words[block];
         }
+    }
+
+    /// Creates an iterator for enumerating bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits([false, true, false, false, true]);
+    /// let mut it = bv.iter();
+    ///
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(true));
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(true));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 
     /// Creates an iterator for enumerating positions of set bits.
