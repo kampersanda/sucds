@@ -29,7 +29,7 @@ use crate::{broadword, BitVector, RsBitVector};
 /// use sucds::WaveletMatrix;
 ///
 /// let text = "tobeornottobethatisthequestion";
-/// let wm = WaveletMatrix::from_text(text).unwrap();
+/// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
 ///
 /// assert_eq!(wm.len(), text.chars().count());
 /// assert_eq!(wm.dim(), 'u' as usize + 1);
@@ -83,65 +83,6 @@ impl WaveletMatrix {
         let mut wmb = WaveletMatrixBuilder::default();
         for v in ints {
             wmb.push(v);
-        }
-        wmb.build()
-    }
-
-    /// Builds a [`WaveletMatrix`] from an iterator of bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `bytes`: Iterator of bytes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::WaveletMatrix;
-    ///
-    /// let bytes = b"abaabb";
-    /// let wm = WaveletMatrix::from_bytes(bytes.iter().cloned()).unwrap();
-    ///
-    /// assert_eq!(wm.get(2), b'a' as usize);
-    /// assert_eq!(wm.len(), bytes.len());
-    /// assert_eq!(wm.dim(), b'b' as usize + 1);
-    /// ```
-    pub fn from_bytes<I>(bytes: I) -> Result<Self>
-    where
-        I: IntoIterator<Item = u8>,
-    {
-        let mut wmb = WaveletMatrixBuilder::default();
-        for v in bytes {
-            wmb.push(v as usize);
-        }
-        wmb.build()
-    }
-
-    /// Builds a [`WaveletMatrix`] from characters in a string.
-    /// Note that this handles a sequence of `char`, not `u8`.
-    ///
-    /// # Arguments
-    ///
-    /// - `text`: String.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::WaveletMatrix;
-    ///
-    /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
-    ///
-    /// assert_eq!(wm.get(20), 'h' as usize);
-    /// assert_eq!(wm.len(), text.chars().count());
-    /// assert_eq!(wm.dim(), 'u' as usize + 1);
-    /// ```
-    pub fn from_text<S>(text: S) -> Result<Self>
-    where
-        S: AsRef<str>,
-    {
-        let mut wmb = WaveletMatrixBuilder::default();
-        for c in text.as_ref().chars() {
-            wmb.push(c as usize);
         }
         wmb.build()
     }
@@ -238,7 +179,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.get(2), 'b' as usize);
     /// assert_eq!(wm.get(5), 'r' as usize);
@@ -277,7 +218,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.rank(14, 'b' as usize), 2);
     /// assert_eq!(wm.rank(14, 'o' as usize), 4);
@@ -305,7 +246,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.rank_range(0..14, 'o' as usize), 4);
     /// assert_eq!(wm.rank_range(14..20, 'a' as usize), 1);
@@ -346,7 +287,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// assert_eq!(wm.select(0, 'q' as usize), 22);
@@ -392,7 +333,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.quantile(0..5, 0), 'b' as usize); // The zero-th in "tobeo" should be "b"
     /// assert_eq!(wm.quantile(0..5, 1), 'e' as usize); // The first in "tobeo" should be "e"
@@ -439,7 +380,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 2), vec!['b' as usize, 'o' as usize]); // "tob", "o", "ob"
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 3), vec!['o' as usize]); // "tob", "o", "ob"
@@ -802,7 +743,7 @@ mod test {
         let text = "tobeornottobethatisthequestion";
         let len = text.chars().count();
 
-        let wm = WaveletMatrix::from_text(text).unwrap();
+        let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
         assert_eq!(wm.len(), len);
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 
