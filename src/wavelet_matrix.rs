@@ -758,4 +758,15 @@ mod test {
         test_quantile(&ints, &wm, &ranges);
         test_intersect(&ints, &wm, &ranges);
     }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let wm = WaveletMatrix::from_ints(gen_random_ints(1000, 13)).unwrap();
+        let size = wm.serialize_into(&mut bytes).unwrap();
+        let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(wm, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, wm.size_in_bytes());
+    }
 }
