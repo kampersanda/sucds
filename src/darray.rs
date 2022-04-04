@@ -29,13 +29,6 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 /// assert_eq!(da.select(0), 0);
 /// assert_eq!(da.select(1), 3);
-///
-/// let mut bytes = vec![];
-/// let size = da.serialize_into(&mut bytes).unwrap();
-/// let other = DArray::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(da, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, da.size_in_bytes());
 /// ```
 ///
 /// # References

@@ -35,13 +35,6 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// assert_eq!(bv.select1(1), 3);
 /// assert_eq!(bv.select0(0), 1);
 /// assert_eq!(bv.len(), 4);
-///
-/// let mut bytes = vec![];
-/// let size = bv.serialize_into(&mut bytes).unwrap();
-/// let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(bv, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, bv.size_in_bytes());
 /// ```
 ///
 /// # References

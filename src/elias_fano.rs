@@ -45,13 +45,6 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// assert_eq!(ef.predecessor(3), Some(3));
 /// assert_eq!(ef.successor(3), Some(3));
 /// assert_eq!(ef.successor(4), Some(7));
-///
-/// let mut bytes = vec![];
-/// let size = ef.serialize_into(&mut bytes).unwrap();
-/// let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(ef, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, ef.size_in_bytes());
 /// ```
 ///
 /// # References

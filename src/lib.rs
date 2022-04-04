@@ -53,6 +53,22 @@ pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
 /// Trait to serialize/deserialize the data structure.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::{BitVector, Searial};
+///
+/// let bv = BitVector::from_bits([true, false, false, true]);
+///
+/// let mut bytes = vec![];
+/// let size = bv.serialize_into(&mut bytes).unwrap();
+/// let other = BitVector::deserialize_from(&bytes[..]).unwrap();
+///
+/// assert_eq!(bv, other);
+/// assert_eq!(size, bytes.len());
+/// assert_eq!(size, bv.size_in_bytes());
+/// ```
 pub trait Searial {
     /// Serializes the data structure into the writer,
     /// returning the number of serialized bytes.

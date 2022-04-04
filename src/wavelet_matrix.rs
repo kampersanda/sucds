@@ -37,13 +37,6 @@ use crate::{broadword, BitVector, RsBitVector, Searial};
 /// assert_eq!(wm.get(20), 'h' as usize);
 /// assert_eq!(wm.rank(22, 'o' as usize), 4);
 /// assert_eq!(wm.select(2, 't' as usize), 9);
-///
-/// let mut bytes = vec![];
-/// let size = wm.serialize_into(&mut bytes).unwrap();
-/// let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(wm, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, wm.size_in_bytes());
 /// ```
 ///
 /// # References

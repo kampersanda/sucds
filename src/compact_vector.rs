@@ -28,13 +28,6 @@ use crate::{util, BitVector, Searial};
 ///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
-///
-/// let mut bytes = vec![];
-/// let size = cv.serialize_into(&mut bytes).unwrap();
-/// let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(cv, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, cv.size_in_bytes());
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct CompactVector {

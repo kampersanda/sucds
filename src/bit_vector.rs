@@ -34,13 +34,6 @@ pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.predecessor0(2), Some(2));
 /// assert_eq!(bv.successor1(1), Some(3));
 /// assert_eq!(bv.successor0(1), Some(1));
-///
-/// let mut bytes = vec![];
-/// let size = bv.serialize_into(&mut bytes).unwrap();
-/// let other = BitVector::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(bv, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, bv.size_in_bytes());
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {

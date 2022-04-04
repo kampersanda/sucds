@@ -21,7 +21,7 @@ use crate::{EliasFano, EliasFanoBuilder, Searial};
 /// # Example
 ///
 /// ```
-/// use sucds::{EliasFanoList, Searial};
+/// use sucds::EliasFanoList;
 ///
 /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
 ///
@@ -32,13 +32,6 @@ use crate::{EliasFano, EliasFanoBuilder, Searial};
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.sum(), 31);
-///
-/// let mut bytes = vec![];
-/// let size = list.serialize_into(&mut bytes).unwrap();
-/// let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(list, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, list.size_in_bytes());
 /// ```
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFanoList {
