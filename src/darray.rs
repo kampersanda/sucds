@@ -10,7 +10,7 @@ use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::darray::iter::Iter;
-use crate::{broadword, util, BitVector};
+use crate::{broadword, util, BitVector, Searial};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -29,13 +29,6 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 /// assert_eq!(da.select(0), 0);
 /// assert_eq!(da.select(1), 3);
-///
-/// let mut bytes = vec![];
-/// let size = da.serialize_into(&mut bytes).unwrap();
-/// let other = DArray::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(da, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, da.size_in_bytes());
 /// ```
 ///
 /// # References
@@ -63,33 +56,6 @@ impl DArray {
             da: DArrayIndex::build(&bv, true),
             bv,
         }
-    }
-
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: `std::io::Write` variable.
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = self.bv.serialize_into(&mut writer)? + self.da.serialize_into(&mut writer)?;
-        Ok(mem)
-    }
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: `std::io::Read` variable.
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let bv = BitVector::deserialize_from(&mut reader)?;
-        let da = DArrayIndex::deserialize_from(&mut reader)?;
-        Ok(Self { bv, da })
-    }
-
-    /// Returns the number of bytes to serialize the data structure.
-    pub fn size_in_bytes(&self) -> usize {
-        self.bv.size_in_bytes() + self.da.size_in_bytes()
     }
 
     /// Searches the `k`-th iteger.
@@ -147,6 +113,23 @@ impl DArray {
     }
 }
 
+impl Searial for DArray {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.bv.serialize_into(&mut writer)? + self.da.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bv = BitVector::deserialize_from(&mut reader)?;
+        let da = DArrayIndex::deserialize_from(&mut reader)?;
+        Ok(Self { bv, da })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.bv.size_in_bytes() + self.da.size_in_bytes()
+    }
+}
+
 /// The index implementation of [`DArray`] separated from the bit vector.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DArrayIndex {
@@ -166,50 +149,6 @@ impl DArrayIndex {
     /// - `over_one`: Flag to build the index for ones.
     pub fn new(bv: &BitVector, over_one: bool) -> Self {
         Self::build(bv, over_one)
-    }
-
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: `std::io::Write` variable.
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = util::vec_io::serialize_isize(&self.block_inventory, &mut writer)?;
-        mem += util::vec_io::serialize_u16(&self.subblock_inventory, &mut writer)?;
-        mem += util::vec_io::serialize_usize(&self.overflow_positions, &mut writer)?;
-        writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
-        writer.write_u8(self.over_one as u8)?;
-        Ok(mem + size_of::<u64>() + size_of::<u8>())
-    }
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: `std::io::Read` variable.
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = util::vec_io::deserialize_isize(&mut reader)?;
-        let subblock_inventory = util::vec_io::deserialize_u16(&mut reader)?;
-        let overflow_positions = util::vec_io::deserialize_usize(&mut reader)?;
-        let num_positions = reader.read_u64::<LittleEndian>()? as usize;
-        let over_one = reader.read_u8()? != 0;
-        Ok(Self {
-            block_inventory,
-            subblock_inventory,
-            overflow_positions,
-            num_positions,
-            over_one,
-        })
-    }
-
-    /// Returns the number of bytes to serialize the data structure.
-    pub fn size_in_bytes(&self) -> usize {
-        util::vec_io::size_in_bytes(&self.block_inventory)
-            + util::vec_io::size_in_bytes(&self.subblock_inventory)
-            + util::vec_io::size_in_bytes(&self.overflow_positions)
-            + size_of::<u64>()
-            + size_of::<u8>()
     }
 
     /// Searches the `k`-th iteger.
@@ -385,6 +324,40 @@ impl DArrayIndex {
 
     fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
         !bv.words()[word_idx]
+    }
+}
+
+impl Searial for DArrayIndex {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = util::vec_io::serialize_isize(&self.block_inventory, &mut writer)?;
+        mem += util::vec_io::serialize_u16(&self.subblock_inventory, &mut writer)?;
+        mem += util::vec_io::serialize_usize(&self.overflow_positions, &mut writer)?;
+        writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
+        writer.write_u8(self.over_one as u8)?;
+        Ok(mem + size_of::<u64>() + size_of::<u8>())
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let block_inventory = util::vec_io::deserialize_isize(&mut reader)?;
+        let subblock_inventory = util::vec_io::deserialize_u16(&mut reader)?;
+        let overflow_positions = util::vec_io::deserialize_usize(&mut reader)?;
+        let num_positions = reader.read_u64::<LittleEndian>()? as usize;
+        let over_one = reader.read_u8()? != 0;
+        Ok(Self {
+            block_inventory,
+            subblock_inventory,
+            overflow_positions,
+            num_positions,
+            over_one,
+        })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        util::vec_io::size_in_bytes(&self.block_inventory)
+            + util::vec_io::size_in_bytes(&self.subblock_inventory)
+            + util::vec_io::size_in_bytes(&self.overflow_positions)
+            + size_of::<u64>()
+            + size_of::<u8>()
     }
 }
 

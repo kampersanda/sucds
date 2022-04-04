@@ -12,7 +12,7 @@ use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::wavelet_matrix::iter::Iter;
-use crate::{broadword, BitVector, RsBitVector};
+use crate::{broadword, BitVector, RsBitVector, Searial};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -37,13 +37,6 @@ use crate::{broadword, BitVector, RsBitVector};
 /// assert_eq!(wm.get(20), 'h' as usize);
 /// assert_eq!(wm.rank(22, 'o' as usize), 4);
 /// assert_eq!(wm.select(2, 't' as usize), 9);
-///
-/// let mut bytes = vec![];
-/// let size = wm.serialize_into(&mut bytes).unwrap();
-/// let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(wm, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, wm.size_in_bytes());
 /// ```
 ///
 /// # References
@@ -85,58 +78,6 @@ impl WaveletMatrix {
             wmb.push(v);
         }
         wmb.build()
-    }
-
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: `std::io::Write` variable.
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = 0;
-        writer.write_u64::<LittleEndian>(self.layers.len() as u64)?;
-        for layer in &self.layers {
-            mem += layer.serialize_into(&mut writer)?;
-        }
-        writer.write_u64::<LittleEndian>(self.dim as u64)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.width as u64)?;
-        Ok(mem + size_of::<u64>() * 4)
-    }
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: `std::io::Read` variable.
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = {
-            let len = reader.read_u64::<LittleEndian>()? as usize;
-            let mut layers = Vec::with_capacity(len);
-            for _ in 0..len {
-                layers.push(RsBitVector::deserialize_from(&mut reader)?);
-            }
-            layers
-        };
-        let dim = reader.read_u64::<LittleEndian>()? as usize;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        let width = reader.read_u64::<LittleEndian>()? as usize;
-        Ok(Self {
-            layers,
-            dim,
-            len,
-            width,
-        })
-    }
-
-    /// Returns the number of bytes to serialize the data structure.
-    pub fn size_in_bytes(&self) -> usize {
-        let mut mem = 0;
-        for layer in &self.layers {
-            mem += layer.size_in_bytes();
-        }
-        mem + size_of::<u64>() * 4
     }
 
     /// Gets the maximum value + 1 in stored integers.
@@ -462,6 +403,48 @@ impl WaveletMatrix {
     }
 }
 
+impl Searial for WaveletMatrix {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = 0;
+        writer.write_u64::<LittleEndian>(self.layers.len() as u64)?;
+        for layer in &self.layers {
+            mem += layer.serialize_into(&mut writer)?;
+        }
+        writer.write_u64::<LittleEndian>(self.dim as u64)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + size_of::<u64>() * 4)
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let layers = {
+            let len = reader.read_u64::<LittleEndian>()? as usize;
+            let mut layers = Vec::with_capacity(len);
+            for _ in 0..len {
+                layers.push(RsBitVector::deserialize_from(&mut reader)?);
+            }
+            layers
+        };
+        let dim = reader.read_u64::<LittleEndian>()? as usize;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self {
+            layers,
+            dim,
+            len,
+            width,
+        })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        let mut mem = 0;
+        for layer in &self.layers {
+            mem += layer.size_in_bytes();
+        }
+        mem + size_of::<u64>() * 4
+    }
+}
+
 /// Builder of [`WaveletMatrix`].
 pub struct WaveletMatrixBuilder {
     vals: Vec<usize>,
@@ -774,5 +757,16 @@ mod test {
         }
         test_quantile(&ints, &wm, &ranges);
         test_intersect(&ints, &wm, &ranges);
+    }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let wm = WaveletMatrix::from_ints(gen_random_ints(1000, 13)).unwrap();
+        let size = wm.serialize_into(&mut bytes).unwrap();
+        let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(wm, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, wm.size_in_bytes());
     }
 }

@@ -10,7 +10,7 @@ use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::compact_vector::iter::Iter;
-use crate::{util, BitVector};
+use crate::{util, BitVector, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///
@@ -28,13 +28,6 @@ use crate::{util, BitVector};
 ///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
-///
-/// let mut bytes = vec![];
-/// let size = cv.serialize_into(&mut bytes).unwrap();
-/// let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
-/// assert_eq!(cv, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, cv.size_in_bytes());
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct CompactVector {
@@ -109,36 +102,6 @@ impl CompactVector {
             cv.set(i, x);
         }
         cv
-    }
-
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: `std::io::Write` variable.
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = self.chunks.serialize_into(&mut writer)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.width as u64)?;
-        Ok(mem + (size_of::<u64>() * 2))
-    }
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: `std::io::Read` variable.
-    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let chunks = BitVector::deserialize_from(&mut reader)?;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        let width = reader.read_u64::<LittleEndian>()? as usize;
-        Ok(Self { chunks, len, width })
-    }
-
-    /// Returns the number of bytes to serialize the data structure.
-    pub fn size_in_bytes(&self) -> usize {
-        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
     }
 
     /// Gets the `pos`-th integer.
@@ -259,6 +222,26 @@ impl std::fmt::Debug for CompactVector {
             .field("len", &self.len)
             .field("width", &self.width)
             .finish()
+    }
+}
+
+impl Searial for CompactVector {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mem = self.chunks.serialize_into(&mut writer)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + (size_of::<u64>() * 2))
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let chunks = BitVector::deserialize_from(&mut reader)?;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self { chunks, len, width })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
     }
 }
 
