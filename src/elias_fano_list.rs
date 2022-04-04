@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::elias_fano_list::iter::Iter;
-use crate::{EliasFano, EliasFanoBuilder};
+use crate::{EliasFano, EliasFanoBuilder, Searial};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///
@@ -21,7 +21,7 @@ use crate::{EliasFano, EliasFanoBuilder};
 /// # Example
 ///
 /// ```
-/// use sucds::EliasFanoList;
+/// use sucds::{EliasFanoList, Searial};
 ///
 /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
 ///
@@ -74,31 +74,6 @@ impl EliasFanoList {
             b.push(cur)?;
         }
         Ok(Self { ef: b.build() })
-    }
-
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: `std::io::Write` variable.
-    pub fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
-        self.ef.serialize_into(writer)
-    }
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: `std::io::Read` variable.
-    pub fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let ef = EliasFano::deserialize_from(reader)?;
-        Ok(Self { ef })
-    }
-
-    /// Returns the number of bytes to serialize the data structure.
-    pub fn size_in_bytes(&self) -> usize {
-        self.ef.size_in_bytes()
     }
 
     /// Gets the `i`-th integer.
@@ -159,6 +134,21 @@ impl EliasFanoList {
     /// Gets the sum of integers.
     pub const fn sum(&self) -> usize {
         self.ef.universe() - 1
+    }
+}
+
+impl Searial for EliasFanoList {
+    fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
+        self.ef.serialize_into(writer)
+    }
+
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        let ef = EliasFano::deserialize_from(reader)?;
+        Ok(Self { ef })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.ef.size_in_bytes()
     }
 }
 
