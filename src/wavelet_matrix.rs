@@ -29,7 +29,7 @@ use crate::{broadword, BitVector, RsBitVector, Searial};
 /// use sucds::WaveletMatrix;
 ///
 /// let text = "tobeornottobethatisthequestion";
-/// let wm = WaveletMatrix::from_text(text).unwrap();
+/// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
 ///
 /// assert_eq!(wm.len(), text.chars().count());
 /// assert_eq!(wm.dim(), 'u' as usize + 1);
@@ -87,63 +87,56 @@ impl WaveletMatrix {
         wmb.build()
     }
 
-    /// Builds a [`WaveletMatrix`] from an iterator of bytes.
+    /// Serializes the data structure into the writer,
+    /// returning the number of serialized bytes.
     ///
     /// # Arguments
     ///
-    /// - `bytes`: Iterator of bytes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::WaveletMatrix;
-    ///
-    /// let bytes = b"abaabb";
-    /// let wm = WaveletMatrix::from_bytes(bytes.iter().cloned()).unwrap();
-    ///
-    /// assert_eq!(wm.get(2), b'a' as usize);
-    /// assert_eq!(wm.len(), bytes.len());
-    /// assert_eq!(wm.dim(), b'b' as usize + 1);
-    /// ```
-    pub fn from_bytes<I>(bytes: I) -> Result<Self>
-    where
-        I: IntoIterator<Item = u8>,
-    {
-        let mut wmb = WaveletMatrixBuilder::default();
-        for v in bytes {
-            wmb.push(v as usize);
+    /// - `writer`: `std::io::Write` variable.
+    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = 0;
+        writer.write_u64::<LittleEndian>(self.layers.len() as u64)?;
+        for layer in &self.layers {
+            mem += layer.serialize_into(&mut writer)?;
         }
-        wmb.build()
+        writer.write_u64::<LittleEndian>(self.dim as u64)?;
+        writer.write_u64::<LittleEndian>(self.len as u64)?;
+        writer.write_u64::<LittleEndian>(self.width as u64)?;
+        Ok(mem + size_of::<u64>() * 4)
     }
 
-    /// Builds a [`WaveletMatrix`] from characters in a string.
-    /// Note that this handles a sequence of `char`, not `u8`.
+    /// Deserializes the data structure from the reader.
     ///
     /// # Arguments
     ///
-    /// - `text`: String.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::WaveletMatrix;
-    ///
-    /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
-    ///
-    /// assert_eq!(wm.get(20), 'h' as usize);
-    /// assert_eq!(wm.len(), text.chars().count());
-    /// assert_eq!(wm.dim(), 'u' as usize + 1);
-    /// ```
-    pub fn from_text<S>(text: S) -> Result<Self>
-    where
-        S: AsRef<str>,
-    {
-        let mut wmb = WaveletMatrixBuilder::default();
-        for c in text.as_ref().chars() {
-            wmb.push(c as usize);
+    /// - `reader`: `std::io::Read` variable.
+    pub fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let layers = {
+            let len = reader.read_u64::<LittleEndian>()? as usize;
+            let mut layers = Vec::with_capacity(len);
+            for _ in 0..len {
+                layers.push(RsBitVector::deserialize_from(&mut reader)?);
+            }
+            layers
+        };
+        let dim = reader.read_u64::<LittleEndian>()? as usize;
+        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let width = reader.read_u64::<LittleEndian>()? as usize;
+        Ok(Self {
+            layers,
+            dim,
+            len,
+            width,
+        })
+    }
+
+    /// Returns the number of bytes to serialize the data structure.
+    pub fn size_in_bytes(&self) -> usize {
+        let mut mem = 0;
+        for layer in &self.layers {
+            mem += layer.size_in_bytes();
         }
-        wmb.build()
+        mem + size_of::<u64>() * 4
     }
 
     /// Gets the maximum value + 1 in stored integers.
@@ -186,7 +179,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.get(2), 'b' as usize);
     /// assert_eq!(wm.get(5), 'r' as usize);
@@ -225,7 +218,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.rank(14, 'b' as usize), 2);
     /// assert_eq!(wm.rank(14, 'o' as usize), 4);
@@ -253,7 +246,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.rank_range(0..14, 'o' as usize), 4);
     /// assert_eq!(wm.rank_range(14..20, 'a' as usize), 1);
@@ -294,7 +287,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// assert_eq!(wm.select(0, 'q' as usize), 22);
@@ -340,7 +333,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.quantile(0..5, 0), 'b' as usize); // The zero-th in "tobeo" should be "b"
     /// assert_eq!(wm.quantile(0..5, 1), 'e' as usize); // The first in "tobeo" should be "e"
@@ -387,7 +380,7 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrix;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_text(text).unwrap();
+    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
     ///
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 2), vec!['b' as usize, 'o' as usize]); // "tob", "o", "ob"
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 3), vec!['o' as usize]); // "tob", "o", "ob"
@@ -792,7 +785,7 @@ mod test {
         let text = "tobeornottobethatisthequestion";
         let len = text.chars().count();
 
-        let wm = WaveletMatrix::from_text(text).unwrap();
+        let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
         assert_eq!(wm.len(), len);
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 

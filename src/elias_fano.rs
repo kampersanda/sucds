@@ -96,30 +96,7 @@ impl EliasFano {
     where
         I: IntoIterator<Item = bool>,
     {
-        Self::from_bitvec(&BitVector::from_bits(bits))
-    }
-
-    /// Creates a new [`EliasFano`] from a bit vector [`BitVector`].
-    ///
-    /// # Arguments
-    ///
-    /// - `bv`: Bit vector.
-    ///
-    /// # Errors
-    ///
-    /// `anyhow::Error` will be returned if `bv` contains no set bit.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{EliasFano, BitVector};
-    ///
-    /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let ef = EliasFano::from_bitvec(&bv).unwrap();
-    /// assert_eq!(ef.select(0), 0);
-    /// assert_eq!(ef.select(1), 3);
-    /// ```
-    pub fn from_bitvec(bv: &BitVector) -> Result<Self> {
+        let bv = BitVector::from_bits(bits);
         let n = bv.len();
         let m = (0..bv.num_words())
             .into_iter()
