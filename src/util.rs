@@ -1,6 +1,7 @@
 //! Utilities.
 #![cfg(target_pointer_width = "64")]
 
+pub mod int_io;
 pub mod vec_io;
 
 use crate::broadword;

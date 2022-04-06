@@ -1,4 +1,4 @@
-//! Utilities for integer vectors.
+//! Utilities for writing/reading integer vectors.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
