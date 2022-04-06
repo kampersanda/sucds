@@ -1,3 +1,6 @@
+//! Utilities for integer vectors.
+#![cfg(target_pointer_width = "64")]
+
 use std::io::{Read, Write};
 use std::mem::size_of;
 
