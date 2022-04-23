@@ -3,14 +3,13 @@ pub mod iter;
 pub mod unary;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 
 use anyhow::Result;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, util, Searial};
+use crate::util::{IntIO, VecIO};
+use crate::{broadword, Searial};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
@@ -531,19 +530,19 @@ impl std::fmt::Debug for BitVector {
 
 impl Searial for BitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = util::vec_io::serialize_usize(&self.words, &mut writer)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        Ok(mem + size_of::<u64>())
+        let mut mem = self.words.serialize_into(&mut writer)?;
+        mem += self.len.serialize_into(&mut writer)?;
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = util::vec_io::deserialize_usize(&mut reader)?;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
+        let words = Vec::<usize>::deserialize_from(&mut reader)?;
+        let len = usize::deserialize_from(&mut reader)?;
         Ok(Self { words, len })
     }
 
     fn size_in_bytes(&self) -> usize {
-        util::vec_io::size_in_bytes(&self.words) + size_of::<u64>()
+        self.words.size_in_bytes() + usize::size_in_bytes()
     }
 }
 

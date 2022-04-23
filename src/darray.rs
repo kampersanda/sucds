@@ -4,13 +4,12 @@
 pub mod iter;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 
 use anyhow::Result;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::darray::iter::Iter;
-use crate::{broadword, util, BitVector, Searial};
+use crate::util::{IntIO, VecIO};
+use crate::{broadword, BitVector, Searial};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -329,20 +328,20 @@ impl DArrayIndex {
 
 impl Searial for DArrayIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = util::vec_io::serialize_isize(&self.block_inventory, &mut writer)?;
-        mem += util::vec_io::serialize_u16(&self.subblock_inventory, &mut writer)?;
-        mem += util::vec_io::serialize_usize(&self.overflow_positions, &mut writer)?;
-        writer.write_u64::<LittleEndian>(self.num_positions as u64)?;
-        writer.write_u8(self.over_one as u8)?;
-        Ok(mem + size_of::<u64>() + size_of::<u8>())
+        let mut mem = self.block_inventory.serialize_into(&mut writer)?;
+        mem += self.subblock_inventory.serialize_into(&mut writer)?;
+        mem += self.overflow_positions.serialize_into(&mut writer)?;
+        mem += self.num_positions.serialize_into(&mut writer)?;
+        mem += self.over_one.serialize_into(&mut writer)?;
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = util::vec_io::deserialize_isize(&mut reader)?;
-        let subblock_inventory = util::vec_io::deserialize_u16(&mut reader)?;
-        let overflow_positions = util::vec_io::deserialize_usize(&mut reader)?;
-        let num_positions = reader.read_u64::<LittleEndian>()? as usize;
-        let over_one = reader.read_u8()? != 0;
+        let block_inventory = Vec::<isize>::deserialize_from(&mut reader)?;
+        let subblock_inventory = Vec::<u16>::deserialize_from(&mut reader)?;
+        let overflow_positions = Vec::<usize>::deserialize_from(&mut reader)?;
+        let num_positions = usize::deserialize_from(&mut reader)?;
+        let over_one = bool::deserialize_from(&mut reader)?;
         Ok(Self {
             block_inventory,
             subblock_inventory,
@@ -353,11 +352,11 @@ impl Searial for DArrayIndex {
     }
 
     fn size_in_bytes(&self) -> usize {
-        util::vec_io::size_in_bytes(&self.block_inventory)
-            + util::vec_io::size_in_bytes(&self.subblock_inventory)
-            + util::vec_io::size_in_bytes(&self.overflow_positions)
-            + size_of::<u64>()
-            + size_of::<u8>()
+        self.block_inventory.size_in_bytes()
+            + self.subblock_inventory.size_in_bytes()
+            + self.overflow_positions.size_in_bytes()
+            + usize::size_in_bytes()
+            + bool::size_in_bytes()
     }
 }
 

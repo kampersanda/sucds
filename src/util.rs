@@ -1,11 +1,13 @@
-//! Utilities.
-
+//! Utilities in Sucds.
 #![cfg(target_pointer_width = "64")]
 
-/// Utilities for integer vectors.
+pub mod int_io;
 pub mod vec_io;
 
 use crate::broadword;
+
+pub use int_io::IntIO;
+pub use vec_io::VecIO;
 
 /// Returns the number of bits to represent `x` at least.
 ///
