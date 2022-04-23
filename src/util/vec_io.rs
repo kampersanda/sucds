@@ -1,4 +1,4 @@
-//! Utilities for writing/reading integers.
+//! Utilities for serialize/deserialize vectors.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
