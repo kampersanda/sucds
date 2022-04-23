@@ -35,7 +35,7 @@ To use `sucds`, depend on it in your Cargo manifest:
 # Cargo.toml
 
 [dependencies]
-sucds = "0.3"
+sucds = "0.4"
 ```
 
 ## Limitation
