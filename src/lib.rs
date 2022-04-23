@@ -52,7 +52,7 @@ pub use rs_bit_vector::RsBitVector;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
-/// Trait to serialize/deserialize the data structure.
+/// Trait to serialize/deserialize data structures.
 ///
 /// # Examples
 ///

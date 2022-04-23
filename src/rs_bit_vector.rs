@@ -2,12 +2,11 @@
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 
 use anyhow::Result;
-use byteorder::{ReadBytesExt, WriteBytesExt};
 
-use crate::{broadword, util, BitVector, Searial};
+use crate::util::{IntIO, VecIO};
+use crate::{broadword, BitVector, Searial};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -472,32 +471,32 @@ impl RsBitVector {
 impl Searial for RsBitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.bv.serialize_into(&mut writer)?;
-        mem += util::vec_io::serialize_usize(&self.block_rank_pairs, &mut writer)?;
+        mem += self.block_rank_pairs.serialize_into(&mut writer)?;
         if let Some(select1_hints) = &self.select1_hints {
-            writer.write_u8(1)?;
-            mem += util::vec_io::serialize_usize(select1_hints, &mut writer)?;
+            mem += true.serialize_into(&mut writer)?;
+            mem += select1_hints.serialize_into(&mut writer)?;
         } else {
-            writer.write_u8(0)?;
+            mem += false.serialize_into(&mut writer)?;
         }
         if let Some(select0_hints) = &self.select0_hints {
-            writer.write_u8(1)?;
-            mem += util::vec_io::serialize_usize(select0_hints, &mut writer)?;
+            mem += true.serialize_into(&mut writer)?;
+            mem += select0_hints.serialize_into(&mut writer)?;
         } else {
-            writer.write_u8(0)?;
+            mem += false.serialize_into(&mut writer)?;
         }
-        Ok(mem + size_of::<u8>() * 2)
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
-        let block_rank_pairs = util::vec_io::deserialize_usize(&mut reader)?;
-        let select1_hints = if reader.read_u8()? != 0 {
-            Some(util::vec_io::deserialize_usize(&mut reader)?)
+        let block_rank_pairs = Vec::<usize>::deserialize_from(&mut reader)?;
+        let select1_hints = if bool::deserialize_from(&mut reader)? {
+            Some(Vec::<usize>::deserialize_from(&mut reader)?)
         } else {
             None
         };
-        let select0_hints = if reader.read_u8()? != 0 {
-            Some(util::vec_io::deserialize_usize(&mut reader)?)
+        let select0_hints = if bool::deserialize_from(&mut reader)? {
+            Some(Vec::<usize>::deserialize_from(&mut reader)?)
         } else {
             None
         };
@@ -511,15 +510,17 @@ impl Searial for RsBitVector {
 
     fn size_in_bytes(&self) -> usize {
         self.bv.size_in_bytes()
-            + util::vec_io::size_in_bytes(&self.block_rank_pairs)
-            + size_of::<u8>()
-            + self.select1_hints.as_ref().map_or(0, |select1_hints| {
-                util::vec_io::size_in_bytes(select1_hints)
-            })
-            + size_of::<u8>()
-            + self.select0_hints.as_ref().map_or(0, |select0_hints| {
-                util::vec_io::size_in_bytes(select0_hints)
-            })
+            + self.block_rank_pairs.size_in_bytes()
+            + bool::size_in_bytes()
+            + self
+                .select1_hints
+                .as_ref()
+                .map_or(0, |select1_hints| select1_hints.size_in_bytes())
+            + bool::size_in_bytes()
+            + self
+                .select0_hints
+                .as_ref()
+                .map_or(0, |select0_hints| select0_hints.size_in_bytes())
     }
 }
 

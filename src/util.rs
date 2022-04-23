@@ -6,6 +6,9 @@ pub mod vec_io;
 
 use crate::broadword;
 
+pub use int_io::IntIO;
+pub use vec_io::VecIO;
+
 /// Returns the number of bits to represent `x` at least.
 ///
 /// # Example

@@ -7,9 +7,9 @@ use std::io::{Read, Write};
 use std::mem::size_of;
 
 use anyhow::Result;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::compact_vector::iter::Iter;
+use crate::util::int_io::IntIO;
 use crate::{util, BitVector, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
@@ -227,16 +227,16 @@ impl std::fmt::Debug for CompactVector {
 
 impl Searial for CompactVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mem = self.chunks.serialize_into(&mut writer)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.width as u64)?;
-        Ok(mem + (size_of::<u64>() * 2))
+        let mut mem = self.chunks.serialize_into(&mut writer)?;
+        mem += self.len.serialize_into(&mut writer)?;
+        mem += self.width.serialize_into(&mut writer)?;
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let chunks = BitVector::deserialize_from(&mut reader)?;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        let width = reader.read_u64::<LittleEndian>()? as usize;
+        let len = usize::deserialize_from(&mut reader)?;
+        let width = usize::deserialize_from(&mut reader)?;
         Ok(Self { chunks, len, width })
     }
 
