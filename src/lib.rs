@@ -52,6 +52,8 @@ pub use rs_bit_vector::RsBitVector;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
+use util::IntIO;
+
 /// Trait to serialize/deserialize data structures.
 ///
 /// # Examples
@@ -69,7 +71,7 @@ pub use wavelet_matrix::WaveletMatrixBuilder;
 /// assert_eq!(size, bytes.len());
 /// assert_eq!(size, bv.size_in_bytes());
 /// ```
-pub trait Searial {
+pub trait Searial: Sized {
     /// Serializes the data structure into the writer,
     /// returning the number of serialized bytes.
     ///
@@ -83,10 +85,37 @@ pub trait Searial {
     /// # Arguments
     ///
     /// - `reader`: [`std::io::Read`] variable.
-    fn deserialize_from<R: std::io::Read>(reader: R) -> anyhow::Result<Self>
-    where
-        Self: std::marker::Sized;
+    fn deserialize_from<R: std::io::Read>(reader: R) -> anyhow::Result<Self>;
 
     /// Returns the number of bytes to serialize the data structure.
     fn size_in_bytes(&self) -> usize;
+}
+
+impl<S> Searial for Option<S>
+where
+    S: Searial,
+{
+    fn serialize_into<W: std::io::Write>(&self, mut writer: W) -> anyhow::Result<usize> {
+        let mut mem = 1;
+        if let Some(x) = self {
+            1u8.serialize_into(&mut writer)?;
+            mem += x.serialize_into(&mut writer)?;
+        } else {
+            0u8.serialize_into(&mut writer)?;
+        }
+        Ok(mem)
+    }
+
+    fn deserialize_from<R: std::io::Read>(mut reader: R) -> anyhow::Result<Self> {
+        let x = if u8::deserialize_from(&mut reader)? != 0 {
+            Some(S::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        Ok(x)
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.as_ref().map_or(0, |x| x.size_in_bytes()) + 1
+    }
 }
