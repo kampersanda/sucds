@@ -7,10 +7,7 @@ use std::mem::size_of;
 use anyhow::Result;
 
 /// Trait to serialize/deserialize integers of primitive types.
-pub trait IntIO {
-    /// The integer type.
-    type Int;
-
+pub trait IntIO: Sized {
     /// Serializes the integer into the writer,
     /// returning the number of serialized bytes.
     ///
@@ -24,28 +21,26 @@ pub trait IntIO {
     /// # Arguments
     ///
     /// - `reader`: [`std::io::Read`] variable.
-    fn deserialize_from<R: Read>(reader: R) -> Result<Self::Int>;
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self>;
 
     /// Returns the number of bytes to serialize the integer.
     fn size_in_bytes() -> usize {
-        size_of::<Self::Int>()
+        size_of::<Self>()
     }
 }
 
 macro_rules! common_def {
     ($int:ident) => {
         impl IntIO for $int {
-            type Int = Self;
-
             fn serialize_into<W: Write>(self, mut writer: W) -> Result<usize> {
                 writer.write_all(&self.to_le_bytes())?;
-                Ok(size_of::<Self::Int>())
+                Ok(size_of::<Self>())
             }
 
-            fn deserialize_from<R: Read>(mut reader: R) -> Result<Self::Int> {
-                let mut buf = [0; size_of::<Self::Int>()];
+            fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+                let mut buf = [0; size_of::<Self>()];
                 reader.read_exact(&mut buf)?;
-                Ok(Self::Int::from_le_bytes(buf))
+                Ok(Self::from_le_bytes(buf))
             }
         }
     };
@@ -63,15 +58,13 @@ common_def!(i64);
 common_def!(isize);
 
 impl IntIO for bool {
-    type Int = Self;
-
     fn serialize_into<W: Write>(self, mut writer: W) -> Result<usize> {
         writer.write_all(&(self as u8).to_le_bytes())?;
-        Ok(size_of::<Self::Int>())
+        Ok(size_of::<Self>())
     }
 
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self::Int> {
-        let mut buf = [0; size_of::<Self::Int>()];
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let mut buf = [0; size_of::<Self>()];
         reader.read_exact(&mut buf)?;
         Ok(u8::from_le_bytes(buf) != 0)
     }

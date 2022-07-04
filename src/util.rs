@@ -2,12 +2,36 @@
 #![cfg(target_pointer_width = "64")]
 
 pub mod int_io;
-pub mod vec_io;
 
-use crate::broadword;
+use crate::{broadword, Searial};
 
 pub use int_io::IntIO;
-pub use vec_io::VecIO;
+
+impl<S> Searial for Vec<S>
+where
+    S: IntIO + Copy,
+{
+    fn serialize_into<W: std::io::Write>(&self, mut writer: W) -> anyhow::Result<usize> {
+        let mut mem = self.len().serialize_into(&mut writer)?;
+        for &x in self {
+            mem += x.serialize_into(&mut writer)?;
+        }
+        Ok(mem)
+    }
+
+    fn deserialize_from<R: std::io::Read>(mut reader: R) -> anyhow::Result<Self> {
+        let len = usize::deserialize_from(&mut reader)?;
+        let mut vec = Self::with_capacity(len);
+        for _ in 0..len {
+            vec.push(S::deserialize_from(&mut reader)?);
+        }
+        Ok(vec)
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        usize::size_in_bytes() + S::size_in_bytes() * self.len()
+    }
+}
 
 /// Returns the number of bits to represent `x` at least.
 ///

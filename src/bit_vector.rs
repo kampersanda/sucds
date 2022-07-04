@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
-use crate::util::{IntIO, VecIO};
+use crate::util::IntIO;
 use crate::{broadword, Searial};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;

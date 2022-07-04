@@ -98,16 +98,16 @@ where
     fn serialize_into<W: std::io::Write>(&self, mut writer: W) -> anyhow::Result<usize> {
         let mut mem = 1;
         if let Some(x) = self {
-            1u8.serialize_into(&mut writer)?;
+            true.serialize_into(&mut writer)?;
             mem += x.serialize_into(&mut writer)?;
         } else {
-            0u8.serialize_into(&mut writer)?;
+            false.serialize_into(&mut writer)?;
         }
         Ok(mem)
     }
 
     fn deserialize_from<R: std::io::Read>(mut reader: R) -> anyhow::Result<Self> {
-        let x = if u8::deserialize_from(&mut reader)? != 0 {
+        let x = if bool::deserialize_from(&mut reader)? {
             Some(S::deserialize_from(&mut reader)?)
         } else {
             None
@@ -116,6 +116,6 @@ where
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.as_ref().map_or(0, |x| x.size_in_bytes()) + 1
+        self.as_ref().map_or(0, |x| x.size_in_bytes()) + bool::size_in_bytes()
     }
 }

@@ -4,7 +4,6 @@
 pub mod iter;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 
 use anyhow::Result;
 
@@ -241,7 +240,7 @@ impl Searial for CompactVector {
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
+        self.chunks.size_in_bytes() + usize::size_in_bytes() * 2
     }
 }
 
