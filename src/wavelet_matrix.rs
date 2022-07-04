@@ -5,11 +5,9 @@
 pub mod iter;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 use std::ops::Range;
 
 use anyhow::{anyhow, Result};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::wavelet_matrix::iter::Iter;
 use crate::{broadword, BitVector, RsBitVector, Searial};
@@ -405,29 +403,18 @@ impl WaveletMatrix {
 
 impl Searial for WaveletMatrix {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = 0;
-        writer.write_u64::<LittleEndian>(self.layers.len() as u64)?;
-        for layer in &self.layers {
-            mem += layer.serialize_into(&mut writer)?;
-        }
-        writer.write_u64::<LittleEndian>(self.dim as u64)?;
-        writer.write_u64::<LittleEndian>(self.len as u64)?;
-        writer.write_u64::<LittleEndian>(self.width as u64)?;
-        Ok(mem + size_of::<u64>() * 4)
+        let mut mem = self.layers.serialize_into(&mut writer)?;
+        mem += self.dim.serialize_into(&mut writer)?;
+        mem += self.len.serialize_into(&mut writer)?;
+        mem += self.width.serialize_into(&mut writer)?;
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = {
-            let len = reader.read_u64::<LittleEndian>()? as usize;
-            let mut layers = Vec::with_capacity(len);
-            for _ in 0..len {
-                layers.push(RsBitVector::deserialize_from(&mut reader)?);
-            }
-            layers
-        };
-        let dim = reader.read_u64::<LittleEndian>()? as usize;
-        let len = reader.read_u64::<LittleEndian>()? as usize;
-        let width = reader.read_u64::<LittleEndian>()? as usize;
+        let layers = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
+        let dim = usize::deserialize_from(&mut reader)?;
+        let len = usize::deserialize_from(&mut reader)?;
+        let width = usize::deserialize_from(&mut reader)?;
         Ok(Self {
             layers,
             dim,
@@ -437,11 +424,7 @@ impl Searial for WaveletMatrix {
     }
 
     fn size_in_bytes(&self) -> usize {
-        let mut mem = 0;
-        for layer in &self.layers {
-            mem += layer.size_in_bytes();
-        }
-        mem + size_of::<u64>() * 4
+        self.layers.size_in_bytes() + usize::size_of().unwrap() * 3
     }
 }
 

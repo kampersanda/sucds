@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, util::IntIO, BitVector, Searial};
+use crate::{broadword, darray::DArrayIndex, BitVector, Searial};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -475,8 +475,7 @@ impl Searial for EliasFano {
             + self.high_bits_d1.size_in_bytes()
             + self.high_bits_d0.size_in_bytes()
             + self.low_bits.size_in_bytes()
-            + usize::size_in_bytes()
-            + usize::size_in_bytes()
+            + usize::size_of().unwrap() * 2
     }
 }
 
