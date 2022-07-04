@@ -4,11 +4,9 @@
 pub mod iter;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 use std::ops::Range;
 
 use anyhow::{anyhow, Result};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::elias_fano::iter::Iter;
 use crate::{broadword, darray::DArrayIndex, BitVector, Searial};
@@ -448,29 +446,20 @@ impl Searial for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.high_bits.serialize_into(&mut writer)?;
         mem += self.high_bits_d1.serialize_into(&mut writer)?;
-        if let Some(high_bits_d0) = &self.high_bits_d0 {
-            writer.write_u8(1)?;
-            mem += high_bits_d0.serialize_into(&mut writer)?;
-        } else {
-            writer.write_u8(0)?;
-        }
+        mem += self.high_bits_d0.serialize_into(&mut writer)?;
         mem += self.low_bits.serialize_into(&mut writer)?;
-        writer.write_u64::<LittleEndian>(self.low_len as u64)?;
-        writer.write_u64::<LittleEndian>(self.universe as u64)?;
-        Ok(mem + size_of::<u8>() + size_of::<u64>() + size_of::<u64>())
+        mem += self.low_len.serialize_into(&mut writer)?;
+        mem += self.universe.serialize_into(&mut writer)?;
+        Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let high_bits = BitVector::deserialize_from(&mut reader)?;
         let high_bits_d1 = DArrayIndex::deserialize_from(&mut reader)?;
-        let high_bits_d0 = if reader.read_u8()? != 0 {
-            Some(DArrayIndex::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
+        let high_bits_d0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
         let low_bits = BitVector::deserialize_from(&mut reader)?;
-        let low_len = reader.read_u64::<LittleEndian>()? as usize;
-        let universe = reader.read_u64::<LittleEndian>()? as usize;
+        let low_len = usize::deserialize_from(&mut reader)?;
+        let universe = usize::deserialize_from(&mut reader)?;
         Ok(Self {
             high_bits,
             high_bits_d1,
@@ -484,14 +473,9 @@ impl Searial for EliasFano {
     fn size_in_bytes(&self) -> usize {
         self.high_bits.size_in_bytes()
             + self.high_bits_d1.size_in_bytes()
-            + size_of::<u8>()
-            + self
-                .high_bits_d0
-                .as_ref()
-                .map_or(0, |high_bits_d0| high_bits_d0.size_in_bytes())
+            + self.high_bits_d0.size_in_bytes()
             + self.low_bits.size_in_bytes()
-            + size_of::<u64>()
-            + size_of::<u64>()
+            + usize::size_of().unwrap() * 2
     }
 }
 

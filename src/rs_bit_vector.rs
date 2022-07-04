@@ -5,7 +5,6 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::util::{IntIO, VecIO};
 use crate::{broadword, BitVector, Searial};
 
 const BLOCK_LEN: usize = 8;
@@ -472,34 +471,16 @@ impl Searial for RsBitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.bv.serialize_into(&mut writer)?;
         mem += self.block_rank_pairs.serialize_into(&mut writer)?;
-        if let Some(select1_hints) = &self.select1_hints {
-            mem += true.serialize_into(&mut writer)?;
-            mem += select1_hints.serialize_into(&mut writer)?;
-        } else {
-            mem += false.serialize_into(&mut writer)?;
-        }
-        if let Some(select0_hints) = &self.select0_hints {
-            mem += true.serialize_into(&mut writer)?;
-            mem += select0_hints.serialize_into(&mut writer)?;
-        } else {
-            mem += false.serialize_into(&mut writer)?;
-        }
+        mem += self.select1_hints.serialize_into(&mut writer)?;
+        mem += self.select0_hints.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let block_rank_pairs = Vec::<usize>::deserialize_from(&mut reader)?;
-        let select1_hints = if bool::deserialize_from(&mut reader)? {
-            Some(Vec::<usize>::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
-        let select0_hints = if bool::deserialize_from(&mut reader)? {
-            Some(Vec::<usize>::deserialize_from(&mut reader)?)
-        } else {
-            None
-        };
+        let select1_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
+        let select0_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
         Ok(Self {
             bv,
             block_rank_pairs,
@@ -511,16 +492,8 @@ impl Searial for RsBitVector {
     fn size_in_bytes(&self) -> usize {
         self.bv.size_in_bytes()
             + self.block_rank_pairs.size_in_bytes()
-            + bool::size_in_bytes()
-            + self
-                .select1_hints
-                .as_ref()
-                .map_or(0, |select1_hints| select1_hints.size_in_bytes())
-            + bool::size_in_bytes()
-            + self
-                .select0_hints
-                .as_ref()
-                .map_or(0, |select0_hints| select0_hints.size_in_bytes())
+            + self.select1_hints.size_in_bytes()
+            + self.select0_hints.size_in_bytes()
     }
 }
 

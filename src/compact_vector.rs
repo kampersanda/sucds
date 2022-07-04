@@ -4,12 +4,10 @@
 pub mod iter;
 
 use std::io::{Read, Write};
-use std::mem::size_of;
 
 use anyhow::Result;
 
 use crate::compact_vector::iter::Iter;
-use crate::util::int_io::IntIO;
 use crate::{util, BitVector, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
@@ -241,7 +239,7 @@ impl Searial for CompactVector {
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.chunks.size_in_bytes() + (size_of::<u64>() * 2)
+        self.chunks.size_in_bytes() + usize::size_of().unwrap() * 2
     }
 }
 

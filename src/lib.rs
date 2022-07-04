@@ -39,6 +39,7 @@ pub mod elias_fano;
 pub mod elias_fano_list;
 mod intrinsics;
 pub mod rs_bit_vector;
+pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;
 
@@ -49,44 +50,6 @@ pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use elias_fano_list::EliasFanoList;
 pub use rs_bit_vector::RsBitVector;
+pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
-
-/// Trait to serialize/deserialize data structures.
-///
-/// # Examples
-///
-/// ```
-/// use sucds::{BitVector, Searial};
-///
-/// let bv = BitVector::from_bits([true, false, false, true]);
-///
-/// let mut bytes = vec![];
-/// let size = bv.serialize_into(&mut bytes).unwrap();
-/// let other = BitVector::deserialize_from(&bytes[..]).unwrap();
-///
-/// assert_eq!(bv, other);
-/// assert_eq!(size, bytes.len());
-/// assert_eq!(size, bv.size_in_bytes());
-/// ```
-pub trait Searial {
-    /// Serializes the data structure into the writer,
-    /// returning the number of serialized bytes.
-    ///
-    /// # Arguments
-    ///
-    /// - `writer`: [`std::io::Write`] variable.
-    fn serialize_into<W: std::io::Write>(&self, writer: W) -> anyhow::Result<usize>;
-
-    /// Deserializes the data structure from the reader.
-    ///
-    /// # Arguments
-    ///
-    /// - `reader`: [`std::io::Read`] variable.
-    fn deserialize_from<R: std::io::Read>(reader: R) -> anyhow::Result<Self>
-    where
-        Self: std::marker::Sized;
-
-    /// Returns the number of bytes to serialize the data structure.
-    fn size_in_bytes(&self) -> usize;
-}

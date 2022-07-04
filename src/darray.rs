@@ -8,7 +8,6 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::darray::iter::Iter;
-use crate::util::{IntIO, VecIO};
 use crate::{broadword, BitVector, Searial};
 
 const BLOCK_LEN: usize = 1024;
@@ -355,8 +354,8 @@ impl Searial for DArrayIndex {
         self.block_inventory.size_in_bytes()
             + self.subblock_inventory.size_in_bytes()
             + self.overflow_positions.size_in_bytes()
-            + usize::size_in_bytes()
-            + bool::size_in_bytes()
+            + usize::size_of().unwrap()
+            + bool::size_of().unwrap()
     }
 }
 

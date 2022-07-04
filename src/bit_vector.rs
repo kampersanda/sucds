@@ -8,7 +8,6 @@ use anyhow::Result;
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
-use crate::util::{IntIO, VecIO};
 use crate::{broadword, Searial};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -542,7 +541,7 @@ impl Searial for BitVector {
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.words.size_in_bytes() + usize::size_in_bytes()
+        self.words.size_in_bytes() + usize::size_of().unwrap()
     }
 }
 
