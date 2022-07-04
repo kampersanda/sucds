@@ -16,8 +16,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-byteorder = "1.4.3"
-num-traits = "0.2.14"
 
 [dev-dependencies]
 rand = "0.8.4"
