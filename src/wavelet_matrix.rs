@@ -127,7 +127,7 @@ impl WaveletMatrix {
     #[inline(always)]
     pub fn get(&self, mut pos: usize) -> usize {
         let mut val = 0;
-        for depth in 0..self.width as usize {
+        for depth in 0..self.width {
             val <<= 1;
             let rsbv = &self.layers[depth];
             if rsbv.get_bit(pos) {
@@ -195,7 +195,7 @@ impl WaveletMatrix {
     pub fn rank_range(&self, range: Range<usize>, val: usize) -> usize {
         let mut start_pos = range.start;
         let mut end_pos = range.end;
-        for depth in 0..self.width as usize {
+        for depth in 0..self.width {
             let bit = Self::get_msb(val, depth, self.width);
             let rsbv = &self.layers[depth];
             if bit {
