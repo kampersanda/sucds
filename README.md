@@ -27,17 +27,6 @@ For a detailed description of each data structure, please see the [respective do
 - [`WaveletMatrix`](https://docs.rs/sucds/latest/sucds/wavelet_matrix/struct.WaveletMatrix.html)
   - Space-efficient data structure providing myriad operations over integer sequences.
 
-## Usage
-
-To use `sucds`, depend on it in your Cargo manifest:
-
-```toml
-# Cargo.toml
-
-[dependencies]
-sucds = "0.4"
-```
-
 ## Limitation
 
 This library is designed to run on 64-bit machines.
