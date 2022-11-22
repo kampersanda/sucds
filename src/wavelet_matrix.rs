@@ -10,7 +10,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::wavelet_matrix::iter::Iter;
-use crate::{broadword, BitVector, RsBitVector, Searial};
+use crate::{broadword, BitVector, CompactVector, RsBitVector, Searial};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -430,13 +430,15 @@ impl Searial for WaveletMatrix {
 
 /// Builder of [`WaveletMatrix`].
 pub struct WaveletMatrixBuilder {
-    vals: Vec<usize>,
+    vals: CompactVector,
 }
 
 impl WaveletMatrixBuilder {
     /// Creates a new [`WaveletMatrixBuilder`].
-    pub const fn new() -> Self {
-        Self { vals: vec![] }
+    pub fn new() -> Self {
+        Self {
+            vals: CompactVector::new(64),
+        }
     }
 
     /// Pusheds integer `val` at the end
@@ -499,12 +501,12 @@ impl WaveletMatrixBuilder {
         let width = Self::get_width(dim);
 
         let mut zeros = self.vals;
-        let mut ones = vec![];
+        let mut ones = CompactVector::new(width);
         let mut layers = vec![];
 
         for depth in 0..width {
-            let mut next_zeros = Vec::with_capacity(len);
-            let mut next_ones = Vec::with_capacity(len);
+            let mut next_zeros = CompactVector::new(width);
+            let mut next_ones = CompactVector::new(width);
             let mut bv = BitVector::new();
             Self::filter(
                 &zeros,
@@ -534,13 +536,13 @@ impl WaveletMatrixBuilder {
     }
 
     fn filter(
-        vals: &[usize],
+        vals: &CompactVector,
         shift: usize,
-        next_zeros: &mut Vec<usize>,
-        next_ones: &mut Vec<usize>,
+        next_zeros: &mut CompactVector,
+        next_ones: &mut CompactVector,
         bv: &mut BitVector,
     ) {
-        for &val in vals {
+        for val in vals.iter() {
             let bit = ((val >> shift) & 1) == 1;
             bv.push_bit(bit);
             if bit {
@@ -552,7 +554,7 @@ impl WaveletMatrixBuilder {
     }
 
     fn get_dim(&self) -> usize {
-        *self.vals.iter().max().unwrap() + 1
+        self.vals.iter().max().unwrap() + 1
     }
 
     fn get_width(val: usize) -> usize {
