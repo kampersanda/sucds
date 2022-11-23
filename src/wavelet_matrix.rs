@@ -697,7 +697,7 @@ mod test {
     }
 
     #[test]
-    fn test_basic() {
+    fn test_build() {
         /*
         This test example is from G. Navarro's "Compact Data Structures" P130
         */
