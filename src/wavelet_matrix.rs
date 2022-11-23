@@ -24,11 +24,15 @@ use crate::{broadword, BitVector, CompactVector, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::WaveletMatrix;
+/// use sucds::WaveletMatrixBuilder;
+///
+/// // It accepts an input integer representable in 8 bits.
+/// let mut wmb = WaveletMatrixBuilder::with_width(8);
 ///
 /// let text = "tobeornottobethatisthequestion";
-/// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+/// text.chars().for_each(|c| wmb.push(c as usize));
 ///
+/// let wm = wmb.build().unwrap();
 /// assert_eq!(wm.len(), text.chars().count());
 /// assert_eq!(wm.dim(), 'u' as usize + 1);
 ///
@@ -49,35 +53,6 @@ pub struct WaveletMatrix {
 }
 
 impl WaveletMatrix {
-    /// Builds a [`WaveletMatrix`] from an iterator of integers.
-    ///
-    /// # Arguments
-    ///
-    /// - `ints`: Iterator of integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::WaveletMatrix;
-    ///
-    /// let ints = vec![20, 7, 13, 2, 11];
-    /// let wm = WaveletMatrix::from_ints(ints.iter().cloned()).unwrap();
-    ///
-    /// assert_eq!(wm.get(2), 13);
-    /// assert_eq!(wm.len(), ints.len());
-    /// assert_eq!(wm.dim(), 21);
-    /// ```
-    pub fn from_ints<I>(ints: I) -> Result<Self>
-    where
-        I: IntoIterator<Item = usize>,
-    {
-        let mut wmb = WaveletMatrixBuilder::default();
-        for v in ints {
-            wmb.push(v);
-        }
-        wmb.build()
-    }
-
     /// Gets the maximum value + 1 in stored integers.
     #[inline(always)]
     pub const fn dim(&self) -> usize {
@@ -115,10 +90,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.get(2), 'b' as usize);
     /// assert_eq!(wm.get(5), 'r' as usize);
@@ -154,10 +132,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.rank(14, 'b' as usize), 2);
     /// assert_eq!(wm.rank(14, 'o' as usize), 4);
@@ -182,10 +163,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.rank_range(0..14, 'o' as usize), 4);
     /// assert_eq!(wm.rank_range(14..20, 'a' as usize), 1);
@@ -223,10 +207,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.select(2, 't' as usize), 9);
     /// assert_eq!(wm.select(0, 'q' as usize), 22);
@@ -269,10 +256,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.quantile(0..5, 0), 'b' as usize); // The zero-th in "tobeo" should be "b"
     /// assert_eq!(wm.quantile(0..5, 1), 'e' as usize); // The first in "tobeo" should be "e"
@@ -316,10 +306,13 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
     /// let text = "tobeornottobethatisthequestion";
-    /// let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+    ///
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 2), vec!['b' as usize, 'o' as usize]); // "tob", "o", "ob"
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 3), vec!['o' as usize]); // "tob", "o", "ob"
@@ -385,9 +378,14 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrix;
+    /// use sucds::WaveletMatrixBuilder;
     ///
-    /// let wm = WaveletMatrix::from_ints([20, 7, 13, 2]).unwrap();
+    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
+    /// wmb.push(20);
+    /// wmb.push(7);
+    /// wmb.push(13);
+    /// wmb.push(2);
+    /// let wm = wmb.build().unwrap();
     /// let mut it = wm.iter();
     ///
     /// assert_eq!(it.next(), Some(20));
@@ -429,15 +427,37 @@ impl Searial for WaveletMatrix {
 }
 
 /// Builder of [`WaveletMatrix`].
+///
+/// # Examples
+///
+/// See the document of [`WaveletMatrix`].
 pub struct WaveletMatrixBuilder {
     vals: CompactVector,
 }
 
 impl WaveletMatrixBuilder {
     /// Creates a new [`WaveletMatrixBuilder`].
+    ///
+    /// # Notes
+    ///
+    /// The builder created by this function uses 64 bits to store an input integer and
+    /// will consume a large memory. We recommend to use [`WaveletMatrixBuilder::with_width()`]
+    /// instead if the maximum value of input integers is known.
     pub fn new() -> Self {
         Self {
             vals: CompactVector::new(64),
+        }
+    }
+
+    /// Creates a new [`WaveletMatrixBuilder`] that uses the specified number of bits to store
+    /// an input integer.
+    ///
+    /// # Arguments
+    ///
+    /// - `width`: Number of bits needed to represent an input integer.
+    pub fn with_width(width: usize) -> Self {
+        Self {
+            vals: CompactVector::new(width),
         }
     }
 
@@ -446,25 +466,8 @@ impl WaveletMatrixBuilder {
     /// # Arguments
     ///
     /// - `val` : Integer to be pushed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
-    ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let text = "tobeornottobethatisthequestion";
-    /// text.chars().for_each(|c| wmb.push(c as usize));
-    ///
-    /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.len(), text.chars().count());
-    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
-    ///
-    /// assert_eq!(wm.get(20), 'h' as usize);
-    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
-    /// assert_eq!(wm.select(2, 't' as usize), 9);
-    /// ```
     pub fn push(&mut self, val: usize) {
+        assert_eq!(val.checked_shr(self.vals.width() as u32).unwrap_or(0), 0);
         self.vals.push(val);
     }
 
@@ -473,24 +476,6 @@ impl WaveletMatrixBuilder {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if `self.vals` is empty
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{WaveletMatrix, WaveletMatrixBuilder};
-    ///
-    /// let mut wmb = WaveletMatrixBuilder::new();
-    /// let text = "tobeornottobethatisthequestion";
-    /// text.chars().for_each(|c| wmb.push(c as usize));
-    ///
-    /// let wm = wmb.build().unwrap();
-    /// assert_eq!(wm.len(), text.chars().count());
-    /// assert_eq!(wm.dim(), ('u' as usize) + 1);
-    ///
-    /// assert_eq!(wm.get(20), 'h' as usize);
-    /// assert_eq!(wm.rank(22, 'o' as usize), 4);
-    /// assert_eq!(wm.select(2, 't' as usize), 9);
-    /// ```
     pub fn build(self) -> Result<WaveletMatrix> {
         if self.vals.is_empty() {
             return Err(anyhow!("vals must not be empty"));
@@ -576,6 +561,7 @@ mod test {
     use rand_chacha::ChaChaRng;
 
     const SIGMA: usize = 256;
+    const LOG_SIGMA: usize = 8;
 
     fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
         let mut rng = ChaChaRng::seed_from_u64(seed);
@@ -704,14 +690,24 @@ mod test {
     }
 
     #[test]
-    fn test_build() {
+    #[should_panic]
+    fn test_builder_overflow_push() {
+        let mut wmb = WaveletMatrixBuilder::with_width(8);
+        wmb.push(256);
+    }
+
+    #[test]
+    fn test_basic() {
         /*
         This test example is from G. Navarro's "Compact Data Structures" P130
         */
         let text = "tobeornottobethatisthequestion";
         let len = text.chars().count();
 
-        let wm = WaveletMatrix::from_ints(text.chars().map(|c| c as usize)).unwrap();
+        let mut wmb = WaveletMatrixBuilder::new();
+        text.chars().for_each(|c| wmb.push(c as usize));
+
+        let wm = wmb.build().unwrap();
         assert_eq!(wm.len(), len);
         assert_eq!(wm.dim(), ('u' as usize) + 1);
 
@@ -733,7 +729,29 @@ mod test {
         let ints = gen_random_ints(1000, 13);
         let ranges = gen_random_ranges(30, ints.len(), 13);
 
-        let wm = WaveletMatrix::from_ints(ints.iter().cloned()).unwrap();
+        let mut wmb = WaveletMatrixBuilder::new();
+        ints.iter().for_each(|&c| wmb.push(c as usize));
+        let wm = wmb.build().unwrap();
+
+        test_lookup(&ints, &wm);
+        test_iter(&ints, &wm);
+        for val in 0..SIGMA {
+            test_rank_select(&ints, &wm, val);
+            test_rank_range(&ints, &wm, &ranges, val);
+        }
+        test_quantile(&ints, &wm, &ranges);
+        test_intersect(&ints, &wm, &ranges);
+    }
+
+    #[test]
+    fn test_random_ints_with_width() {
+        let ints = gen_random_ints(1000, 13);
+        let ranges = gen_random_ranges(30, ints.len(), 13);
+
+        let mut wmb = WaveletMatrixBuilder::with_width(LOG_SIGMA);
+        ints.iter().for_each(|&c| wmb.push(c as usize));
+        let wm = wmb.build().unwrap();
+
         test_lookup(&ints, &wm);
         test_iter(&ints, &wm);
         for val in 0..SIGMA {
@@ -747,7 +765,10 @@ mod test {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let wm = WaveletMatrix::from_ints(gen_random_ints(1000, 13)).unwrap();
+        let ints = gen_random_ints(1000, 13);
+        let mut wmb = WaveletMatrixBuilder::new();
+        ints.iter().for_each(|&c| wmb.push(c as usize));
+        let wm = wmb.build().unwrap();
         let size = wm.serialize_into(&mut bytes).unwrap();
         let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(wm, other);
