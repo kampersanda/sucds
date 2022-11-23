@@ -17,49 +17,33 @@ jobs:
       matrix:
         rust:
           - stable
-          - beta
           - nightly
     steps:
-      - uses: actions/checkout@v2
-      - name: Install latest stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-          components: rustfmt, clippy
+      - uses: actions/checkout@v3
+      - name: Install ${{ matrix.rust }}
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal --component rustfmt,clippy
+          rustup default ${{ matrix.rust }}
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: check
+        run: cargo check
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: clippy
-          args: -- -D warnings -W clippy::nursery
+        # Run clippy only on stable to ignore unreasonable old warnings.
+        continue-on-error: ${{ matrix.rust != 'stable' }}
+        run: cargo clippy -- -D warnings -W clippy::nursery
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: test
-          args: --release --all-features
-          
+        run: cargo test --release --all-features
+
       - name: Run cargo doc
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: doc
-          args: --no-deps
         env:
           RUSTDOCFLAGS: '--html-in-header katex.html'
+        run: cargo doc --no-deps
