@@ -46,6 +46,7 @@ pub mod wavelet_matrix;
 
 pub use bit_vector::BitVector;
 pub use compact_vector::CompactVector;
+pub use dacs_byte::DacsByte;
 pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;

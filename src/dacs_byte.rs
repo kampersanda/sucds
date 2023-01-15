@@ -1,9 +1,7 @@
-//! Bytewise Dacs
+//! Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
 #![cfg(target_pointer_width = "64")]
 
 use std::convert::TryInto;
-
-use anyhow::Result;
 
 use crate::util;
 use crate::{BitVector, RsBitVector};
@@ -11,15 +9,43 @@ use crate::{BitVector, RsBitVector};
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 
+/// Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
 ///
+/// # Examples
+///
+/// ```
+/// use sucds::DacsByte;
+///
+/// let list = DacsByte::from_slice(&[5, 0, 256, 255]).unwrap();
+///
+/// assert_eq!(list.get(0), 5);
+/// assert_eq!(list.get(1), 0);
+/// assert_eq!(list.get(2), 256);
+/// assert_eq!(list.get(3), 255);
+///
+/// assert_eq!(list.len(), 4);
+/// ```
+///
+/// # References
+///
+/// - N. R. Brisaboa, S. Ladra, and G. Navarro, "DACs: Bringing direct access to variable-length
+///   codes." Information Processing & Management, 49(1), 392-404, 2013.
 pub struct DacsByte {
     bytes: Vec<Vec<u8>>,
     flags: Vec<RsBitVector>,
 }
 
 impl DacsByte {
+    /// Creates an instance from a slice of integers.
     ///
-    pub fn from_slice(ints: &[usize]) -> Result<Self> {
+    /// # Arguments
+    ///
+    /// - `ints`: Integers to be stored.
+    pub fn from_slice(ints: &[usize]) -> Self {
+        if ints.is_empty() {
+            return Self::default();
+        }
+
         let maxv = ints.iter().cloned().max().unwrap();
         let bits = util::needed_bits(maxv);
 
@@ -28,10 +54,10 @@ impl DacsByte {
 
         if num_levels == 1 {
             let bytes: Vec<_> = ints.iter().map(|&x| x.try_into().unwrap()).collect();
-            return Ok(Self {
+            return Self {
                 bytes: vec![bytes],
                 flags: vec![],
-            });
+            };
         }
 
         let mut bytes = vec![];
@@ -55,10 +81,18 @@ impl DacsByte {
         }
 
         let flags = flags.into_iter().map(|f| RsBitVector::new(f)).collect();
-        Ok(Self { bytes, flags })
+        Self { bytes, flags }
     }
 
+    /// Gets the `i`-th integer.
     ///
+    /// # Arguments
+    ///
+    /// - `i`: Position to get.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
@@ -87,5 +121,14 @@ impl DacsByte {
     #[inline(always)]
     pub fn num_levels(&self) -> usize {
         self.bytes.len()
+    }
+}
+
+impl Default for DacsByte {
+    fn default() -> Self {
+        Self {
+            bytes: vec![vec![]],
+            flags: vec![],
+        }
     }
 }
