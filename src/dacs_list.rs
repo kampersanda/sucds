@@ -13,9 +13,9 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsByte;
+/// use sucds::DacsList;
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 256, 255], 4).unwrap();
+/// let list = DacsList::from_slice(&[5, 0, 256, 255], 4).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
@@ -31,13 +31,13 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// - N. R. Brisaboa, S. Ladra, and G. Navarro, "DACs: Bringing direct access to variable-length
 ///   codes." Information Processing & Management, 49(1), 392-404, 2013.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DacsByte {
+pub struct DacsList {
     data: Vec<CompactVector>,
     flags: Vec<RsBitVector>,
     width: usize,
 }
 
-impl DacsByte {
+impl DacsList {
     /// Creates an instance from a slice of integers.
     ///
     /// # Arguments
@@ -137,7 +137,7 @@ impl DacsByte {
     }
 }
 
-impl Default for DacsByte {
+impl Default for DacsList {
     fn default() -> Self {
         Self {
             data: vec![CompactVector::default()],
@@ -147,7 +147,7 @@ impl Default for DacsByte {
     }
 }
 
-impl Searial for DacsByte {
+impl Searial for DacsList {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.data.serialize_into(&mut writer)?;
@@ -173,18 +173,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_zero_width() {
+        let list = DacsList::from_slice(&[0, 1, 2, 3], 0);
+        assert!(list.is_err());
+    }
+
+    #[test]
     fn test_empty() {
-        let list = DacsByte::from_slice(&[], 1).unwrap();
-        assert_eq!(list.len(), 0);
+        let list = DacsList::from_slice(&[], 1).unwrap();
         assert!(list.is_empty());
+        assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
     }
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsByte::from_slice(&[0, 0, 0, 0], 1).unwrap();
-        assert_eq!(list.len(), 4);
+        let list = DacsList::from_slice(&[0, 0, 0, 0], 1).unwrap();
         assert!(!list.is_empty());
+        assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.get(0), 0);
         assert_eq!(list.get(1), 0);
@@ -195,9 +201,9 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsByte::from_slice(&[4, 256, 0, 255], 4).unwrap();
+        let list = DacsList::from_slice(&[4, 256, 0, 255], 4).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
-        let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
+        let other = DacsList::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, list.size_in_bytes());
