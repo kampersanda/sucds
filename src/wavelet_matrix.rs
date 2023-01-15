@@ -30,7 +30,7 @@ use crate::{broadword, BitVector, CompactVector, RsBitVector, Searial};
 /// let mut wmb = WaveletMatrixBuilder::with_width(8);
 ///
 /// let text = "tobeornottobethatisthequestion";
-/// text.chars().for_each(|c| wmb.push(c as usize));
+/// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
 ///
 /// let wm = wmb.build().unwrap();
 /// assert_eq!(wm.len(), text.chars().count());
@@ -95,7 +95,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.get(2), 'b' as usize);
@@ -137,7 +137,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.rank(14, 'b' as usize), 2);
@@ -168,7 +168,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.rank_range(0..14, 'o' as usize), 4);
@@ -212,7 +212,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.select(2, 't' as usize), 9);
@@ -261,7 +261,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.quantile(0..5, 0), 'b' as usize); // The zero-th in "tobeo" should be "b"
@@ -311,7 +311,7 @@ impl WaveletMatrix {
     /// let text = "tobeornottobethatisthequestion";
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// text.chars().for_each(|c| wmb.push(c as usize));
+    /// text.chars().for_each(|c| wmb.push(c as usize).unwrap());
     /// let wm = wmb.build().unwrap();
     ///
     /// assert_eq!(wm.intersect(&[0..3, 4..5, 10..12], 2), vec!['b' as usize, 'o' as usize]); // "tob", "o", "ob"
@@ -381,10 +381,10 @@ impl WaveletMatrix {
     /// use sucds::WaveletMatrixBuilder;
     ///
     /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// wmb.push(20);
-    /// wmb.push(7);
-    /// wmb.push(13);
-    /// wmb.push(2);
+    /// wmb.push(20).unwrap();
+    /// wmb.push(7).unwrap();
+    /// wmb.push(13).unwrap();
+    /// wmb.push(2).unwrap();
     /// let wm = wmb.build().unwrap();
     /// let mut it = wm.iter();
     ///
@@ -466,9 +466,17 @@ impl WaveletMatrixBuilder {
     /// # Arguments
     ///
     /// - `val` : Integer to be pushed.
-    pub fn push(&mut self, val: usize) {
-        assert_eq!(val.checked_shr(self.vals.width() as u32).unwrap_or(0), 0);
-        self.vals.push(val);
+    pub fn push(&mut self, val: usize) -> Result<()> {
+        if val.checked_shr(self.vals.width() as u32).unwrap_or(0) != 0 {
+            Err(anyhow!(
+                "val must be represented in {} bits, but got {}",
+                self.vals.width(),
+                val
+            ))
+        } else {
+            self.vals.push(val);
+            Ok(())
+        }
     }
 
     /// Builds [`WaveletMatrix`] from a sequence of pushed integers.
@@ -669,31 +677,29 @@ mod test {
     #[test]
     fn test_builder_push() {
         let mut wmb = WaveletMatrixBuilder::new();
-        wmb.push(123);
+        wmb.push(123).unwrap();
         assert_eq!(wmb.get_dim(), 124);
     }
 
     #[test]
     fn test_builder_multi_push() {
         let mut wmb = WaveletMatrixBuilder::new();
-        wmb.push(123);
-        wmb.push(7777);
-        wmb.push(987);
+        wmb.push(123).unwrap();
+        wmb.push(7777).unwrap();
+        wmb.push(987).unwrap();
         assert_eq!(wmb.get_dim(), 7778);
     }
 
     #[test]
-    #[should_panic]
     fn test_builder_with_emtpy_vals() {
         let wmb = WaveletMatrixBuilder::new();
-        wmb.build().unwrap();
+        assert!(wmb.build().is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_builder_overflow_push() {
         let mut wmb = WaveletMatrixBuilder::with_width(8);
-        wmb.push(256);
+        assert!(wmb.push(256).is_err());
     }
 
     #[test]
@@ -705,7 +711,7 @@ mod test {
         let len = text.chars().count();
 
         let mut wmb = WaveletMatrixBuilder::new();
-        text.chars().for_each(|c| wmb.push(c as usize));
+        text.chars().for_each(|c| wmb.push(c as usize).unwrap());
 
         let wm = wmb.build().unwrap();
         assert_eq!(wm.len(), len);
@@ -730,7 +736,7 @@ mod test {
         let ranges = gen_random_ranges(30, ints.len(), 13);
 
         let mut wmb = WaveletMatrixBuilder::new();
-        ints.iter().for_each(|&c| wmb.push(c as usize));
+        ints.iter().for_each(|&c| wmb.push(c as usize).unwrap());
         let wm = wmb.build().unwrap();
 
         test_lookup(&ints, &wm);
@@ -749,7 +755,7 @@ mod test {
         let ranges = gen_random_ranges(30, ints.len(), 13);
 
         let mut wmb = WaveletMatrixBuilder::with_width(LOG_SIGMA);
-        ints.iter().for_each(|&c| wmb.push(c as usize));
+        ints.iter().for_each(|&c| wmb.push(c as usize).unwrap());
         let wm = wmb.build().unwrap();
 
         test_lookup(&ints, &wm);
@@ -767,7 +773,7 @@ mod test {
         let mut bytes = vec![];
         let ints = gen_random_ints(1000, 13);
         let mut wmb = WaveletMatrixBuilder::new();
-        ints.iter().for_each(|&c| wmb.push(c as usize));
+        ints.iter().for_each(|&c| wmb.push(c as usize).unwrap());
         let wm = wmb.build().unwrap();
         let size = wm.serialize_into(&mut bytes).unwrap();
         let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
