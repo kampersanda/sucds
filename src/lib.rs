@@ -34,6 +34,7 @@ compile_error!("`target_pointer_width` must be 64");
 pub mod bit_vector;
 pub mod broadword;
 pub mod compact_vector;
+pub mod dacs_byte;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
