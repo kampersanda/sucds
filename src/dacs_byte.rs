@@ -2,9 +2,12 @@
 #![cfg(target_pointer_width = "64")]
 
 use std::convert::TryInto;
+use std::io::{Read, Write};
+
+use anyhow::Result;
 
 use crate::util;
-use crate::{BitVector, RsBitVector};
+use crate::{BitVector, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -30,6 +33,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// - N. R. Brisaboa, S. Ladra, and G. Navarro, "DACs: Bringing direct access to variable-length
 ///   codes." Information Processing & Management, 49(1), 392-404, 2013.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DacsByte {
     bytes: Vec<Vec<u8>>,
     flags: Vec<RsBitVector>,
@@ -133,6 +137,25 @@ impl Default for DacsByte {
     }
 }
 
+impl Searial for DacsByte {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = 0;
+        mem += self.bytes.serialize_into(&mut writer)?;
+        mem += self.flags.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let bytes = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
+        let flags = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
+        Ok(Self { bytes, flags })
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.bytes.size_in_bytes() + self.flags.size_in_bytes()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,5 +226,16 @@ mod tests {
         assert_eq!(list.get(1), 4294967296);
         assert_eq!(list.get(2), 0);
         assert_eq!(list.get(3), 18446744073709551615);
+    }
+
+    #[test]
+    fn test_serialize() {
+        let mut bytes = vec![];
+        let list = DacsByte::from_slice(&[4, 256, 0, 65535]);
+        let size = list.serialize_into(&mut bytes).unwrap();
+        let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(list, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, list.size_in_bytes());
     }
 }
