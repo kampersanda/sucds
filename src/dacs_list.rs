@@ -97,15 +97,16 @@ impl DacsList {
         Ok(Self { data, flags, width })
     }
 
-    /// Gets the `i`-th integer.
+    /// Gets the `pos`-th integer.
     ///
     /// # Arguments
     ///
-    /// - `i`: Position to get.
+    /// - `pos`: Position to get.
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// - $`O( \lceil b_i / w \rceil )`$ where $`b_i`$ is the number of bits needed to represent
+    ///   the integer and $`w`$ is [`Self::width()`].
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
