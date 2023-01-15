@@ -106,7 +106,7 @@ impl DacsList {
     /// # Complexity
     ///
     /// - $`O( \lceil b_i / w \rceil )`$ where $`b_i`$ is the number of bits needed to represent
-    ///   the integer and $`w`$ is [`Self::width()`].
+    ///   the `pos`-th integer and $`w`$ is [`Self::width()`].
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
