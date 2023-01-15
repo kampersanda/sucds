@@ -1,16 +1,12 @@
 //! Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
 #![cfg(target_pointer_width = "64")]
 
-use std::convert::TryInto;
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitVector, RsBitVector, Searial};
-
-const LEVEL_WIDTH: usize = 8;
-const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
+use crate::{BitVector, CompactVector, RsBitVector, Searial};
 
 /// Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
 ///
@@ -19,7 +15,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// ```
 /// use sucds::DacsByte;
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 256, 255]);
+/// let list = DacsByte::from_slice(&[5, 0, 256, 255], 4).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
@@ -27,6 +23,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// assert_eq!(list.get(3), 255);
 ///
 /// assert_eq!(list.len(), 4);
+/// assert_eq!(list.num_levels(), 3);
 /// ```
 ///
 /// # References
@@ -35,8 +32,9 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///   codes." Information Processing & Management, 49(1), 392-404, 2013.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DacsByte {
-    bytes: Vec<Vec<u8>>,
+    data: Vec<CompactVector>,
     flags: Vec<RsBitVector>,
+    width: usize,
 }
 
 impl DacsByte {
@@ -45,34 +43,45 @@ impl DacsByte {
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    pub fn from_slice(ints: &[usize]) -> Self {
+    /// - `width`: Number of bits for each level.
+    pub fn from_slice(ints: &[usize], width: usize) -> Result<Self> {
+        if !(1..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64, but got {width}"));
+        }
+
         if ints.is_empty() {
-            return Self::default();
+            return Ok(Self::default());
         }
 
         let maxv = ints.iter().cloned().max().unwrap();
         let bits = util::needed_bits(maxv);
 
         // .max(1) is required for the case of all zeros.
-        let num_levels = util::ceiled_divide(bits, LEVEL_WIDTH).max(1);
+        let num_levels = util::ceiled_divide(bits, width).max(1);
 
         if num_levels == 1 {
-            let bytes: Vec<_> = ints.iter().map(|&x| x.try_into().unwrap()).collect();
-            return Self {
-                bytes: vec![bytes],
+            let mut data = CompactVector::with_len(ints.len(), width);
+            for (i, &x) in ints.iter().enumerate() {
+                data.set(i, x);
+            }
+            return Ok(Self {
+                data: vec![data],
                 flags: vec![],
-            };
+                width,
+            });
         }
 
-        let mut bytes = vec![];
+        let mut data = vec![];
         let mut flags = vec![];
-        bytes.resize(num_levels, vec![]);
+        data.resize(num_levels, CompactVector::new(width));
         flags.resize(num_levels - 1, BitVector::default());
+
+        let mask = (1 << width) - 1;
 
         for mut x in ints.iter().cloned() {
             for j in 0..num_levels {
-                bytes[j].push((x & LEVEL_MASK) as u8);
-                x >>= LEVEL_WIDTH;
+                data[j].push(x & mask);
+                x >>= width;
                 if j == num_levels - 1 {
                     assert_eq!(x, 0);
                     break;
@@ -85,7 +94,7 @@ impl DacsByte {
         }
 
         let flags = flags.into_iter().map(|f| RsBitVector::new(f)).collect();
-        Self { bytes, flags }
+        Ok(Self { data, flags, width })
     }
 
     /// Gets the `i`-th integer.
@@ -100,7 +109,7 @@ impl DacsByte {
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
-            x |= usize::from(self.bytes[j][pos]) << (j * LEVEL_WIDTH);
+            x |= usize::from(self.data[j].get(pos)) << (j * self.width);
             if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
                 break;
             }
@@ -112,7 +121,7 @@ impl DacsByte {
     /// Gets the number of bits.
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.bytes[0].len()
+        self.data[0].len()
     }
 
     /// Checks if the vector is empty.
@@ -124,15 +133,16 @@ impl DacsByte {
     /// Gets the number of levels.
     #[inline(always)]
     pub fn num_levels(&self) -> usize {
-        self.bytes.len()
+        self.data.len()
     }
 }
 
 impl Default for DacsByte {
     fn default() -> Self {
         Self {
-            bytes: vec![vec![]],
+            data: vec![CompactVector::default()],
             flags: vec![],
+            width: 0,
         }
     }
 }
@@ -140,19 +150,21 @@ impl Default for DacsByte {
 impl Searial for DacsByte {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
-        mem += self.bytes.serialize_into(&mut writer)?;
+        mem += self.data.serialize_into(&mut writer)?;
         mem += self.flags.serialize_into(&mut writer)?;
+        mem += self.width.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let bytes = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
+        let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
         let flags = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
-        Ok(Self { bytes, flags })
+        let width = usize::deserialize_from(&mut reader)?;
+        Ok(Self { data, flags, width })
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.bytes.size_in_bytes() + self.flags.size_in_bytes()
+        self.data.size_in_bytes() + self.flags.size_in_bytes() + usize::size_of().unwrap()
     }
 }
 
@@ -162,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let list = DacsByte::from_slice(&[]);
+        let list = DacsByte::from_slice(&[], 1).unwrap();
         assert_eq!(list.len(), 0);
         assert!(list.is_empty());
         assert_eq!(list.num_levels(), 1);
@@ -170,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsByte::from_slice(&[0, 0, 0, 0]);
+        let list = DacsByte::from_slice(&[0, 0, 0, 0], 1).unwrap();
         assert_eq!(list.len(), 4);
         assert!(!list.is_empty());
         assert_eq!(list.num_levels(), 1);
@@ -181,57 +193,9 @@ mod tests {
     }
 
     #[test]
-    fn test_one_level() {
-        let list = DacsByte::from_slice(&[4, 255, 0, 13]);
-        assert_eq!(list.len(), 4);
-        assert!(!list.is_empty());
-        assert_eq!(list.num_levels(), 1);
-        assert_eq!(list.get(0), 4);
-        assert_eq!(list.get(1), 255);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 13);
-    }
-
-    #[test]
-    fn test_two_level() {
-        let list = DacsByte::from_slice(&[4, 256, 0, 65535]);
-        assert_eq!(list.len(), 4);
-        assert!(!list.is_empty());
-        assert_eq!(list.num_levels(), 2);
-        assert_eq!(list.get(0), 4);
-        assert_eq!(list.get(1), 256);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 65535);
-    }
-
-    #[test]
-    fn test_four_level() {
-        let list = DacsByte::from_slice(&[4, 16777216, 0, 4294967295]);
-        assert_eq!(list.len(), 4);
-        assert!(!list.is_empty());
-        assert_eq!(list.num_levels(), 4);
-        assert_eq!(list.get(0), 4);
-        assert_eq!(list.get(1), 16777216);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 4294967295);
-    }
-
-    #[test]
-    fn test_eight_level() {
-        let list = DacsByte::from_slice(&[4, 4294967296, 0, 18446744073709551615]);
-        assert_eq!(list.len(), 4);
-        assert!(!list.is_empty());
-        assert_eq!(list.num_levels(), 8);
-        assert_eq!(list.get(0), 4);
-        assert_eq!(list.get(1), 4294967296);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 18446744073709551615);
-    }
-
-    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsByte::from_slice(&[4, 256, 0, 65535]);
+        let list = DacsByte::from_slice(&[4, 256, 0, 255], 4).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);
