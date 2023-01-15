@@ -34,6 +34,6 @@ pub fn needed_bits(x: usize) -> usize {
 /// # Panics
 ///
 /// It will panic if `y == 0`.
-pub fn ceiled_divide(x: usize, y: usize) -> usize {
+pub const fn ceiled_divide(x: usize, y: usize) -> usize {
     (x + y - 1) / y
 }

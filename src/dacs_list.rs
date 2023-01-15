@@ -99,7 +99,7 @@ impl DacsList {
             }
         }
 
-        let flags = flags.into_iter().map(|f| RsBitVector::new(f)).collect();
+        let flags = flags.into_iter().map(RsBitVector::new).collect();
         Ok(Self { data, flags, width })
     }
 
@@ -116,7 +116,7 @@ impl DacsList {
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j].get(pos)) << (j * self.width);
+            x |= self.data[j].get(pos) << (j * self.width);
             if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
                 break;
             }
@@ -165,7 +165,7 @@ impl DacsList {
 
     /// Gets the number of bits for each level.
     #[inline(always)]
-    pub fn width(&self) -> usize {
+    pub const fn width(&self) -> usize {
         self.width
     }
 }
