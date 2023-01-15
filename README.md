@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kampersanda/sucds/blob/master/LICENSE)
 
 `sucds` contains some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
-See [the documentation](https://docs.rs/sucds/latest/sucds/) for the data structures supported.
+See [documentation](https://docs.rs/sucds/latest/sucds/) for supported data structures.
 
 ## Limitation
 
