@@ -691,17 +691,15 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn test_builder_with_emtpy_vals() {
         let wmb = WaveletMatrixBuilder::new();
-        wmb.build().unwrap();
+        assert!(wmb.build().is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_builder_overflow_push() {
         let mut wmb = WaveletMatrixBuilder::with_width(8);
-        wmb.push(256).unwrap();
+        assert!(wmb.push(256).is_err());
     }
 
     #[test]
