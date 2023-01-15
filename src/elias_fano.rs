@@ -89,9 +89,7 @@ impl EliasFano {
     {
         let bv = BitVector::from_bits(bits);
         let n = bv.len();
-        let m = (0..bv.num_words())
-            .into_iter()
-            .fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
+        let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
             if bv.get_bit(i) {

@@ -5,7 +5,7 @@ use crate::broadword;
 
 /// Returns the number of bits to represent `x` at least.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// use sucds::util::needed_bits;
@@ -18,4 +18,22 @@ use crate::broadword;
 /// ```
 pub fn needed_bits(x: usize) -> usize {
     broadword::msb(x).map_or(1, |n| n + 1)
+}
+
+/// Returns `ceil(x / y)`.
+///
+/// # Examples
+///
+/// ```
+/// use sucds::util::ceiled_divide;
+///
+/// assert_eq!(ceiled_divide(10, 2), 5);
+/// assert_eq!(ceiled_divide(10, 3), 4);
+/// ```
+///
+/// # Panics
+///
+/// It will panic if `y == 0`.
+pub const fn ceiled_divide(x: usize, y: usize) -> usize {
+    (x + y - 1) / y
 }
