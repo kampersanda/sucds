@@ -1,12 +1,15 @@
 //! Compressed integer list with Directly Addressable Codes (DACs).
 #![cfg(target_pointer_width = "64")]
 
+pub mod iter;
+
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
 use crate::util;
 use crate::{BitVector, CompactVector, RsBitVector, Searial};
+use iter::Iter;
 
 /// Compressed integer list with Directly Addressable Codes (DACs).
 ///
@@ -117,6 +120,26 @@ impl DacsList {
             pos = self.flags[j].rank1(pos);
         }
         x
+    }
+
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::DacsList;
+    ///
+    /// let list = DacsList::from_slice(&[5, 0, 256, 255], 4).unwrap();
+    /// let mut it = list.iter();
+    ///
+    /// assert_eq!(it.next(), Some(5));
+    /// assert_eq!(it.next(), Some(0));
+    /// assert_eq!(it.next(), Some(256));
+    /// assert_eq!(it.next(), Some(255));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub const fn iter(&self) -> Iter {
+        Iter::new(self)
     }
 
     /// Gets the number of bits.
