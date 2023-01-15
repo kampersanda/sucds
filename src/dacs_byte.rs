@@ -16,7 +16,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// ```
 /// use sucds::DacsByte;
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 256, 255]).unwrap();
+/// let list = DacsByte::from_slice(&[5, 0, 256, 255]);
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
@@ -130,5 +130,78 @@ impl Default for DacsByte {
             bytes: vec![vec![]],
             flags: vec![],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_empty() {
+        let list = DacsByte::from_slice(&[]);
+        assert_eq!(list.len(), 0);
+        assert!(list.is_empty());
+        assert_eq!(list.num_levels(), 1);
+    }
+
+    #[test]
+    fn test_all_zeros() {
+        let list = DacsByte::from_slice(&[0, 0, 0, 0]);
+        assert_eq!(list.len(), 4);
+        assert!(!list.is_empty());
+        assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.get(0), 0);
+        assert_eq!(list.get(1), 0);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 0);
+    }
+
+    #[test]
+    fn test_one_level() {
+        let list = DacsByte::from_slice(&[4, 255, 0, 13]);
+        assert_eq!(list.len(), 4);
+        assert!(!list.is_empty());
+        assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.get(0), 4);
+        assert_eq!(list.get(1), 255);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 13);
+    }
+
+    #[test]
+    fn test_two_level() {
+        let list = DacsByte::from_slice(&[4, 256, 0, 65535]);
+        assert_eq!(list.len(), 4);
+        assert!(!list.is_empty());
+        assert_eq!(list.num_levels(), 2);
+        assert_eq!(list.get(0), 4);
+        assert_eq!(list.get(1), 256);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 65535);
+    }
+
+    #[test]
+    fn test_four_level() {
+        let list = DacsByte::from_slice(&[4, 16777216, 0, 4294967295]);
+        assert_eq!(list.len(), 4);
+        assert!(!list.is_empty());
+        assert_eq!(list.num_levels(), 4);
+        assert_eq!(list.get(0), 4);
+        assert_eq!(list.get(1), 16777216);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 4294967295);
+    }
+
+    #[test]
+    fn test_eight_level() {
+        let list = DacsByte::from_slice(&[4, 4294967296, 0, 18446744073709551615]);
+        assert_eq!(list.len(), 4);
+        assert!(!list.is_empty());
+        assert_eq!(list.num_levels(), 8);
+        assert_eq!(list.get(0), 4);
+        assert_eq!(list.get(1), 4294967296);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 18446744073709551615);
     }
 }
