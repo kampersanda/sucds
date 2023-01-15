@@ -13,6 +13,9 @@ use iter::Iter;
 
 /// Compressed integer list with Directly Addressable Codes (DACs).
 ///
+/// This stores a list of integers in a compressed space with DACs of a fixed-width scheme.
+/// When the list consists of small integers, the representation will be very compact.
+///
 /// # Examples
 ///
 /// ```
