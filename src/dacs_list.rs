@@ -1,4 +1,4 @@
-//! Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
+//! Compressed integer list with Directly Addressable Codes (DACs).
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use crate::util;
 use crate::{BitVector, CompactVector, RsBitVector, Searial};
 
-/// Compressed integer list with Directly Addressable Codes (DACs) in the bytewise scheme.
+/// Compressed integer list with Directly Addressable Codes (DACs).
 ///
 /// # Examples
 ///
@@ -135,6 +135,12 @@ impl DacsList {
     pub fn num_levels(&self) -> usize {
         self.data.len()
     }
+
+    /// Gets the number of bits for each level.
+    #[inline(always)]
+    pub fn width(&self) -> usize {
+        self.width
+    }
 }
 
 impl Default for DacsList {
@@ -196,6 +202,19 @@ mod tests {
         assert_eq!(list.get(1), 0);
         assert_eq!(list.get(2), 0);
         assert_eq!(list.get(3), 0);
+    }
+
+    #[test]
+    fn test_one_level() {
+        let list = DacsList::from_slice(&[4, 32, 0, 255], 8).unwrap();
+        assert!(!list.is_empty());
+        assert_eq!(list.len(), 4);
+        assert_eq!(list.width(), 8);
+        assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.get(0), 4);
+        assert_eq!(list.get(1), 32);
+        assert_eq!(list.get(2), 0);
+        assert_eq!(list.get(3), 255);
     }
 
     #[test]
