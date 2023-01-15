@@ -19,6 +19,8 @@
 //!   - Compressed monotone sequence with Elias-Fano encoding.
 //! - [`EliasFanoList`]
 //!   - Compressed integer list with prefix-summed Elias-Fano encoding.
+//! - [`DacsList`]
+//!   - Compressed integer list with directly addressable codes.
 //! - [`WaveletMatrix`]
 //!   - Space-efficient data structure providing myriad operations over integer sequences.
 //!
