@@ -21,6 +21,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// That is, a sparse sequence can be stored in a very compressed space.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+/// The implementation of binary search is based on that in [tongrams](https://github.com/jermp/tongrams).
 ///
 /// # Example
 ///
