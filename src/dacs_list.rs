@@ -58,14 +58,16 @@ impl DacsList {
             return Ok(Self::default());
         }
 
-        let maxv = ints.iter().cloned().max().unwrap();
-        let bits = util::needed_bits(maxv);
+        let widths = Self::compute_fixed_widths(ints, width);
+        Self::build(ints, &widths)
+    }
 
-        // .max(1) is required for the case of all zeros.
-        let num_levels = util::ceiled_divide(bits, width).max(1);
+    fn build(ints: &[usize], widths: &[usize]) -> Result<Self> {
+        assert!(!ints.is_empty());
+        assert!(!widths.is_empty());
 
-        if num_levels == 1 {
-            let mut data = CompactVector::with_len(ints.len(), width);
+        if widths.len() == 1 {
+            let mut data = CompactVector::with_len(ints.len(), widths[0]);
             for (i, &x) in ints.iter().enumerate() {
                 data.set(i, x);
             }
@@ -75,18 +77,15 @@ impl DacsList {
             });
         }
 
-        let mut data = vec![];
-        let mut flags = vec![];
-        data.resize(num_levels, CompactVector::new(width));
-        flags.resize(num_levels - 1, BitVector::default());
-
-        let mask = (1 << width) - 1;
+        let mut data: Vec<_> = widths.iter().map(|&w| CompactVector::new(w)).collect();
+        let mut flags = vec![BitVector::default(); widths.len() - 1];
 
         for mut x in ints.iter().cloned() {
-            for j in 0..num_levels {
+            for (j, &width) in widths.iter().enumerate() {
+                let mask = (1 << width) - 1;
                 data[j].push(x & mask);
                 x >>= width;
-                if j == num_levels - 1 {
+                if j == widths.len() - 1 {
                     assert_eq!(x, 0);
                     break;
                 } else if x == 0 {
@@ -99,6 +98,12 @@ impl DacsList {
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
         Ok(Self { data, flags })
+    }
+
+    fn compute_fixed_widths(ints: &[usize], width: usize) -> Vec<usize> {
+        let bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let num_levels = util::ceiled_divide(bits, width);
+        (0..num_levels).map(|_| width).collect()
     }
 
     /// Gets the `pos`-th integer.
