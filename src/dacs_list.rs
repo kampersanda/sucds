@@ -40,7 +40,6 @@ use iter::Iter;
 pub struct DacsList {
     data: Vec<CompactVector>,
     flags: Vec<RsBitVector>,
-    width: usize,
 }
 
 impl DacsList {
@@ -73,7 +72,6 @@ impl DacsList {
             return Ok(Self {
                 data: vec![data],
                 flags: vec![],
-                width,
             });
         }
 
@@ -100,7 +98,7 @@ impl DacsList {
         }
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
-        Ok(Self { data, flags, width })
+        Ok(Self { data, flags })
     }
 
     /// Gets the `pos`-th integer.
@@ -115,12 +113,14 @@ impl DacsList {
     ///   the `pos`-th integer and $`w`$ is [`Self::width()`].
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
+        let mut width = 0;
         for j in 0..self.num_levels() {
-            x |= self.data[j].get(pos) << (j * self.width);
+            x |= self.data[j].get(pos) << (j * width);
             if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
                 break;
             }
             pos = self.flags[j].rank1(pos);
+            width = self.data[j].width();
         }
         x
     }
@@ -165,8 +165,8 @@ impl DacsList {
 
     /// Gets the number of bits for each level.
     #[inline(always)]
-    pub const fn width(&self) -> usize {
-        self.width
+    pub fn widths(&self) -> Vec<usize> {
+        self.data.iter().map(|d| d.width()).collect()
     }
 }
 
@@ -175,7 +175,6 @@ impl Default for DacsList {
         Self {
             data: vec![CompactVector::default()],
             flags: vec![],
-            width: 0,
         }
     }
 }
@@ -185,19 +184,17 @@ impl Searial for DacsList {
         let mut mem = 0;
         mem += self.data.serialize_into(&mut writer)?;
         mem += self.flags.serialize_into(&mut writer)?;
-        mem += self.width.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
         let flags = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
-        let width = usize::deserialize_from(&mut reader)?;
-        Ok(Self { data, flags, width })
+        Ok(Self { data, flags })
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.data.size_in_bytes() + self.flags.size_in_bytes() + usize::size_of().unwrap()
+        self.data.size_in_bytes() + self.flags.size_in_bytes()
     }
 }
 
@@ -236,7 +233,6 @@ mod tests {
         let list = DacsList::from_slice(&[4, 32, 0, 255], 8).unwrap();
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
-        assert_eq!(list.width(), 8);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.get(0), 4);
         assert_eq!(list.get(1), 32);
