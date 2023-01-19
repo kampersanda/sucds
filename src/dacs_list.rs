@@ -43,7 +43,7 @@ pub struct DacsList {
 }
 
 impl DacsList {
-    /// Creates an instance from a slice of integers.
+    /// Builds DACs by assigning a fixed number of bits for each level.
     ///
     /// # Arguments
     ///
@@ -62,8 +62,13 @@ impl DacsList {
         Self::build(ints, &widths)
     }
 
+    /// Builds DACs by assigning optimal numbers of bits for each level.
     ///
-    pub fn with_max_level(ints: &[usize], max_levels: usize) -> Result<Self> {
+    /// # Arguments
+    ///
+    /// - `ints`: Integers to be stored.
+    /// - `max_levels`: Upper bound of number of levels.
+    pub fn with_optimal_assignment(ints: &[usize], max_levels: usize) -> Result<Self> {
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
                 "max_levels must be in 1..=64, but got {max_levels}"
