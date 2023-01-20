@@ -68,7 +68,8 @@ impl DacsList {
     ///
     /// - `ints`: Integers to be stored.
     /// - `max_levels`: Maximum number of levels defined.
-    pub fn with_optimal_assignment(ints: &[usize], max_levels: usize) -> Result<Self> {
+    pub fn with_optimal_assignment(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
+        let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
                 "max_levels must be in 1..=64, but got {max_levels}"
