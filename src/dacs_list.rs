@@ -62,12 +62,12 @@ impl DacsList {
         Self::build(ints, &widths)
     }
 
-    /// Builds DACs by assigning optimal numbers of bits for each level.
+    /// Builds DACs by assigning the optimal number of bits for each level.
     ///
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    /// - `max_levels`: Upper bound of number of levels.
+    /// - `max_levels`: Maximum number of levels defined.
     pub fn with_optimal_assignment(ints: &[usize], max_levels: usize) -> Result<Self> {
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
@@ -81,6 +81,66 @@ impl DacsList {
 
         let widths = Self::compute_opt_widths(ints, max_levels);
         Self::build(ints, &widths)
+    }
+
+    fn compute_fixed_widths(ints: &[usize], width: usize) -> Vec<usize> {
+        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let num_levels = util::ceiled_divide(num_bits, width);
+        (0..num_levels).map(|_| width).collect()
+    }
+
+    fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
+        // Computes the number of bits needed to represent an integer at least.
+        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+
+        // Computes the number of integers with more than j bits.
+        let nums_ints = {
+            let mut nums_ints = vec![0; num_bits + 1];
+            for &x in ints {
+                nums_ints[util::needed_bits(x) - 1] += 1;
+            }
+            for j in (0..num_bits).rev() {
+                nums_ints[j] += nums_ints[j + 1];
+            }
+            nums_ints
+        };
+
+        debug_assert_eq!(nums_ints[0], ints.len());
+        debug_assert_eq!(*nums_ints.last().unwrap(), 0);
+
+        // dp_s[j,r]: Possible smallest total space to encode integers with more than j bits,
+        //            provided that at most r+1 more levels are used.
+        let mut dp_s = vec![vec![0; max_levels]; num_bits + 1];
+        // dp_b[j,r]: Number of bits for the (r+1)-th level from the bottom to achieve dp_s[j,r].
+        let mut dp_b = vec![vec![0; max_levels]; num_bits + 1];
+
+        for j in 0..num_bits {
+            dp_b[j][0] = num_bits - j;
+            dp_s[j][0] = dp_b[j][0] * nums_ints[j];
+        }
+
+        for r in 1..max_levels {
+            for j in 0..num_bits {
+                dp_s[j][r] = usize::MAX;
+                for b in 1..=num_bits - j {
+                    let c = (b + 1) * nums_ints[j] + dp_s[j + b][r - 1];
+                    if c < dp_s[j][r] {
+                        dp_s[j][r] = c;
+                        dp_b[j][r] = b;
+                    }
+                }
+            }
+        }
+
+        let mut widths = vec![0; max_levels];
+        let (mut j, mut r) = (0, 0);
+
+        while j < num_bits {
+            widths[r] = dp_b[j][max_levels - r];
+            j += widths[r];
+            r += 1;
+        }
+        widths
     }
 
     fn build(ints: &[usize], widths: &[usize]) -> Result<Self> {
@@ -119,62 +179,6 @@ impl DacsList {
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
         Ok(Self { data, flags })
-    }
-
-    fn compute_fixed_widths(ints: &[usize], width: usize) -> Vec<usize> {
-        let bits = util::needed_bits(ints.iter().cloned().max().unwrap());
-        let num_levels = util::ceiled_divide(bits, width);
-        (0..num_levels).map(|_| width).collect()
-    }
-
-    fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
-        // Computes the number of bits needed to represent an integer at least.
-        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
-
-        // Computes the number of integers with more than j bits.
-        let nums_ints = {
-            let mut nums_ints = vec![0; num_bits + 1];
-            for &x in ints {
-                nums_ints[util::needed_bits(x) - 1] += 1;
-            }
-            for j in (0..num_bits).rev() {
-                nums_ints[j] += nums_ints[j + 1];
-            }
-            debug_assert_eq!(nums_ints[0], ints.len());
-            nums_ints
-        };
-
-        let mut dp_s = vec![vec![0; max_levels]; num_bits + 1];
-        let mut dp_b = vec![vec![0; max_levels]; num_bits + 1];
-
-        for j in 0..num_bits {
-            dp_b[j][0] = num_bits - j;
-            dp_s[j][0] = dp_b[j][0] * nums_ints[j];
-        }
-
-        for r in 1..max_levels {
-            for j in 0..num_bits {
-                dp_s[j][r] = usize::MAX;
-                for b in 1..=num_bits - j {
-                    let c = (b + 1) * nums_ints[j] + dp_s[j + b][r - 1];
-                    if c < dp_s[j][r] {
-                        dp_s[j][r] = c;
-                        dp_b[j][r] = b;
-                    }
-                }
-            }
-        }
-
-        let mut widths = vec![0; max_levels];
-        let (mut j, mut r) = (0, 0);
-
-        while j < num_bits {
-            r += 1;
-            widths[r] = dp_b[j][max_levels - r];
-            j += widths[r];
-        }
-
-        widths
     }
 
     /// Gets the `pos`-th integer.
