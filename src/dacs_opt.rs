@@ -1,4 +1,4 @@
-//! Compressed integer list with Directly Addressable Codes (DACs).
+//! Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -8,16 +8,18 @@ use anyhow::{anyhow, Result};
 use crate::util;
 use crate::{BitVector, CompactVector, RsBitVector, Searial};
 
-/// Compressed integer list with Directly Addressable Codes (DACs).
+/// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
-/// This stores a list of integers in a compressed space with DACs of a fixed-width scheme.
-/// When the list consists of small integers, the representation will be very compact.
+/// DACs are a compact representation of an integer array consisting of many small values.
+/// [`DacsOpt`] uses dynamic programming to compute the configuration
+/// to achieve the minimum memory usage.
 ///
 /// # Examples
 ///
 /// ```
 /// use sucds::DacsOpt;
 ///
+/// // Specifies two for the maximum number of levels to control time efficiency.
 /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
@@ -40,12 +42,19 @@ pub struct DacsOpt {
 }
 
 impl DacsOpt {
-    /// Builds DACs by assigning the optimal number of bits for each level.
+    /// Builds DACs with the minimum memory usage by dynamic programming.
     ///
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    /// - `max_levels`: Maximum number of levels defined.
+    /// - `max_levels`: Maximum number of levels. The resulting number of levels is related to
+    ///                 the access time. The smaller this value is, the faster operations can be,
+    ///                 but the larger the memory can be. If [`None`], it computes configuration
+    ///                 without limitation in the number of levels.
+    ///
+    /// # Complexities
+    ///
+    /// $`O(nw + w^3)`$ where $`n`$ is the number of integers, and $`w`$ is the word size in bits.
     pub fn from_slice(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
@@ -62,6 +71,7 @@ impl DacsOpt {
         Self::build(ints, &widths)
     }
 
+    // A modified implementation of Algorithm 3.5 in Navarro's book.
     fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
         assert_ne!(max_levels, 0);
 
@@ -85,7 +95,7 @@ impl DacsOpt {
         debug_assert_eq!(*nums_ints.last().unwrap(), 0);
 
         // dp_s[j,r]: Possible smallest total space to encode integers with more than j bits,
-        //            provided that at most r+1 more levels are used.
+        //            provided that r+1 further levels are used.
         let mut dp_s = vec![vec![0; max_levels]; num_bits + 1];
         // dp_b[j,r]: Number of bits for the (r+1)-th level from the bottom to achieve dp_s[j,r].
         let mut dp_b = vec![vec![0; max_levels]; num_bits + 1];
@@ -183,8 +193,8 @@ impl DacsOpt {
     ///
     /// # Complexity
     ///
-    /// - $`O( \lceil b_i / w \rceil )`$ where $`b_i`$ is the number of bits needed to represent
-    ///   the `pos`-th integer and $`w`$ is [`Self::width()`].
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         let mut width = 0;
