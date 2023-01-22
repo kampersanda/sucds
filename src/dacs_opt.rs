@@ -16,9 +16,9 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsList;
+/// use sucds::DacsOpt;
 ///
-/// let list = DacsList::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+/// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
@@ -34,12 +34,12 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// - N. R. Brisaboa, S. Ladra, and G. Navarro, "DACs: Bringing direct access to variable-length
 ///   codes." Information Processing & Management, 49(1), 392-404, 2013.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DacsList {
+pub struct DacsOpt {
     data: Vec<CompactVector>,
     flags: Vec<RsBitVector>,
 }
 
-impl DacsList {
+impl DacsOpt {
     /// Builds DACs by assigning the optimal number of bits for each level.
     ///
     /// # Arguments
@@ -204,9 +204,9 @@ impl DacsList {
     /// # Examples
     ///
     /// ```
-    /// use sucds::DacsList;
+    /// use sucds::DacsOpt;
     ///
-    /// let list = DacsList::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+    /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -244,7 +244,7 @@ impl DacsList {
     }
 }
 
-impl Default for DacsList {
+impl Default for DacsOpt {
     fn default() -> Self {
         Self {
             data: vec![CompactVector::default()],
@@ -253,15 +253,15 @@ impl Default for DacsList {
     }
 }
 
-/// Iterator for enumerating integers, created by [`DacsList::iter()`].
+/// Iterator for enumerating integers, created by [`DacsOpt::iter()`].
 pub struct Iter<'a> {
-    list: &'a DacsList,
+    list: &'a DacsOpt,
     pos: usize,
 }
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub const fn new(list: &'a DacsList) -> Self {
+    pub const fn new(list: &'a DacsOpt) -> Self {
         Self { list, pos: 0 }
     }
 }
@@ -286,7 +286,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl Searial for DacsList {
+impl Searial for DacsOpt {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.data.serialize_into(&mut writer)?;
@@ -311,37 +311,37 @@ mod tests {
 
     #[test]
     fn test_opt_witdhs_0() {
-        let widths = DacsList::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3);
         assert_eq!(widths, vec![1]);
     }
 
     #[test]
     fn test_opt_witdhs_1() {
-        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1);
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1);
         assert_eq!(widths, vec![4]);
     }
 
     #[test]
     fn test_opt_witdhs_2() {
-        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2);
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_3() {
-        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_4() {
-        let widths = DacsList::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3);
         assert_eq!(widths, vec![4]);
     }
 
     #[test]
     fn test_basic() {
-        let list = DacsList::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
+        let list = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
 
         assert_eq!(
             list.data,
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let list = DacsList::from_slice(&[], None).unwrap();
+        let list = DacsOpt::from_slice(&[], None).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
@@ -378,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsList::from_slice(&[0, 0, 0, 0], None).unwrap();
+        let list = DacsOpt::from_slice(&[0, 0, 0, 0], None).unwrap();
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
@@ -392,9 +392,9 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsList::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
+        let list = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
-        let other = DacsList::deserialize_from(&bytes[..]).unwrap();
+        let other = DacsOpt::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, list.size_in_bytes());
