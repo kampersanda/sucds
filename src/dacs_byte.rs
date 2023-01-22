@@ -1,4 +1,4 @@
-//! Compressed integer list with Directly Addressable Codes (DACs).
+//! Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 #![cfg(target_pointer_width = "64")]
 
 use std::convert::TryFrom;
@@ -12,10 +12,11 @@ use crate::{BitVector, RsBitVector, Searial};
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 
-/// Compressed integer list with Directly Addressable Codes (DACs).
+/// Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 ///
-/// This stores a list of integers in a compressed space with DACs of a fixed-width scheme.
-/// When the list consists of small integers, the representation will be very compact.
+/// DACs are a compact representation of an integer array consisting of many small values.
+/// [`DacsByte`] is a simple variant and uses [`Vec<u8>`] for each level to obtain faster
+/// operations than [`DacsOpt`](crate::DacsOpt).
 ///
 /// # Examples
 ///
@@ -44,7 +45,7 @@ pub struct DacsByte {
 }
 
 impl DacsByte {
-    /// Builds DACs by assigning a fixed number of bits for each level.
+    /// Builds DACs by assigning 8 bits to represent each level.
     ///
     /// # Arguments
     ///
@@ -96,8 +97,8 @@ impl DacsByte {
     ///
     /// # Complexity
     ///
-    /// - $`O( \lceil b_i / w \rceil )`$ where $`b_i`$ is the number of bits needed to represent
-    ///   the `pos`-th integer and $`w`$ is [`Self::width()`].
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
     pub fn get(&self, mut pos: usize) -> usize {
         let mut x = 0;
         for j in 0..self.num_levels() {
