@@ -10,7 +10,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::wavelet_matrix::iter::Iter;
-use crate::{broadword, BitVector, CompactVector, RsBitVector, Searial};
+use crate::{broadword, BitVector, CompactVector, IntArray, RsBitVector, Searial};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.

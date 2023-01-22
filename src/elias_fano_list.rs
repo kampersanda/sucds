@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::elias_fano_list::iter::Iter;
-use crate::{EliasFano, EliasFanoBuilder, Searial};
+use crate::{EliasFano, EliasFanoBuilder, IntArray, Searial};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///
@@ -69,6 +69,33 @@ impl EliasFanoList {
         Ok(Self { ef: b.build() })
     }
 
+    /// Creates an iterator for enumerating integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::EliasFanoList;
+    ///
+    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
+    /// let mut it = list.iter();
+    ///
+    /// assert_eq!(it.next(), Some(5));
+    /// assert_eq!(it.next(), Some(14));
+    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), Some(10));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub const fn iter(&self) -> Iter {
+        Iter::new(self)
+    }
+
+    /// Gets the sum of integers.
+    pub const fn sum(&self) -> usize {
+        self.ef.universe() - 1
+    }
+}
+
+impl IntArray for EliasFanoList {
     /// Gets the `i`-th integer.
     ///
     /// # Arguments
@@ -90,43 +117,12 @@ impl EliasFanoList {
     /// assert_eq!(list.get(2), 2);
     /// assert_eq!(list.get(3), 10);
     /// ```
-    pub fn get(&self, i: usize) -> usize {
+    fn get(&self, i: usize) -> usize {
         self.ef.delta(i)
     }
 
-    /// Creates an iterator for enumerating integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFanoList;
-    ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
-    /// let mut it = list.iter();
-    ///
-    /// assert_eq!(it.next(), Some(5));
-    /// assert_eq!(it.next(), Some(14));
-    /// assert_eq!(it.next(), Some(2));
-    /// assert_eq!(it.next(), Some(10));
-    /// assert_eq!(it.next(), None);
-    /// ```
-    pub const fn iter(&self) -> Iter {
-        Iter::new(self)
-    }
-
-    /// Gets the number of integers.
-    pub const fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.ef.len()
-    }
-
-    /// Checks if the list is empty.
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Gets the sum of integers.
-    pub const fn sum(&self) -> usize {
-        self.ef.universe() - 1
     }
 }
 

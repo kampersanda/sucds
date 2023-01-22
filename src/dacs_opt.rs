@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitVector, CompactVector, RsBitVector, Searial};
+use crate::{BitVector, CompactVector, IntArray, RsBitVector, Searial};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -185,30 +185,6 @@ impl DacsOpt {
         Ok(Self { data, flags })
     }
 
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        let mut width = 0;
-        for j in 0..self.num_levels() {
-            x |= self.data[j].get(pos) << (j * width);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-            width = self.data[j].width();
-        }
-        x
-    }
-
     /// Creates an iterator for enumerating integers.
     ///
     /// # Examples
@@ -227,18 +203,6 @@ impl DacsOpt {
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
-    }
-
-    /// Gets the number of bits.
-    #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.data[0].len()
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     /// Gets the number of levels.
@@ -260,6 +224,38 @@ impl Default for DacsOpt {
             data: vec![CompactVector::default()],
             flags: vec![],
         }
+    }
+}
+
+impl IntArray for DacsOpt {
+    /// Gets the `pos`-th integer.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Position to get.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    fn get(&self, mut pos: usize) -> usize {
+        let mut x = 0;
+        let mut width = 0;
+        for j in 0..self.num_levels() {
+            x |= self.data[j].get(pos) << (j * width);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
+                break;
+            }
+            pos = self.flags[j].rank1(pos);
+            width = self.data[j].width();
+        }
+        x
+    }
+
+    /// Gets the number of bits.
+    #[inline(always)]
+    fn len(&self) -> usize {
+        self.data[0].len()
     }
 }
 

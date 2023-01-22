@@ -1,6 +1,6 @@
 //! Iterator on EliasFanoList.
 
-use crate::EliasFanoList;
+use crate::{EliasFanoList, IntArray};
 
 /// Iterator for enumerating integers, created by [`EliasFanoList::iter`].
 pub struct Iter<'a> {

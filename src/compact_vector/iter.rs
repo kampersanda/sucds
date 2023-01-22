@@ -1,5 +1,5 @@
 //! Iterator on compact vectors.
-use crate::CompactVector;
+use crate::{CompactVector, IntArray};
 
 /// Iterator for enumerating integers, created by [`CompactVector::iter`].
 pub struct Iter<'a> {

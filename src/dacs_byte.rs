@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::util;
-use crate::{BitVector, RsBitVector, Searial};
+use crate::{BitVector, IntArray, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -89,28 +89,6 @@ impl DacsByte {
         Self { data, flags }
     }
 
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-        }
-        x
-    }
-
     /// Creates an iterator for enumerating integers.
     ///
     /// # Examples
@@ -129,18 +107,6 @@ impl DacsByte {
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
-    }
-
-    /// Gets the number of bits.
-    #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.data[0].len()
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     /// Gets the number of levels.
@@ -163,6 +129,35 @@ impl Default for DacsByte {
             data: vec![vec![]],
             flags: vec![],
         }
+    }
+}
+
+impl IntArray for DacsByte {
+    /// Gets the `pos`-th integer.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Position to get.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    fn get(&self, mut pos: usize) -> usize {
+        let mut x = 0;
+        for j in 0..self.num_levels() {
+            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
+                break;
+            }
+            pos = self.flags[j].rank1(pos);
+        }
+        x
+    }
+
+    #[inline(always)]
+    fn len(&self) -> usize {
+        self.data[0].len()
     }
 }
 

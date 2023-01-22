@@ -8,6 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::compact_vector::iter::Iter;
+use crate::IntArray;
 use crate::{util, BitVector, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
@@ -102,28 +103,6 @@ impl CompactVector {
         cv
     }
 
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::CompactVector;
-    ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
-    /// assert_eq!(cv.get(0), 5);
-    /// assert_eq!(cv.get(1), 256);
-    /// assert_eq!(cv.get(2), 0);
-    /// assert_eq!(cv.get(3), 10);
-    /// ```
-    #[inline(always)]
-    pub fn get(&self, pos: usize) -> usize {
-        self.chunks.get_bits(pos * self.width, self.width)
-    }
-
     /// Sets the `pos`-th integer to `value`.
     ///
     /// # Arguments
@@ -190,22 +169,37 @@ impl CompactVector {
         Iter::new(self)
     }
 
-    /// Gets the number of ints.
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// Gets the number of bits to represent an integer.
     #[inline(always)]
     pub const fn width(&self) -> usize {
         self.width
+    }
+}
+
+impl IntArray for CompactVector {
+    /// Gets the `pos`-th integer.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::CompactVector;
+    ///
+    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
+    /// assert_eq!(cv.get(0), 5);
+    /// assert_eq!(cv.get(1), 256);
+    /// assert_eq!(cv.get(2), 0);
+    /// assert_eq!(cv.get(3), 10);
+    /// ```
+    fn get(&self, i: usize) -> usize {
+        self.chunks.get_bits(i * self.width, self.width)
+    }
+
+    fn len(&self) -> usize {
+        self.len
     }
 }
 
