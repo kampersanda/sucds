@@ -260,6 +260,7 @@ mod tests {
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
     }
 
     #[test]
@@ -268,6 +269,7 @@ mod tests {
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
         assert_eq!(list.get(0), 0);
         assert_eq!(list.get(1), 0);
         assert_eq!(list.get(2), 0);

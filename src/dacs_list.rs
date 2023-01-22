@@ -1,15 +1,12 @@
 //! Compressed integer list with Directly Addressable Codes (DACs).
 #![cfg(target_pointer_width = "64")]
 
-pub mod iter;
-
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
 use crate::util;
 use crate::{BitVector, CompactVector, RsBitVector, Searial};
-use iter::Iter;
 
 /// Compressed integer list with Directly Addressable Codes (DACs).
 ///
@@ -18,36 +15,18 @@ use iter::Iter;
 ///
 /// # Examples
 ///
-/// ## Specifying a fixed number of bits for each level
-///
 /// ```
 /// use sucds::DacsList;
 ///
-/// let list = DacsList::with_fixed_width(&[5, 0, 256, 255], 4).unwrap();
+/// let list = DacsList::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 256);
-/// assert_eq!(list.get(3), 255);
+/// assert_eq!(list.get(2), 100000);
+/// assert_eq!(list.get(3), 334);
 ///
 /// assert_eq!(list.len(), 4);
-/// assert_eq!(list.num_levels(), 3);
-/// ```
-///
-/// ## Computing an optimal assignment in space.
-///
-/// ```
-/// use sucds::DacsList;
-///
-/// let list = DacsList::with_optimal_assignment(&[5, 0, 256, 255], None).unwrap();
-///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 256);
-/// assert_eq!(list.get(3), 255);
-///
-/// assert_eq!(list.len(), 4);
-/// assert_eq!(list.num_levels(), 3);
+/// assert_eq!(list.num_levels(), 2);
 /// ```
 ///
 /// # References
@@ -61,32 +40,13 @@ pub struct DacsList {
 }
 
 impl DacsList {
-    /// Builds DACs by assigning a fixed number of bits for each level.
-    ///
-    /// # Arguments
-    ///
-    /// - `ints`: Integers to be stored.
-    /// - `width`: Number of bits for each level.
-    pub fn with_fixed_width(ints: &[usize], width: usize) -> Result<Self> {
-        if !(1..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64, but got {width}"));
-        }
-
-        if ints.is_empty() {
-            return Ok(Self::default());
-        }
-
-        let widths = Self::compute_fixed_widths(ints, width);
-        Self::build(ints, &widths)
-    }
-
     /// Builds DACs by assigning the optimal number of bits for each level.
     ///
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
     /// - `max_levels`: Maximum number of levels defined.
-    pub fn with_optimal_assignment(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
+    pub fn from_slice(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
@@ -102,15 +62,12 @@ impl DacsList {
         Self::build(ints, &widths)
     }
 
-    fn compute_fixed_widths(ints: &[usize], width: usize) -> Vec<usize> {
-        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
-        let num_levels = util::ceiled_divide(num_bits, width);
-        (0..num_levels).map(|_| width).collect()
-    }
-
     fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
+        assert_ne!(max_levels, 0);
+
         // Computes the number of bits needed to represent an integer at least.
         let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let max_levels = max_levels.min(num_bits);
 
         // Computes the number of integers with more than j bits.
         let nums_ints = {
@@ -134,8 +91,10 @@ impl DacsList {
         let mut dp_b = vec![vec![0; max_levels]; num_bits + 1];
 
         for j in 0..num_bits {
+            // NOTE(kampersabda): Here does not assume the space for flags,
+            // i.e., +1 is omitted.
+            dp_s[j][0] = (num_bits - j) * nums_ints[j];
             dp_b[j][0] = num_bits - j;
-            dp_s[j][0] = dp_b[j][0] * nums_ints[j];
         }
 
         for r in 1..max_levels {
@@ -143,7 +102,9 @@ impl DacsList {
                 dp_s[j][r] = usize::MAX;
                 for b in 1..=num_bits - j {
                     let c = (b + 1) * nums_ints[j] + dp_s[j + b][r - 1];
-                    if c < dp_s[j][r] {
+                    // NOTE(kampersabda): This comparison should use <=, not <,
+                    // because a larger b allows to suppress the resulting height.
+                    if c <= dp_s[j][r] {
                         dp_s[j][r] = c;
                         dp_b[j][r] = b;
                     }
@@ -151,14 +112,28 @@ impl DacsList {
             }
         }
 
-        let mut widths = vec![0; max_levels];
+        // Search the number of levels to achieve the minimum space.
+        let mut min_level_idx = 0;
+        for r in 1..max_levels {
+            if dp_s[0][r] < dp_s[0][min_level_idx] {
+                min_level_idx = r;
+            }
+        }
+
+        let num_levels = min_level_idx + 1;
+        let mut widths = vec![0; num_levels];
         let (mut j, mut r) = (0, 0);
 
         while j < num_bits {
-            widths[r] = dp_b[j][max_levels - r - 1];
+            widths[r] = dp_b[j][num_levels - r - 1];
             j += widths[r];
             r += 1;
         }
+
+        assert_eq!(j, num_bits);
+        assert_eq!(r, num_levels);
+        assert_eq!(widths.iter().sum::<usize>(), num_bits);
+
         widths
     }
 
@@ -231,13 +206,13 @@ impl DacsList {
     /// ```
     /// use sucds::DacsList;
     ///
-    /// let list = DacsList::with_fixed_width(&[5, 0, 256, 255], 4).unwrap();
+    /// let list = DacsList::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(0));
-    /// assert_eq!(it.next(), Some(256));
-    /// assert_eq!(it.next(), Some(255));
+    /// assert_eq!(it.next(), Some(100000));
+    /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), None);
     /// ```
     pub const fn iter(&self) -> Iter {
@@ -278,6 +253,39 @@ impl Default for DacsList {
     }
 }
 
+/// Iterator for enumerating integers, created by [`DacsList::iter()`].
+pub struct Iter<'a> {
+    list: &'a DacsList,
+    pos: usize,
+}
+
+impl<'a> Iter<'a> {
+    /// Creates a new iterator.
+    pub const fn new(list: &'a DacsList) -> Self {
+        Self { list, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = usize;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.list.len() {
+            let x = self.list.get(self.pos);
+            self.pos += 1;
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.list.len(), Some(self.list.len()))
+    }
+}
+
 impl Searial for DacsList {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -302,25 +310,79 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_zero_width() {
-        let list = DacsList::with_fixed_width(&[0, 1, 2, 3], 0);
-        assert!(list.is_err());
+    fn test_opt_witdhs_0() {
+        let widths = DacsList::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3);
+        assert_eq!(widths, vec![1]);
+    }
+
+    #[test]
+    fn test_opt_witdhs_1() {
+        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1);
+        assert_eq!(widths, vec![4]);
+    }
+
+    #[test]
+    fn test_opt_witdhs_2() {
+        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2);
+        assert_eq!(widths, vec![2, 2]);
+    }
+
+    #[test]
+    fn test_opt_witdhs_3() {
+        let widths = DacsList::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3);
+        assert_eq!(widths, vec![2, 2]);
+    }
+
+    #[test]
+    fn test_opt_witdhs_4() {
+        let widths = DacsList::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3);
+        assert_eq!(widths, vec![4]);
+    }
+
+    #[test]
+    fn test_basic() {
+        let list = DacsList::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
+
+        assert_eq!(
+            list.data,
+            vec![
+                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]),
+                CompactVector::from_slice(&[0b11]),
+            ]
+        );
+
+        assert_eq!(
+            list.flags,
+            vec![RsBitVector::from_bits([false, false, true, false])]
+        );
+
+        assert!(!list.is_empty());
+        assert_eq!(list.len(), 4);
+        assert_eq!(list.num_levels(), 2);
+        assert_eq!(list.widths(), vec![2, 2]);
+
+        assert_eq!(list.get(0), 0b11);
+        assert_eq!(list.get(1), 0b1);
+        assert_eq!(list.get(2), 0b1111);
+        assert_eq!(list.get(3), 0b11);
     }
 
     #[test]
     fn test_empty() {
-        let list = DacsList::with_fixed_width(&[], 1).unwrap();
+        let list = DacsList::from_slice(&[], None).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.widths(), vec![0]);
     }
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsList::with_fixed_width(&[0, 0, 0, 0], 1).unwrap();
+        let list = DacsList::from_slice(&[0, 0, 0, 0], None).unwrap();
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
+        assert_eq!(list.widths(), vec![1]);
         assert_eq!(list.get(0), 0);
         assert_eq!(list.get(1), 0);
         assert_eq!(list.get(2), 0);
@@ -328,21 +390,9 @@ mod tests {
     }
 
     #[test]
-    fn test_one_level() {
-        let list = DacsList::with_fixed_width(&[4, 32, 0, 255], 8).unwrap();
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 4);
-        assert_eq!(list.num_levels(), 1);
-        assert_eq!(list.get(0), 4);
-        assert_eq!(list.get(1), 32);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 255);
-    }
-
-    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsList::with_fixed_width(&[4, 256, 0, 255], 4).unwrap();
+        let list = DacsList::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
         let other = DacsList::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);
