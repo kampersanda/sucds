@@ -16,7 +16,7 @@ use crate::{util, BitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::CompactVector;
+/// use sucds::{CompactVector, IntArray};
 ///
 /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
 ///
@@ -86,7 +86,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// use sucds::{CompactVector, IntArray};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
     /// assert_eq!(cv.get(0), 5);
@@ -113,7 +113,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// use sucds::{CompactVector, IntArray};
     ///
     /// let mut cv = CompactVector::with_len(2, 8);
     /// cv.set(0, 10);
@@ -135,7 +135,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// use sucds::{CompactVector, IntArray};
     ///
     /// let mut cv = CompactVector::new(8);
     /// cv.push(10);
@@ -154,7 +154,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// use sucds::{CompactVector, IntArray};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
     /// let mut it = cv.iter();
@@ -186,7 +186,7 @@ impl IntArray for CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// use sucds::{CompactVector, IntArray};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
     /// assert_eq!(cv.get(0), 5);

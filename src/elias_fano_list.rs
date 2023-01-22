@@ -21,7 +21,7 @@ use crate::{EliasFano, EliasFanoBuilder, IntArray, Searial};
 /// # Example
 ///
 /// ```
-/// use sucds::EliasFanoList;
+/// use sucds::{EliasFanoList, IntArray};
 ///
 /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
 ///
@@ -48,7 +48,7 @@ impl EliasFanoList {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFanoList;
+    /// use sucds::{EliasFanoList, IntArray};
     ///
     /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
     ///
@@ -109,7 +109,7 @@ impl IntArray for EliasFanoList {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFanoList;
+    /// use sucds::{EliasFanoList, IntArray};
     ///
     /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
     /// assert_eq!(list.get(0), 5);

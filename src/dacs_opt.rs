@@ -17,7 +17,7 @@ use crate::{BitVector, CompactVector, IntArray, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsOpt;
+/// use sucds::{DacsOpt, IntArray};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
 /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();

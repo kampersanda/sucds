@@ -21,7 +21,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsByte;
+/// use sucds::{DacsByte, IntArray};
 ///
 /// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
 ///
