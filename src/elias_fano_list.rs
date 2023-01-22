@@ -44,17 +44,6 @@ impl EliasFanoList {
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{EliasFanoList, IntArray};
-    ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
-    ///
-    /// assert_eq!(list.len(), 4);
-    /// assert_eq!(list.sum(), 31);
-    /// ```
     pub fn from_slice(ints: &[usize]) -> Result<Self> {
         let mut universe = 0;
         for &x in ints {
@@ -96,29 +85,17 @@ impl EliasFanoList {
 }
 
 impl IntArray for EliasFanoList {
-    /// Gets the `i`-th integer.
+    /// Gets the `pos`-th integer.
     ///
     /// # Arguments
     ///
-    /// - `i`: Position to get.
+    /// - `pos`: Position to get.
     ///
     /// # Complexity
     ///
     /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{EliasFanoList, IntArray};
-    ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
-    /// assert_eq!(list.get(0), 5);
-    /// assert_eq!(list.get(1), 14);
-    /// assert_eq!(list.get(2), 2);
-    /// assert_eq!(list.get(3), 10);
-    /// ```
-    fn get(&self, i: usize) -> usize {
-        self.ef.delta(i)
+    fn get(&self, pos: usize) -> usize {
+        self.ef.delta(pos)
     }
 
     fn len(&self) -> usize {

@@ -15,20 +15,24 @@ pub trait IntArray {
 }
 
 impl IntArray for Vec<usize> {
+    #[inline(always)]
     fn get(&self, pos: usize) -> usize {
         (*self)[pos]
     }
 
+    #[inline(always)]
     fn len(&self) -> usize {
         self.len()
     }
 }
 
 impl IntArray for [usize] {
+    #[inline(always)]
     fn get(&self, pos: usize) -> usize {
         (*self)[pos]
     }
 
+    #[inline(always)]
     fn len(&self) -> usize {
         self.len()
     }
