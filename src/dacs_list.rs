@@ -18,10 +18,28 @@ use iter::Iter;
 ///
 /// # Examples
 ///
+/// ## Specifying a fixed number of bits for each level
+///
 /// ```
 /// use sucds::DacsList;
 ///
 /// let list = DacsList::with_fixed_width(&[5, 0, 256, 255], 4).unwrap();
+///
+/// assert_eq!(list.get(0), 5);
+/// assert_eq!(list.get(1), 0);
+/// assert_eq!(list.get(2), 256);
+/// assert_eq!(list.get(3), 255);
+///
+/// assert_eq!(list.len(), 4);
+/// assert_eq!(list.num_levels(), 3);
+/// ```
+///
+/// ## Computing an optimal assignment in space.
+///
+/// ```
+/// use sucds::DacsList;
+///
+/// let list = DacsList::with_optimal_assignment(&[5, 0, 256, 255], None).unwrap();
 ///
 /// assert_eq!(list.get(0), 5);
 /// assert_eq!(list.get(1), 0);
@@ -137,7 +155,7 @@ impl DacsList {
         let (mut j, mut r) = (0, 0);
 
         while j < num_bits {
-            widths[r] = dp_b[j][max_levels - r];
+            widths[r] = dp_b[j][max_levels - r - 1];
             j += widths[r];
             r += 1;
         }
