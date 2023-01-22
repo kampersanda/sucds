@@ -19,7 +19,7 @@
 //!   - Compressed monotone sequence with Elias-Fano encoding.
 //! - [`EliasFanoList`]
 //!   - Compressed integer list with prefix-summed Elias-Fano encoding.
-//! - [`DacsList`]
+//! - [`DacsOpt`] and [`DacsByte`]
 //!   - Compressed integer list with directly addressable codes.
 //! - [`WaveletMatrix`]
 //!   - Space-efficient data structure providing myriad operations over integer sequences.
@@ -36,7 +36,8 @@ compile_error!("`target_pointer_width` must be 64");
 pub mod bit_vector;
 pub mod broadword;
 pub mod compact_vector;
-pub mod dacs_list;
+pub mod dacs_byte;
+pub mod dacs_opt;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
@@ -48,7 +49,8 @@ pub mod wavelet_matrix;
 
 pub use bit_vector::BitVector;
 pub use compact_vector::CompactVector;
-pub use dacs_list::DacsList;
+pub use dacs_byte::DacsByte;
+pub use dacs_opt::DacsOpt;
 pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
