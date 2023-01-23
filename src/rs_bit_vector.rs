@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitVector, Searial};
+use crate::{broadword, BitGetter, BitVector, Length, Searial};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -145,7 +145,7 @@ impl RsBitVector {
     /// ```
     #[inline(always)]
     pub fn get_bit(&self, pos: usize) -> bool {
-        self.bv.get_bit(pos)
+        self.bv.get_bit(pos).unwrap()
     }
 
     /// Counts the number of ones from the zeroth bit to the `pos-1`-th bit.
@@ -338,13 +338,13 @@ impl RsBitVector {
 
     /// Gets the number of bits.
     #[inline(always)]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.bv.len()
     }
 
     /// Checks if the vector is empty.
     #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

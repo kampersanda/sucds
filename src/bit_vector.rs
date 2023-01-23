@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, Searial};
+use crate::{broadword, BitGetter, Length, Searial};
 
 pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
@@ -19,14 +19,14 @@ pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// # Examples
 ///
 /// ```
-/// use sucds::BitVector;
+/// use sucds::{BitGetter, BitVector};
 ///
 /// let bv = BitVector::from_bits([true, false, false, true]);
 ///
-/// assert_eq!(bv.get_bit(0), true);
-/// assert_eq!(bv.get_bit(1), false);
-/// assert_eq!(bv.get_bit(2), false);
-/// assert_eq!(bv.get_bit(3), true);
+/// assert_eq!(bv.get_bit(0), Some(true));
+/// assert_eq!(bv.get_bit(1), Some(false));
+/// assert_eq!(bv.get_bit(2), Some(false));
+/// assert_eq!(bv.get_bit(3), Some(true));
 ///
 /// assert_eq!(bv.predecessor1(2), Some(0));
 /// assert_eq!(bv.predecessor0(2), Some(2));
@@ -40,12 +40,12 @@ pub struct BitVector {
 }
 
 impl BitVector {
-    /// Creates a new empty [`BitVector`].
+    /// Creates a new empty instance.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Creates a new [`BitVector`] of `len` bits.
+    /// Creates a new instance of `len` bits.
     pub fn with_len(len: usize) -> Self {
         Self {
             words: vec![0; Self::words_for(len)],
@@ -53,7 +53,7 @@ impl BitVector {
         }
     }
 
-    /// Creates a new [`BitVector`] that `capa` bits are reserved.
+    /// Creates a new instance that `capa` bits are reserved.
     pub fn with_capacity(capa: usize) -> Self {
         Self {
             words: Vec::with_capacity(Self::words_for(capa)),
@@ -61,23 +61,7 @@ impl BitVector {
         }
     }
 
-    /// Creates a new [`BitVector`] from input bitset `bits`.
-    ///
-    /// # Arguments
-    ///
-    /// - `bits`: List of bits.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// ```
+    /// Creates a new instance from input bitset `bits`.
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
@@ -85,30 +69,6 @@ impl BitVector {
         let mut this = Self::new();
         bits.into_iter().for_each(|b| this.push_bit(b));
         this
-    }
-
-    /// Gets the `pos`-th bit.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// ```
-    #[inline(always)]
-    pub fn get_bit(&self, pos: usize) -> bool {
-        debug_assert!(pos < self.len);
-        let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
-        (self.words[block] >> shift) & 1 == 1
     }
 
     /// Sets the `pos`-th bit to `bit`.
@@ -124,12 +84,9 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::from_bits([false, true, true, false]);
+    ///
     /// bv.set_bit(0, true);
     /// bv.set_bit(2, false);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), true);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), false);
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) {
@@ -149,13 +106,13 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{BitGetter, BitVector};
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
     /// bv.push_bit(false);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
+    /// assert_eq!(bv.get_bit(0), Some(true));
+    /// assert_eq!(bv.get_bit(1), Some(false));
     /// ```
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
@@ -491,18 +448,6 @@ impl BitVector {
         self.words.len()
     }
 
-    /// Gets the number of bits.
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// Shrinks the capacity of the vector as much as possible.
     pub fn shrink_to_fit(&mut self) {
         self.words.shrink_to_fit();
@@ -514,11 +459,41 @@ impl BitVector {
     }
 }
 
+impl Length for BitVector {
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl BitGetter for BitVector {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitGetter, BitVector};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false]);
+    /// assert_eq!(bv.get_bit(0), Some(true));
+    /// assert_eq!(bv.get_bit(1), Some(false));
+    /// assert_eq!(bv.get_bit(2), Some(false));
+    /// assert_eq!(bv.get_bit(3), None);
+    /// ```
+    fn get_bit(&self, pos: usize) -> Option<bool> {
+        if pos < self.len {
+            let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
+            Some((self.words[block] >> shift) & 1 == 1)
+        } else {
+            None
+        }
+    }
+}
+
 impl std::fmt::Debug for BitVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut bits = vec![0u8; self.len()];
         for (i, b) in bits.iter_mut().enumerate() {
-            *b = self.get_bit(i) as u8;
+            *b = self.get_bit(i).unwrap() as u8;
         }
         f.debug_struct("BitVector")
             .field("bits", &bits)
@@ -567,7 +542,7 @@ mod tests {
         let bv = BitVector::from_bits(bits.iter().cloned());
         assert_eq!(bits.len(), bv.len());
         for i in 0..bits.len() {
-            assert_eq!(bits[i], bv.get_bit(i));
+            assert_eq!(bits[i], bv.get_bit(i).unwrap());
         }
         for (i, x) in bv.iter().enumerate() {
             assert_eq!(bits[i], x);
@@ -582,8 +557,9 @@ mod tests {
             assert_eq!(bv.get_bit(i), other.get_bit(i));
         }
 
-        let one_positions: Vec<usize> = (0..bv.len()).filter(|&i| bv.get_bit(i)).collect();
-        let zero_positions: Vec<usize> = (0..bv.len()).filter(|&i| !bv.get_bit(i)).collect();
+        let one_positions: Vec<usize> = (0..bv.len()).filter(|&i| bv.get_bit(i).unwrap()).collect();
+        let zero_positions: Vec<usize> =
+            (0..bv.len()).filter(|&i| !bv.get_bit(i).unwrap()).collect();
 
         let mut pos = 0;
         for &i in &one_positions {

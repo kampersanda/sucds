@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::darray::iter::Iter;
-use crate::{broadword, BitVector, Searial};
+use crate::{broadword, BitVector, Length, Searial};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -362,6 +362,7 @@ impl Searial for DArrayIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::BitGetter;
 
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaChaRng;
@@ -374,7 +375,7 @@ mod tests {
     fn test_select(bv: &BitVector, da: &DArrayIndex) {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
-            if bv.get_bit(i) {
+            if bv.get_bit(i).unwrap() {
                 assert_eq!(i, da.select(bv, cur_rank));
                 cur_rank += 1;
             }
@@ -385,7 +386,7 @@ mod tests {
     fn test_select0(bv: &BitVector, da: &DArrayIndex) {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
-            if !bv.get_bit(i) {
+            if !bv.get_bit(i).unwrap() {
                 assert_eq!(i, da.select(bv, cur_rank));
                 cur_rank += 1;
             }

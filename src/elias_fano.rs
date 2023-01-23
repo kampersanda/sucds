@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitVector, Searial};
+use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Length, Searial};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -94,7 +94,7 @@ impl EliasFano {
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
-            if bv.get_bit(i) {
+            if bv.get_bit(i).unwrap() {
                 b.push(i)?;
             }
         }
@@ -215,7 +215,7 @@ impl EliasFano {
         let l_pos = pos & ((1 << self.low_len) - 1);
 
         while h_pos > 0
-            && self.high_bits.get_bit(h_pos - 1)
+            && self.high_bits.get_bit(h_pos - 1).unwrap()
             && self
                 .low_bits
                 .get_bits((rank - 1) * self.low_len, self.low_len)

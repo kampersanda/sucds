@@ -59,3 +59,20 @@ pub use rs_bit_vector::RsBitVector;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
+
+/// An interface for the length of a container.
+pub trait Length {
+    /// Returns the number of elements stored.
+    fn len(&self) -> usize;
+
+    /// Checks if the container is empty.
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+/// An interface for handling immutable bit arrays.
+pub trait BitGetter {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    fn get_bit(&self, pos: usize) -> Option<bool>;
+}
