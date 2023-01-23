@@ -1,5 +1,5 @@
 //! Iterator on bit vectors.
-use crate::BitVector;
+use crate::{BitGetter, BitVector, Length};
 
 /// Iterator for enumerating bits, created by [`BitVector::iter`].
 pub struct Iter<'a> {
@@ -20,7 +20,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.bv.len() {
-            let x = self.bv.get_bit(self.pos);
+            let x = self.bv.get_bit(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {

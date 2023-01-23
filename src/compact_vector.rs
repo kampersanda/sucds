@@ -121,7 +121,7 @@ impl CompactVector {
     /// ```
     #[inline(always)]
     pub fn get(&self, pos: usize) -> usize {
-        self.chunks.get_bits(pos * self.width, self.width)
+        self.chunks.get_bits(pos * self.width, self.width).unwrap()
     }
 
     /// Sets the `pos`-th integer to `value`.
