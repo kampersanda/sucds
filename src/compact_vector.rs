@@ -194,7 +194,7 @@ impl IntArray for CompactVector {
     /// assert_eq!(cv.get(2), 0);
     /// assert_eq!(cv.get(3), 10);
     /// ```
-    fn get(&self, i: usize) -> usize {
+    fn get(&self, i: usize) -> Option<usize> {
         self.chunks.get_bits(i * self.width, self.width)
     }
 

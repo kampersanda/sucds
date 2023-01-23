@@ -41,7 +41,6 @@ pub mod dacs_opt;
 pub mod darray;
 pub mod elias_fano;
 pub mod elias_fano_list;
-pub mod int_array;
 mod intrinsics;
 pub mod rs_bit_vector;
 pub mod serial;
@@ -56,8 +55,49 @@ pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use elias_fano_list::EliasFanoList;
-pub use int_array::IntArray;
 pub use rs_bit_vector::RsBitVector;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
+
+/// An interface for handling immutable bit arrays.
+pub trait BitArray {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    fn get(&self, pos: usize) -> Option<bool>;
+
+    /// Returns the `pos`-th bit.
+    ///
+    /// # Panics
+    ///
+    /// It will panic if the position is out of bounds.
+    fn index(&self, pos: usize) -> bool;
+
+    /// Returns the number of bits stored.
+    fn len(&self) -> usize;
+
+    /// Checks if the array is empty.
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+/// An interface for handling immutable integer arrays.
+pub trait IntArray {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    fn get(&self, pos: usize) -> Option<usize>;
+
+    /// Returns the `pos`-th integer.
+    ///
+    /// # Panics
+    ///
+    /// It will panic if the position is out of bounds.
+    fn index(&self, pos: usize) -> usize;
+
+    /// Returns the number of integers stored.
+    fn len(&self) -> usize;
+
+    /// Checks if the array is empty.
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
