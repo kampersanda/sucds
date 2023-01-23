@@ -89,12 +89,16 @@ impl BitVector {
     /// bv.set_bit(2, false);
     /// ```
     #[inline(always)]
-    pub fn set_bit(&mut self, pos: usize, bit: bool) {
-        debug_assert!(pos < self.len);
-        let word = pos / WORD_LEN;
-        let pos_in_word = pos % WORD_LEN;
-        self.words[word] &= !(1 << pos_in_word);
-        self.words[word] |= (bit as usize) << pos_in_word;
+    pub fn set_bit(&mut self, pos: usize, bit: bool) -> Option<()> {
+        if pos < self.len {
+            let word = pos / WORD_LEN;
+            let pos_in_word = pos % WORD_LEN;
+            self.words[word] &= !(1 << pos_in_word);
+            self.words[word] |= (bit as usize) << pos_in_word;
+            Some(())
+        } else {
+            None
+        }
     }
 
     /// Pushes `bit` at the end.
@@ -552,7 +556,7 @@ mod tests {
         assert_eq!(bv.len(), other.len());
         bits.iter()
             .enumerate()
-            .for_each(|(i, &b)| other.set_bit(i, b));
+            .for_each(|(i, &b)| other.set_bit(i, b).unwrap());
         for i in 0..bv.len() {
             assert_eq!(bv.get_bit(i), other.get_bit(i));
         }
