@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitVector, CompactVector, RsBitVector, Searial};
+use crate::{BitVector, CompactVector, IntGetter, RsBitVector, Searial};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -199,7 +199,7 @@ impl DacsOpt {
         let mut x = 0;
         let mut width = 0;
         for j in 0..self.num_levels() {
-            x |= self.data[j].get(pos) << (j * width);
+            x |= self.data[j].get_int(pos).unwrap() << (j * width);
             if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
                 break;
             }

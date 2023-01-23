@@ -8,21 +8,21 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::compact_vector::iter::Iter;
-use crate::{util, BitVector, Searial};
+use crate::{util, BitVector, IntGetter, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///
 /// # Examples
 ///
 /// ```
-/// use sucds::CompactVector;
+/// use sucds::{CompactVector, IntGetter};
 ///
 /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
 ///
-/// assert_eq!(cv.get(0), 5);
-/// assert_eq!(cv.get(1), 256);
-/// assert_eq!(cv.get(2), 0);
-/// assert_eq!(cv.get(3), 10);
+/// assert_eq!(cv.get_int(0), Some(5));
+/// assert_eq!(cv.get_int(1), Some(256));
+/// assert_eq!(cv.get_int(2), Some(0));
+/// assert_eq!(cv.get_int(3), Some(10));
 ///
 /// assert_eq!(cv.len(), 4);
 /// assert_eq!(cv.width(), 9);
@@ -81,17 +81,6 @@ impl CompactVector {
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::CompactVector;
-    ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
-    /// assert_eq!(cv.get(0), 5);
-    /// assert_eq!(cv.get(1), 256);
-    /// assert_eq!(cv.get(2), 0);
-    /// assert_eq!(cv.get(3), 10);
     /// ```
     pub fn from_slice(ints: &[usize]) -> Self {
         let &max_int = ints.iter().max().unwrap();
@@ -100,28 +89,6 @@ impl CompactVector {
             cv.set(i, x);
         }
         cv
-    }
-
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::CompactVector;
-    ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
-    /// assert_eq!(cv.get(0), 5);
-    /// assert_eq!(cv.get(1), 256);
-    /// assert_eq!(cv.get(2), 0);
-    /// assert_eq!(cv.get(3), 10);
-    /// ```
-    #[inline(always)]
-    pub fn get(&self, pos: usize) -> usize {
-        self.chunks.get_bits(pos * self.width, self.width).unwrap()
     }
 
     /// Sets the `pos`-th integer to `value`.
@@ -139,8 +106,6 @@ impl CompactVector {
     /// let mut cv = CompactVector::with_len(2, 8);
     /// cv.set(0, 10);
     /// cv.set(1, 255);
-    /// assert_eq!(cv.get(0), 10);
-    /// assert_eq!(cv.get(1), 255);
     /// ```
     #[inline(always)]
     pub fn set(&mut self, pos: usize, value: usize) {
@@ -161,8 +126,6 @@ impl CompactVector {
     /// let mut cv = CompactVector::new(8);
     /// cv.push(10);
     /// cv.push(255);
-    /// assert_eq!(cv.get(0), 10);
-    /// assert_eq!(cv.get(1), 255);
     /// ```
     #[inline(always)]
     pub fn push(&mut self, value: usize) {
@@ -209,11 +172,29 @@ impl CompactVector {
     }
 }
 
+impl IntGetter for CompactVector {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{CompactVector, IntGetter};
+    ///
+    /// let cv = CompactVector::from_slice(&[5, 256, 0]);
+    /// assert_eq!(cv.get_int(0), Some(5));
+    /// assert_eq!(cv.get_int(1), Some(256));
+    /// assert_eq!(cv.get_int(2), Some(0));
+    /// assert_eq!(cv.get_int(3), None);
+    fn get_int(&self, pos: usize) -> Option<usize> {
+        self.chunks.get_bits(pos * self.width, self.width)
+    }
+}
+
 impl std::fmt::Debug for CompactVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ints = vec![0; self.len()];
         for (i, b) in ints.iter_mut().enumerate() {
-            *b = self.get(i);
+            *b = self.get_int(i).unwrap();
         }
         f.debug_struct("CompactVector")
             .field("ints", &ints)
@@ -257,7 +238,7 @@ mod tests {
 
     fn test_basic(ints: &[usize], list: &CompactVector) {
         for (i, &x) in ints.iter().enumerate() {
-            assert_eq!(x, list.get(i));
+            assert_eq!(x, list.get_int(i).unwrap());
         }
         for (i, x) in list.iter().enumerate() {
             assert_eq!(ints[i], x);

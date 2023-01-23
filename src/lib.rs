@@ -71,8 +71,17 @@ pub trait Length {
     }
 }
 
-/// An interface for handling immutable bit arrays.
+// NOTE(kampersanda): We should use `get()` because it has been already used in most std
+// containers with different type annotations.
+
+/// An interface for getters of bit arrays.
 pub trait BitGetter {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     fn get_bit(&self, pos: usize) -> Option<bool>;
+}
+
+/// An interface for getters of integer arrays.
+pub trait IntGetter {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    fn get_int(&self, pos: usize) -> Option<usize>;
 }
