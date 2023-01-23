@@ -187,12 +187,15 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(1, 4), Some(0b1010));
     /// ```
     #[inline(always)]
-    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) {
-        debug_assert!(len <= WORD_LEN);
-        debug_assert!(pos + len <= self.len());
-        debug_assert!(len == WORD_LEN || (bits >> len) == 0);
+    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Option<()> {
+        if WORD_LEN < len || self.len() < pos + len {
+            return None;
+        }
+        if len != WORD_LEN && (bits >> len) != 0 {
+            return None;
+        }
         if len == 0 {
-            return;
+            return Some(());
         }
         let mask = {
             if len < WORD_LEN {
@@ -212,6 +215,7 @@ impl BitVector {
             self.words[word + 1] &= !(mask >> stored);
             self.words[word + 1] |= bits >> stored;
         }
+        Some(())
     }
 
     /// Pushes `bits` of `len` bits at the end.
@@ -232,11 +236,15 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(1, 4), Some(0b1010));
     /// ```
     #[inline(always)]
-    pub fn push_bits(&mut self, bits: usize, len: usize) {
-        debug_assert!(len <= WORD_LEN);
-        debug_assert!(len == WORD_LEN || (bits >> len) == 0);
+    pub fn push_bits(&mut self, bits: usize, len: usize) -> Option<()> {
+        if WORD_LEN < len {
+            return None;
+        }
+        if len != WORD_LEN && (bits >> len) != 0 {
+            return None;
+        }
         if len == 0 {
-            return;
+            return Some(());
         }
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
@@ -249,6 +257,7 @@ impl BitVector {
             }
         }
         self.len += len;
+        Some(())
     }
 
     /// Gets the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
@@ -611,7 +620,7 @@ mod tests {
     fn test_int_vector(ints: &[usize], width: usize) {
         {
             let mut bv = BitVector::new();
-            ints.iter().for_each(|&x| bv.push_bits(x, width));
+            ints.iter().for_each(|&x| bv.push_bits(x, width).unwrap());
             assert_eq!(ints.len() * width, bv.len());
             for i in 0..ints.len() {
                 assert_eq!(ints[i], bv.get_bits(i * width, width).unwrap());
@@ -622,7 +631,7 @@ mod tests {
             assert_eq!(ints.len() * width, bv.len());
             ints.iter()
                 .enumerate()
-                .for_each(|(i, &x)| bv.set_bits(i * width, x, width));
+                .for_each(|(i, &x)| bv.set_bits(i * width, x, width).unwrap());
             for i in 0..ints.len() {
                 assert_eq!(ints[i], bv.get_bits(i * width, width).unwrap());
             }
