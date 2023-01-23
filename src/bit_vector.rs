@@ -10,7 +10,8 @@ use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, BitGetter, Length, Searial};
 
-pub(crate) const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+/// The number of bits in a machine word.
+pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
 /// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 ///
@@ -71,12 +72,7 @@ impl BitVector {
         this
     }
 
-    /// Sets the `pos`-th bit to `bit`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    /// - `bit`: Set bit.
+    /// Updates the `pos`-th bit to `bit`, returning [`None`] if out of bounds.
     ///
     /// # Examples
     ///
@@ -84,9 +80,8 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::from_bits([false, true, true, false]);
-    ///
-    /// bv.set_bit(0, true);
-    /// bv.set_bit(2, false);
+    /// bv.set_bit(0, true).unwrap();
+    /// bv.set_bit(2, false).unwrap();
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Option<()> {
@@ -103,10 +98,6 @@ impl BitVector {
 
     /// Pushes `bit` at the end.
     ///
-    /// # Arguments
-    ///
-    /// - `bit`: Pushed bit.
-    ///
     /// # Examples
     ///
     /// ```
@@ -115,8 +106,6 @@ impl BitVector {
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
     /// bv.push_bit(false);
-    /// assert_eq!(bv.get_bit(0), Some(true));
-    /// assert_eq!(bv.get_bit(1), Some(false));
     /// ```
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
@@ -130,12 +119,12 @@ impl BitVector {
         self.len += 1;
     }
 
-    /// Gets the `len` bits starting at the `pos`-th bit.
+    /// Returns the `len` bits starting at the `pos`-th bit.
     ///
-    /// # Arguments
+    /// [`None`] is returned if
     ///
-    /// - `pos`: Starting bit position.
-    /// - `len`: Number of bits.
+    /// - `len` is greater than [`WORD_LEN`], or
+    /// - `pos + len` is out of bounds.
     ///
     /// # Examples
     ///
@@ -169,13 +158,11 @@ impl BitVector {
         Some(bits)
     }
 
-    /// Sets the `len` bits starting at the `pos`-th bit to `bits`.
+    /// Updates the `len` bits starting at the `pos`-th bit to `bits`, returning [`None`] if
     ///
-    /// # Arguments
-    ///
-    /// - `pos`: Starting bit position.
-    /// - `bits`: Set bits.
-    /// - `len`: Number of bits.
+    /// - `len` is greater than [`WORD_LEN`],
+    /// - `pos + len` is out of bounds, or
+    /// - `bits` has active bits other than the lowest `len` bits.
     ///
     /// # Examples
     ///
@@ -218,12 +205,10 @@ impl BitVector {
         Some(())
     }
 
-    /// Pushes `bits` of `len` bits at the end.
+    /// Pushes `bits` of `len` bits at the end, returning [`None`] if
     ///
-    /// # Arguments
-    ///
-    /// - `bits`: Pushed bits.
-    /// - `len`: Number of bits.
+    /// - `len` is greater than [`WORD_LEN`],
+    /// - `bits` has active bits other than the lowest `len` bits.
     ///
     /// # Examples
     ///
