@@ -175,7 +175,10 @@ impl EliasFano {
     #[inline(always)]
     pub fn select(&self, k: usize) -> usize {
         ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
-            | self.low_bits.get_bits(k * self.low_len, self.low_len)
+            | self
+                .low_bits
+                .get_bits(k * self.low_len, self.low_len)
+                .unwrap()
     }
 
     /// Counts the number of integers less than `pos`.
@@ -219,6 +222,7 @@ impl EliasFano {
             && self
                 .low_bits
                 .get_bits((rank - 1) * self.low_len, self.low_len)
+                .unwrap()
                 >= l_pos
         {
             rank -= 1;
@@ -309,11 +313,17 @@ impl EliasFano {
     #[inline(always)]
     pub fn delta(&self, k: usize) -> usize {
         let high_val = self.high_bits_d1.select(&self.high_bits, k);
-        let low_val = self.low_bits.get_bits(k * self.low_len, self.low_len);
+        let low_val = self
+            .low_bits
+            .get_bits(k * self.low_len, self.low_len)
+            .unwrap();
         if k != 0 {
             ((high_val - self.high_bits.predecessor1(high_val - 1).unwrap() - 1) << self.low_len)
                 + low_val
-                - self.low_bits.get_bits((k - 1) * self.low_len, self.low_len)
+                - self
+                    .low_bits
+                    .get_bits((k - 1) * self.low_len, self.low_len)
+                    .unwrap()
         } else {
             ((high_val - k) << self.low_len) | low_val
         }
