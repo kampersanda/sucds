@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::util;
-use crate::{BitVector, RsBitVector, Searial};
+use crate::{BitVector, IntGetter, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -21,14 +21,14 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsByte;
+/// use sucds::{DacsByte, IntGetter};
 ///
 /// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
 ///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 100000);
-/// assert_eq!(list.get(3), 334);
+/// assert_eq!(list.get_int(0), Some(5));
+/// assert_eq!(list.get_int(1), Some(0));
+/// assert_eq!(list.get_int(2), Some(100000));
+/// assert_eq!(list.get_int(3), Some(334));
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 3);
@@ -89,28 +89,6 @@ impl DacsByte {
         Self { data, flags }
     }
 
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-        }
-        x
-    }
-
     /// Creates an iterator for enumerating integers.
     ///
     /// # Examples
@@ -166,6 +144,26 @@ impl Default for DacsByte {
     }
 }
 
+impl IntGetter for DacsByte {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    fn get_int(&self, mut pos: usize) -> Option<usize> {
+        let mut x = 0;
+        for j in 0..self.num_levels() {
+            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
+                break;
+            }
+            pos = self.flags[j].rank1(pos);
+        }
+        Some(x)
+    }
+}
+
 /// Iterator for enumerating integers, created by [`DacsByte::iter()`].
 pub struct Iter<'a> {
     list: &'a DacsByte,
@@ -185,7 +183,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.list.len() {
-            let x = self.list.get(self.pos);
+            let x = self.list.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -248,11 +246,11 @@ mod tests {
         assert_eq!(list.num_levels(), 3);
         assert_eq!(list.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
 
-        assert_eq!(list.get(0), 0xFFFF);
-        assert_eq!(list.get(1), 0xFF);
-        assert_eq!(list.get(2), 0xF);
-        assert_eq!(list.get(3), 0xFFFFF);
-        assert_eq!(list.get(4), 0xF);
+        assert_eq!(list.get_int(0), Some(0xFFFF));
+        assert_eq!(list.get_int(1), Some(0xFF));
+        assert_eq!(list.get_int(2), Some(0xF));
+        assert_eq!(list.get_int(3), Some(0xFFFFF));
+        assert_eq!(list.get_int(4), Some(0xF));
     }
 
     #[test]
@@ -271,10 +269,10 @@ mod tests {
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
-        assert_eq!(list.get(0), 0);
-        assert_eq!(list.get(1), 0);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 0);
+        assert_eq!(list.get_int(0), Some(0));
+        assert_eq!(list.get_int(1), Some(0));
+        assert_eq!(list.get_int(2), Some(0));
+        assert_eq!(list.get_int(3), Some(0));
     }
 
     #[test]
