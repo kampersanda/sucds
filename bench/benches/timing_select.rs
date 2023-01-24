@@ -91,7 +91,7 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
-                sum += idx.select(q);
+                sum += idx.select1(q).unwrap();
             }
             if sum == 0 {
                 panic!();

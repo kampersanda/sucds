@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::darray::iter::Iter;
-use crate::{broadword, BitVector, Searial};
+use crate::{broadword, BitVector, Searial, Selector};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -21,12 +21,12 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// # Examples
 ///
 /// ```
-/// use sucds::DArray;
+/// use sucds::{DArray, Selector};
 ///
 /// let da = DArray::from_bits([true, false, false, true]);
 ///
-/// assert_eq!(da.select(0), 0);
-/// assert_eq!(da.select(1), 3);
+/// assert_eq!(da.select1(0), Some(0));
+/// assert_eq!(da.select1(1), Some(3));
 /// ```
 ///
 /// # References
@@ -54,30 +54,6 @@ impl DArray {
             da: DArrayIndex::build(&bv, true),
             bv,
         }
-    }
-
-    /// Searches the `k`-th iteger.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::DArray;
-    ///
-    /// let da = DArray::from_bits([true, false, false, true]);
-    /// assert_eq!(da.select(0), 0);
-    /// assert_eq!(da.select(1), 3);
-    /// ```
-    #[inline(always)]
-    pub fn select(&self, k: usize) -> usize {
-        self.da.select(&self.bv, k)
     }
 
     /// Creates an iterator for enumerating integers.
@@ -108,6 +84,33 @@ impl DArray {
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.da.is_empty()
+    }
+}
+
+impl Selector for DArray {
+    /// Returns the position of the `k`-th smallest integer.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{DArray, Selector};
+    ///
+    /// let da = DArray::from_bits([true, false, false, true]);
+    ///
+    /// assert_eq!(da.select1(0), Some(0));
+    /// assert_eq!(da.select1(1), Some(3));
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        Some(self.da.select(&self.bv, k))
+    }
+
+    /// Panics always because this operation is not supported.
+    fn select0(&self, _k: usize) -> Option<usize> {
+        panic!("This operation is not supported.")
     }
 }
 
