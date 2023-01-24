@@ -47,14 +47,6 @@ impl BitVector {
         Self::default()
     }
 
-    /// Creates a new instance of `len` bits.
-    pub fn with_len(len: usize) -> Self {
-        Self {
-            words: vec![0; Self::words_for(len)],
-            len,
-        }
-    }
-
     /// Creates a new instance that `capa` bits are reserved.
     pub fn with_capacity(capa: usize) -> Self {
         Self {
@@ -63,7 +55,20 @@ impl BitVector {
         }
     }
 
-    /// Creates a new instance from input bitset `bits`.
+    /// Creates a new instance that stores `len` bits initialized by `bit`.
+    pub fn from_bit(bit: bool, len: usize) -> Self {
+        let bit = bit.into();
+        let word = if bit { usize::MAX } else { 0 };
+        let mut words = vec![word; Self::words_for(len)];
+        let shift = len % WORD_LEN;
+        if shift != 0 {
+            let mask = (1 << shift) - 1;
+            *words.last_mut().unwrap() &= mask;
+        }
+        Self { words, len }
+    }
+
+    /// Creates a new instance from input bit stream `bits`.
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
@@ -553,7 +558,7 @@ mod tests {
             assert_eq!(bits[i], x);
         }
 
-        let mut other = BitVector::with_len(bits.len());
+        let mut other = BitVector::from_bit(false, bits.len());
         assert_eq!(bv.len(), other.len());
         bits.iter()
             .enumerate()
@@ -617,7 +622,7 @@ mod tests {
             }
         }
         {
-            let mut bv = BitVector::with_len(ints.len() * width);
+            let mut bv = BitVector::from_bit(false, ints.len() * width);
             assert_eq!(ints.len() * width, bv.len());
             ints.iter()
                 .enumerate()

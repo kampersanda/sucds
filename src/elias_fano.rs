@@ -499,7 +499,7 @@ impl EliasFanoBuilder {
         }
         let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
         Ok(Self {
-            high_bits: BitVector::with_len((num_ints + 1) + (universe >> low_len) + 1),
+            high_bits: BitVector::from_bit(false, (num_ints + 1) + (universe >> low_len) + 1),
             low_bits: BitVector::new(),
             universe,
             num_ints,

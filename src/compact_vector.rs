@@ -56,7 +56,7 @@ impl CompactVector {
     /// - `width`: Number of bits to represent an integer.
     pub fn with_len(len: usize, width: usize) -> Self {
         Self {
-            chunks: BitVector::with_len(len * width),
+            chunks: BitVector::from_bit(false, len * width),
             len,
             width,
         }
