@@ -31,6 +31,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 ///
 /// assert_eq!(bv.predecessor1(2), Some(0));
 /// assert_eq!(bv.predecessor0(2), Some(2));
+///
 /// assert_eq!(bv.successor1(1), Some(3));
 /// assert_eq!(bv.successor0(1), Some(1));
 /// ```
