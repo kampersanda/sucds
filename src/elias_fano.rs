@@ -114,8 +114,8 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Builds an index to enable operations [`EliasFano::rank`],
-    /// [`EliasFano::predecessor`], and [`EliasFano::successor`].
+    /// Builds an index to enable operations [`EliasFano::rank1()`],
+    /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
