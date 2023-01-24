@@ -60,17 +60,6 @@ pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
-/// An interface for the length of a container.
-pub trait Length {
-    /// Returns the number of elements stored.
-    fn len(&self) -> usize;
-
-    /// Checks if the container is empty.
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
 // NOTE(kampersanda): We should use `get()` because it has been already used in most std
 // containers with different type annotations.
 

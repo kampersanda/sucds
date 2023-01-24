@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Length, Searial};
+use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Searial};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 

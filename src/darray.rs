@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::darray::iter::Iter;
-use crate::{broadword, BitVector, Length, Searial};
+use crate::{broadword, BitVector, Searial};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;

@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, BitGetter, Length, Searial};
+use crate::{broadword, BitGetter, Searial};
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -442,6 +442,16 @@ impl BitVector {
         &self.words
     }
 
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Checks if the container is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Gets the number of words.
     #[inline(always)]
     pub fn num_words(&self) -> usize {
@@ -456,12 +466,6 @@ impl BitVector {
     #[inline(always)]
     const fn words_for(n: usize) -> usize {
         (n + WORD_LEN - 1) / WORD_LEN
-    }
-}
-
-impl Length for BitVector {
-    fn len(&self) -> usize {
-        self.len
     }
 }
 

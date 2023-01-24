@@ -1,5 +1,5 @@
 //! Iterator on bit vectors.
-use crate::{BitGetter, BitVector, Length};
+use crate::{BitGetter, BitVector};
 
 /// Iterator for enumerating bits, created by [`BitVector::iter`].
 pub struct Iter<'a> {
