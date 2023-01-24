@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitVector, CompactVector, RsBitVector, Searial};
+use crate::{BitVector, CompactVector, IntGetter, RsBitVector, Searial};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -17,15 +17,15 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsOpt;
+/// use sucds::{DacsOpt, IntGetter};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
 /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
 ///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 100000);
-/// assert_eq!(list.get(3), 334);
+/// assert_eq!(list.get_int(0), Some(5));
+/// assert_eq!(list.get_int(1), Some(0));
+/// assert_eq!(list.get_int(2), Some(100000));
+/// assert_eq!(list.get_int(3), Some(334));
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 2);
@@ -154,7 +154,7 @@ impl DacsOpt {
         if widths.len() == 1 {
             let mut data = CompactVector::with_len(ints.len(), widths[0]);
             for (i, &x) in ints.iter().enumerate() {
-                data.set(i, x);
+                data.set_int(i, x).unwrap();
             }
             return Ok(Self {
                 data: vec![data],
@@ -168,7 +168,7 @@ impl DacsOpt {
         for mut x in ints.iter().cloned() {
             for (j, &width) in widths.iter().enumerate() {
                 let mask = (1 << width) - 1;
-                data[j].push(x & mask);
+                data[j].push_int(x & mask);
                 x >>= width;
                 if j == widths.len() - 1 {
                     assert_eq!(x, 0);
@@ -183,30 +183,6 @@ impl DacsOpt {
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
         Ok(Self { data, flags })
-    }
-
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        let mut width = 0;
-        for j in 0..self.num_levels() {
-            x |= self.data[j].get(pos) << (j * width);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-            width = self.data[j].width();
-        }
-        x
     }
 
     /// Creates an iterator for enumerating integers.
@@ -263,6 +239,28 @@ impl Default for DacsOpt {
     }
 }
 
+impl IntGetter for DacsOpt {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    fn get_int(&self, mut pos: usize) -> Option<usize> {
+        let mut x = 0;
+        let mut width = 0;
+        for j in 0..self.num_levels() {
+            x |= self.data[j].get_int(pos).unwrap() << (j * width);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
+                break;
+            }
+            pos = self.flags[j].rank1(pos);
+            width = self.data[j].width();
+        }
+        Some(x)
+    }
+}
+
 /// Iterator for enumerating integers, created by [`DacsOpt::iter()`].
 pub struct Iter<'a> {
     list: &'a DacsOpt,
@@ -282,7 +280,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.list.len() {
-            let x = self.list.get(self.pos);
+            let x = self.list.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -371,10 +369,10 @@ mod tests {
         assert_eq!(list.num_levels(), 2);
         assert_eq!(list.widths(), vec![2, 2]);
 
-        assert_eq!(list.get(0), 0b11);
-        assert_eq!(list.get(1), 0b1);
-        assert_eq!(list.get(2), 0b1111);
-        assert_eq!(list.get(3), 0b11);
+        assert_eq!(list.get_int(0), Some(0b11));
+        assert_eq!(list.get_int(1), Some(0b1));
+        assert_eq!(list.get_int(2), Some(0b1111));
+        assert_eq!(list.get_int(3), Some(0b11));
     }
 
     #[test]
@@ -393,10 +391,10 @@ mod tests {
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.widths(), vec![1]);
-        assert_eq!(list.get(0), 0);
-        assert_eq!(list.get(1), 0);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 0);
+        assert_eq!(list.get_int(0), Some(0));
+        assert_eq!(list.get_int(1), Some(0));
+        assert_eq!(list.get_int(2), Some(0));
+        assert_eq!(list.get_int(3), Some(0));
     }
 
     #[test]

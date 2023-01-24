@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Length, Searial};
+use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Searial};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -289,11 +289,7 @@ impl EliasFano {
     }
 
     /// Gets the difference between the `k-1`-th and `k`-th integers
-    /// (i.e., `select(k) - select(k-1)`).
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
+    /// (i.e., `select(k) - select(k-1)`), returning [`None`] if out of bounds.
     ///
     /// # Complexity
     ///
@@ -305,19 +301,23 @@ impl EliasFano {
     /// use sucds::EliasFano;
     ///
     /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.delta(0), 1);
-    /// assert_eq!(ef.delta(1), 2);
-    /// assert_eq!(ef.delta(2), 0);
-    /// assert_eq!(ef.delta(3), 4);
+    /// assert_eq!(ef.delta(0), Some(1));
+    /// assert_eq!(ef.delta(1), Some(2));
+    /// assert_eq!(ef.delta(2), Some(0));
+    /// assert_eq!(ef.delta(3), Some(4));
+    /// assert_eq!(ef.delta(4), None);
     /// ```
     #[inline(always)]
-    pub fn delta(&self, k: usize) -> usize {
+    pub fn delta(&self, k: usize) -> Option<usize> {
+        if self.len() <= k {
+            return None;
+        }
         let high_val = self.high_bits_d1.select(&self.high_bits, k);
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
             .unwrap();
-        if k != 0 {
+        let x = if k != 0 {
             ((high_val - self.high_bits.predecessor1(high_val - 1).unwrap() - 1) << self.low_len)
                 + low_val
                 - self
@@ -326,7 +326,8 @@ impl EliasFano {
                     .unwrap()
         } else {
             ((high_val - k) << self.low_len) | low_val
-        }
+        };
+        Some(x)
     }
 
     /// Finds the position `k` such that `select(k) == val`.

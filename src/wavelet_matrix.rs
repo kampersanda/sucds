@@ -474,7 +474,7 @@ impl WaveletMatrixBuilder {
                 val
             ))
         } else {
-            self.vals.push(val);
+            self.vals.push_int(val);
             Ok(())
         }
     }
@@ -539,9 +539,9 @@ impl WaveletMatrixBuilder {
             let bit = ((val >> shift) & 1) == 1;
             bv.push_bit(bit);
             if bit {
-                next_ones.push(val);
+                next_ones.push_int(val);
             } else {
-                next_zeros.push(val);
+                next_zeros.push_int(val);
             }
         }
     }

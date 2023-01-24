@@ -1,5 +1,6 @@
 //! Broadword tools.
 #![cfg(target_pointer_width = "64")]
+#![allow(dead_code)]
 
 #[cfg(feature = "intrinsics")]
 use crate::intrinsics;
@@ -13,13 +14,11 @@ pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
 pub(crate) const INV_COUNT_STEP_9: usize =
     1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn uleq_step_8(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
@@ -37,7 +36,6 @@ pub(crate) const fn byte_counts(mut x: usize) -> usize {
     (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
@@ -98,7 +96,6 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
     place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) fn bit_position(x: usize) -> usize {
     debug_assert!(popcount(x) == 1);

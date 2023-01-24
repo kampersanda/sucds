@@ -60,19 +60,17 @@ pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
-/// An interface for the length of a container.
-pub trait Length {
-    /// Returns the number of elements stored.
-    fn len(&self) -> usize;
+// NOTE(kampersanda): We should use `get()` because it has been already used in most std
+// containers with different type annotations.
 
-    /// Checks if the container is empty.
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
-/// An interface for handling immutable bit arrays.
+/// An interface for getters of bit arrays.
 pub trait BitGetter {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     fn get_bit(&self, pos: usize) -> Option<bool>;
+}
+
+/// An interface for getters of integer arrays.
+pub trait IntGetter {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    fn get_int(&self, pos: usize) -> Option<usize>;
 }

@@ -1,5 +1,5 @@
 //! Iterator on compact vectors.
-use crate::CompactVector;
+use crate::{CompactVector, IntGetter};
 
 /// Iterator for enumerating integers, created by [`CompactVector::iter`].
 pub struct Iter<'a> {
@@ -20,7 +20,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.cv.len() {
-            let x = self.cv.get(self.pos);
+            let x = self.cv.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
