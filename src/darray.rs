@@ -110,7 +110,7 @@ impl Selector for DArray {
 
     /// Panics always because this operation is not supported.
     fn select0(&self, _k: usize) -> Option<usize> {
-        panic!("This operation is not supported.")
+        panic!("This operation is not supported.");
     }
 }
 

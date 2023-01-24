@@ -89,7 +89,7 @@ fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
-                sum += idx.rank(q);
+                sum += idx.rank1(q).unwrap();
             }
             if sum == 0 {
                 panic!();
