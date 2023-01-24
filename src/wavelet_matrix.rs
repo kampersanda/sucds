@@ -10,7 +10,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::wavelet_matrix::iter::Iter;
-use crate::{broadword, BitGetter, BitVector, CompactVector, RsBitVector, Searial};
+use crate::{broadword, BitGetter, BitVector, CompactVector, Ranker, RsBitVector, Searial};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -110,9 +110,9 @@ impl WaveletMatrix {
             let rsbv = &self.layers[depth];
             if rsbv.get_bit(pos).unwrap() {
                 val |= 1;
-                pos = rsbv.rank1(pos) + rsbv.num_zeros();
+                pos = rsbv.rank1(pos).unwrap() + rsbv.num_zeros();
             } else {
-                pos = rsbv.rank0(pos);
+                pos = rsbv.rank0(pos).unwrap();
             }
         }
         val
@@ -183,11 +183,11 @@ impl WaveletMatrix {
             let bit = Self::get_msb(val, depth, self.width);
             let rsbv = &self.layers[depth];
             if bit {
-                start_pos = rsbv.rank1(start_pos) + rsbv.num_zeros();
-                end_pos = rsbv.rank1(end_pos) + rsbv.num_zeros();
+                start_pos = rsbv.rank1(start_pos).unwrap() + rsbv.num_zeros();
+                end_pos = rsbv.rank1(end_pos).unwrap() + rsbv.num_zeros();
             } else {
-                start_pos = rsbv.rank0(start_pos);
-                end_pos = rsbv.rank0(end_pos);
+                start_pos = rsbv.rank0(start_pos).unwrap();
+                end_pos = rsbv.rank0(end_pos).unwrap();
             }
         }
         (start_pos..end_pos).len()
@@ -232,11 +232,11 @@ impl WaveletMatrix {
         let rsbv = &self.layers[depth];
         if bit {
             let zeros = rsbv.num_zeros();
-            pos = rsbv.rank1(pos) + zeros;
+            pos = rsbv.rank1(pos).unwrap() + zeros;
             k = self.select_helper(k, val, pos, depth + 1);
             rsbv.select1(k - zeros)
         } else {
-            pos = rsbv.rank0(pos);
+            pos = rsbv.rank0(pos).unwrap();
             k = self.select_helper(k, val, pos, depth + 1);
             rsbv.select0(k)
         }
@@ -280,8 +280,8 @@ impl WaveletMatrix {
         for depth in 0..self.width {
             val <<= 1;
             let rsbv = &self.layers[depth];
-            let zero_start_pos = rsbv.rank0(start_pos);
-            let zero_end_pos = rsbv.rank0(end_pos);
+            let zero_start_pos = rsbv.rank0(start_pos).unwrap();
+            let zero_end_pos = rsbv.rank0(end_pos).unwrap();
             let zeros = zero_end_pos - zero_start_pos;
             if k < zeros {
                 start_pos = zero_start_pos;
@@ -341,8 +341,8 @@ impl WaveletMatrix {
         for range in ranges {
             let start_pos = range.start;
             let end_pos = range.end;
-            let zero_start_pos = rsbv.rank0(start_pos);
-            let zero_end_pos = rsbv.rank0(end_pos);
+            let zero_start_pos = rsbv.rank0(start_pos).unwrap();
+            let zero_end_pos = rsbv.rank0(end_pos).unwrap();
             let one_start_pos = rsbv.num_zeros() + start_pos - zero_start_pos;
             let one_end_pos = rsbv.num_zeros() + end_pos - zero_end_pos;
             if zero_end_pos - zero_start_pos > 0 {

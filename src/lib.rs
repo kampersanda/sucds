@@ -74,3 +74,14 @@ pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
 }
+
+/// An interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+pub trait Ranker {
+    /// Returns the cardinality of $`\{ x \mid x \in S, x < i \}`$, i.e.,
+    /// the number of integers in $`S`$ that are no greater than `i`.
+    fn rank1(&self, i: usize) -> Option<usize>;
+
+    /// Returns the cardinality of $`\{ x \mid x \not\in S, 0 \leq x < i \}`$, i.e.,
+    /// the number of integers not in $`S`$ that are no greater than `i`.
+    fn rank0(&self, i: usize) -> Option<usize>;
+}

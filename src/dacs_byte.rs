@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::util;
-use crate::{BitGetter, BitVector, IntGetter, RsBitVector, Searial};
+use crate::{BitGetter, BitVector, IntGetter, Ranker, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -161,7 +161,7 @@ impl IntGetter for DacsByte {
             if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
                 break;
             }
-            pos = self.flags[j].rank1(pos);
+            pos = self.flags[j].rank1(pos).unwrap();
         }
         Some(x)
     }
