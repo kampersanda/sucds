@@ -126,28 +126,6 @@ impl RsBitVector {
         self.build_select0()
     }
 
-    /// Gets the `pos`-th bit.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// ```
-    #[inline(always)]
-    pub fn get_bit(&self, pos: usize) -> bool {
-        self.bv.get_bit(pos).unwrap()
-    }
-
     /// Counts the number of ones from the zeroth bit to the `pos-1`-th bit.
     ///
     /// # Arguments
@@ -464,6 +442,25 @@ impl RsBitVector {
 
         self.select0_hints = Some(select0_hints);
         self
+    }
+}
+
+impl BitGetter for RsBitVector {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, BitVector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false]);
+    /// assert_eq!(bv.get_bit(0), Some(true));
+    /// assert_eq!(bv.get_bit(1), Some(false));
+    /// assert_eq!(bv.get_bit(2), Some(false));
+    /// assert_eq!(bv.get_bit(3), None);
+    /// ```
+    fn get_bit(&self, pos: usize) -> Option<bool> {
+        self.bv.get_bit(pos)
     }
 }
 

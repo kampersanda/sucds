@@ -10,7 +10,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::wavelet_matrix::iter::Iter;
-use crate::{broadword, BitVector, CompactVector, RsBitVector, Searial};
+use crate::{broadword, BitGetter, BitVector, CompactVector, RsBitVector, Searial};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -108,7 +108,7 @@ impl WaveletMatrix {
         for depth in 0..self.width {
             val <<= 1;
             let rsbv = &self.layers[depth];
-            if rsbv.get_bit(pos) {
+            if rsbv.get_bit(pos).unwrap() {
                 val |= 1;
                 pos = rsbv.rank1(pos) + rsbv.num_zeros();
             } else {
