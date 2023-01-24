@@ -81,7 +81,6 @@ impl CompactVector {
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    /// ```
     pub fn from_slice(ints: &[usize]) -> Self {
         let &max_int = ints.iter().max().unwrap();
         let mut cv = Self::with_len(ints.len(), util::needed_bits(max_int));
