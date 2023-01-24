@@ -106,7 +106,7 @@ impl IntGetter for EliasFanoList {
     /// assert_eq!(list.get_int(1), Some(14));
     /// assert_eq!(list.get_int(2), Some(2));
     fn get_int(&self, pos: usize) -> Option<usize> {
-        Some(self.ef.delta(pos))
+        self.ef.delta(pos)
     }
 }
 
