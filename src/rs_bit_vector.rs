@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitGetter, BitVector, Searial};
+use crate::{broadword, BitGetter, BitVector, Ranker, Searial, Selector};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -23,15 +23,15 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// # Examples
 ///
 /// ```
-/// use sucds::RsBitVector;
+/// use sucds::{RsBitVector, BitGetter, Ranker, Selector};
 ///
 /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints().select0_hints();
 ///
-/// assert_eq!(bv.get_bit(1), false);
-/// assert_eq!(bv.rank1(1), 1);
-/// assert_eq!(bv.rank0(1), 0);
-/// assert_eq!(bv.select1(1), 3);
-/// assert_eq!(bv.select0(0), 1);
+/// assert_eq!(bv.get_bit(1), Some(false));
+/// assert_eq!(bv.rank1(1), Some(1));
+/// assert_eq!(bv.rank0(1), Some(0));
+/// assert_eq!(bv.select1(1), Some(3));
+/// assert_eq!(bv.select0(0), Some(1));
 /// assert_eq!(bv.len(), 4);
 /// ```
 ///
@@ -48,23 +48,6 @@ pub struct RsBitVector {
 
 impl RsBitVector {
     /// Creates a new [`RsBitVector`] from input bit vector `bv`.
-    ///
-    /// # Arguments
-    ///
-    /// - `bv`: Input bit vector.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{BitVector, RsBitVector};
-    ///
-    /// let bv = RsBitVector::new(BitVector::from_bits([true, false, false, true]));
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// assert_eq!(bv.len(), 4);
-    /// ```
     pub fn new(bv: BitVector) -> Self {
         Self::build_rank(bv)
     }
@@ -74,19 +57,6 @@ impl RsBitVector {
     /// # Arguments
     ///
     /// - `bits`: List of bits.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// assert_eq!(bv.len(), 4);
-    /// ```
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
@@ -95,240 +65,15 @@ impl RsBitVector {
     }
 
     /// Builds an index for faster `select1`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
-    /// assert_eq!(bv.select1(0), 0);
-    /// assert_eq!(bv.select1(1), 3);
-    /// ```
     #[must_use]
     pub fn select1_hints(self) -> Self {
         self.build_select1()
     }
 
     /// Builds an index for faster `select0`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
-    /// assert_eq!(bv.select0(0), 1);
-    /// assert_eq!(bv.select0(1), 2);
-    /// ```
     #[must_use]
     pub fn select0_hints(self) -> Self {
         self.build_select0()
-    }
-
-    /// Gets the `pos`-th bit.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.get_bit(0), true);
-    /// assert_eq!(bv.get_bit(1), false);
-    /// assert_eq!(bv.get_bit(2), false);
-    /// assert_eq!(bv.get_bit(3), true);
-    /// ```
-    #[inline(always)]
-    pub fn get_bit(&self, pos: usize) -> bool {
-        self.bv.get_bit(pos).unwrap()
-    }
-
-    /// Counts the number of ones from the zeroth bit to the `pos-1`-th bit.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.rank1(1), 1);
-    /// assert_eq!(bv.rank1(2), 1);
-    /// assert_eq!(bv.rank1(3), 1);
-    /// assert_eq!(bv.rank1(4), 2);
-    /// ```
-    #[inline(always)]
-    pub fn rank1(&self, pos: usize) -> usize {
-        debug_assert!(pos <= self.len());
-        if pos == self.len() {
-            return self.num_ones();
-        }
-        let (sub_bpos, sub_left) = (pos / 64, pos % 64);
-        let mut r = self.sub_block_rank(sub_bpos);
-        if sub_left != 0 {
-            r += broadword::popcount(self.bv.words()[sub_bpos] << (64 - sub_left));
-        }
-        r
-    }
-
-    /// Counts the number of zeros from the zeroth bit to the `pos-1`-th bit.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.rank0(1), 0);
-    /// assert_eq!(bv.rank0(2), 1);
-    /// assert_eq!(bv.rank0(3), 2);
-    /// assert_eq!(bv.rank0(4), 2);
-    /// ```
-    #[inline(always)]
-    pub fn rank0(&self, pos: usize) -> usize {
-        pos - self.rank1(pos)
-    }
-
-    /// Searches the position of the `k`-th bit set.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
-    /// assert_eq!(bv.select1(0), 0);
-    /// assert_eq!(bv.select1(1), 3);
-    /// ```
-    #[inline(always)]
-    pub fn select1(&self, k: usize) -> usize {
-        debug_assert!(k < self.num_ones());
-        let block = {
-            let (mut a, mut b) = (0, self.num_blocks());
-            if let Some(select1_hints) = self.select1_hints.as_ref() {
-                let chunk = k / SELECT_ONES_PER_HINT;
-                if chunk != 0 {
-                    a = select1_hints[chunk - 1];
-                }
-                b = select1_hints[chunk] + 1;
-            }
-            while b - a > 1 {
-                let mid = a + (b - a) / 2;
-                let x = self.block_rank(mid);
-                if x <= k {
-                    a = mid;
-                } else {
-                    b = mid;
-                }
-            }
-            a
-        };
-
-        debug_assert!(block < self.num_blocks());
-        let block_offset = block * BLOCK_LEN;
-        let mut cur_rank = self.block_rank(block);
-        debug_assert!(cur_rank <= k);
-
-        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = self.sub_block_ranks(block);
-        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
-            .wrapping_mul(broadword::ONES_STEP_9)
-            >> 54
-            & 0x7;
-        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
-        debug_assert!(cur_rank <= k);
-
-        let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(self.bv.words()[word_offset], k - cur_rank)
-    }
-
-    /// Searches the position of the `k`-th bit unset.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::RsBitVector;
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
-    /// assert_eq!(bv.select0(0), 1);
-    /// assert_eq!(bv.select0(1), 2);
-    /// ```
-    #[inline(always)]
-    pub fn select0(&self, k: usize) -> usize {
-        debug_assert!(k < self.num_zeros());
-        let block = {
-            let (mut a, mut b) = (0, self.num_blocks());
-            if let Some(select0_hints) = self.select0_hints.as_ref() {
-                let chunk = k / SELECT_ZEROS_PER_HINT;
-                if chunk != 0 {
-                    a = select0_hints[chunk - 1];
-                }
-                b = select0_hints[chunk] + 1;
-            }
-            while b - a > 1 {
-                let mid = a + (b - a) / 2;
-                let x = self.block_rank0(mid);
-                if x <= k {
-                    a = mid;
-                } else {
-                    b = mid;
-                }
-            }
-            a
-        };
-
-        debug_assert!(block < self.num_blocks());
-        let block_offset = block * BLOCK_LEN;
-        let mut cur_rank = self.block_rank0(block);
-        debug_assert!(cur_rank <= k);
-
-        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
-        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
-        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
-            .wrapping_mul(broadword::ONES_STEP_9)
-            >> 54
-            & 0x7;
-        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
-        debug_assert!(cur_rank <= k);
-
-        let word_offset = block_offset + sub_block_offset;
-        word_offset * 64 + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank)
     }
 
     /// Gets the reference of the internal bit vector.
@@ -467,6 +212,206 @@ impl RsBitVector {
     }
 }
 
+impl BitGetter for RsBitVector {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, BitGetter};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false]);
+    /// assert_eq!(bv.get_bit(0), Some(true));
+    /// assert_eq!(bv.get_bit(1), Some(false));
+    /// assert_eq!(bv.get_bit(2), Some(false));
+    /// assert_eq!(bv.get_bit(3), None);
+    /// ```
+    fn get_bit(&self, pos: usize) -> Option<bool> {
+        self.bv.get_bit(pos)
+    }
+}
+
+impl Ranker for RsBitVector {
+    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
+    /// [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{Ranker, RsBitVector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.rank1(1), Some(1));
+    /// assert_eq!(bv.rank1(2), Some(1));
+    /// assert_eq!(bv.rank1(3), Some(1));
+    /// assert_eq!(bv.rank1(4), Some(2));
+    /// ```
+    fn rank1(&self, pos: usize) -> Option<usize> {
+        if self.len() < pos {
+            return None;
+        }
+        if pos == self.len() {
+            return Some(self.num_ones());
+        }
+        let (sub_bpos, sub_left) = (pos / 64, pos % 64);
+        let mut r = self.sub_block_rank(sub_bpos);
+        if sub_left != 0 {
+            r += broadword::popcount(self.bv.words()[sub_bpos] << (64 - sub_left));
+        }
+        Some(r)
+    }
+
+    /// Returns the number of zeros from the zeroth bit to the `pos-1`-th bit, or
+    /// [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{Ranker, RsBitVector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.rank0(1), Some(0));
+    /// assert_eq!(bv.rank0(2), Some(1));
+    /// assert_eq!(bv.rank0(3), Some(2));
+    /// assert_eq!(bv.rank0(4), Some(2));
+    /// ```
+    fn rank0(&self, pos: usize) -> Option<usize> {
+        Some(pos - self.rank1(pos)?)
+    }
+}
+
+impl Selector for RsBitVector {
+    /// Searches the position of the `k`-th bit set.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Selector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
+    /// assert_eq!(bv.select1(0), Some(0));
+    /// assert_eq!(bv.select1(1), Some(3));
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        if self.num_ones() <= k {
+            return None;
+        }
+
+        let block = {
+            let (mut a, mut b) = (0, self.num_blocks());
+            if let Some(select1_hints) = self.select1_hints.as_ref() {
+                let chunk = k / SELECT_ONES_PER_HINT;
+                if chunk != 0 {
+                    a = select1_hints[chunk - 1];
+                }
+                b = select1_hints[chunk] + 1;
+            }
+            while b - a > 1 {
+                let mid = a + (b - a) / 2;
+                let x = self.block_rank(mid);
+                if x <= k {
+                    a = mid;
+                } else {
+                    b = mid;
+                }
+            }
+            a
+        };
+
+        debug_assert!(block < self.num_blocks());
+        let block_offset = block * BLOCK_LEN;
+        let mut cur_rank = self.block_rank(block);
+        debug_assert!(cur_rank <= k);
+
+        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
+        let sub_ranks = self.sub_block_ranks(block);
+        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+            .wrapping_mul(broadword::ONES_STEP_9)
+            >> 54
+            & 0x7;
+        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
+        debug_assert!(cur_rank <= k);
+
+        let word_offset = block_offset + sub_block_offset;
+        let sel = word_offset * 64
+            + broadword::select_in_word(self.bv.words()[word_offset], k - cur_rank);
+        Some(sel)
+    }
+
+    /// Searches the position of the `k`-th bit unset.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Selector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
+    /// assert_eq!(bv.select0(0), Some(1));
+    /// assert_eq!(bv.select0(1), Some(2));
+    /// ```
+    fn select0(&self, k: usize) -> Option<usize> {
+        if self.num_zeros() <= k {
+            return None;
+        }
+
+        let block = {
+            let (mut a, mut b) = (0, self.num_blocks());
+            if let Some(select0_hints) = self.select0_hints.as_ref() {
+                let chunk = k / SELECT_ZEROS_PER_HINT;
+                if chunk != 0 {
+                    a = select0_hints[chunk - 1];
+                }
+                b = select0_hints[chunk] + 1;
+            }
+            while b - a > 1 {
+                let mid = a + (b - a) / 2;
+                let x = self.block_rank0(mid);
+                if x <= k {
+                    a = mid;
+                } else {
+                    b = mid;
+                }
+            }
+            a
+        };
+
+        debug_assert!(block < self.num_blocks());
+        let block_offset = block * BLOCK_LEN;
+        let mut cur_rank = self.block_rank0(block);
+        debug_assert!(cur_rank <= k);
+
+        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
+        let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
+        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+            .wrapping_mul(broadword::ONES_STEP_9)
+            >> 54
+            & 0x7;
+        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
+        debug_assert!(cur_rank <= k);
+
+        let word_offset = block_offset + sub_block_offset;
+        let sel = word_offset * 64
+            + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank);
+        Some(sel)
+    }
+}
+
 impl Searial for RsBitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.bv.serialize_into(&mut writer)?;
@@ -512,9 +457,9 @@ mod tests {
     fn test_rank_select1(bits: &[bool], bv: &RsBitVector) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
-            assert_eq!(cur_rank, bv.rank1(i));
+            assert_eq!(bv.rank1(i), Some(cur_rank));
             if bits[i] {
-                assert_eq!(i, bv.select1(cur_rank));
+                assert_eq!(bv.select1(cur_rank), Some(i));
                 cur_rank += 1;
             }
         }
@@ -524,9 +469,9 @@ mod tests {
     fn test_rank_select0(bits: &[bool], bv: &RsBitVector) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
-            assert_eq!(cur_rank, bv.rank0(i));
+            assert_eq!(bv.rank0(i), Some(cur_rank));
             if !bits[i] {
-                assert_eq!(i, bv.select0(cur_rank));
+                assert_eq!(bv.select0(cur_rank), Some(i));
                 cur_rank += 1;
             }
         }

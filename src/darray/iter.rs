@@ -1,5 +1,5 @@
 //! Iterator on DArray.
-use crate::DArray;
+use crate::{DArray, Selector};
 
 /// Iterator for enumerating integers, created by [`DArray::iter`].
 pub struct Iter<'a> {
@@ -20,7 +20,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.da.len() {
-            let x = self.da.select(self.pos);
+            let x = self.da.select1(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {

@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::util;
-use crate::{BitVector, IntGetter, RsBitVector, Searial};
+use crate::{BitGetter, BitVector, IntGetter, Ranker, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -152,13 +152,16 @@ impl IntGetter for DacsByte {
     /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
     ///   the `pos`-th integer.
     fn get_int(&self, mut pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
         let mut x = 0;
         for j in 0..self.num_levels() {
             x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
                 break;
             }
-            pos = self.flags[j].rank1(pos);
+            pos = self.flags[j].rank1(pos).unwrap();
         }
         Some(x)
     }

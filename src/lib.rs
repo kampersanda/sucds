@@ -63,14 +63,35 @@ pub use wavelet_matrix::WaveletMatrixBuilder;
 // NOTE(kampersanda): We should use `get()` because it has been already used in most std
 // containers with different type annotations.
 
-/// An interface for getters of bit arrays.
+/// An interface for accessing elements on bit arrays.
 pub trait BitGetter {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
-/// An interface for getters of integer arrays.
+/// An interface for accessing elements on integer arrays.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
+}
+
+/// An interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+pub trait Ranker {
+    /// Returns the cardinality of $`\{ x \mid x \in S, x < i \}`$, i.e.,
+    /// the number of integers in $`S`$ that are less than `i`.
+    fn rank1(&self, i: usize) -> Option<usize>;
+
+    /// Returns the cardinality of $`\{ x \mid x \not\in S, 0 \leq x < i \}`$, i.e.,
+    /// the number of integers not in $`S`$ that are less than `i`.
+    fn rank0(&self, i: usize) -> Option<usize>;
+}
+
+/// An interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+pub trait Selector {
+    /// Returns the position of the `k`-th smallest integer in $`S`$.
+    fn select1(&self, k: usize) -> Option<usize>;
+
+    /// Returns the position of the `k`-th smallest integer in $`S^{-1}`$,
+    /// where $`S^{-1} = \{ 0,1,\dots,n-1 \} \setminus S`$.
+    fn select0(&self, k: usize) -> Option<usize>;
 }

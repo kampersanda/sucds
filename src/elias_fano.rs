@@ -9,7 +9,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Searial};
+use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Ranker, Searial, Selector};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -27,22 +27,27 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Example
 ///
 /// ```
-/// use sucds::EliasFano;
+/// use sucds::{EliasFano, Ranker, Selector};
 ///
 /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+///
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
-/// assert_eq!(ef.select(0), 1);
-/// assert_eq!(ef.select(1), 3);
-/// assert_eq!(ef.select(2), 3);
-/// assert_eq!(ef.select(3), 7);
+///
+/// assert_eq!(ef.select1(0), Some(1));
+/// assert_eq!(ef.select1(1), Some(3));
+/// assert_eq!(ef.select1(2), Some(3));
+/// assert_eq!(ef.select1(3), Some(7));
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
-/// assert_eq!(ef.rank(3), 1);
-/// assert_eq!(ef.rank(4), 3);
+///
+/// assert_eq!(ef.rank1(3), Some(1));
+/// assert_eq!(ef.rank1(4), Some(3));
+///
 /// assert_eq!(ef.predecessor(4), Some(3));
 /// assert_eq!(ef.predecessor(3), Some(3));
+///
 /// assert_eq!(ef.successor(3), Some(3));
 /// assert_eq!(ef.successor(4), Some(7));
 /// ```
@@ -75,16 +80,6 @@ impl EliasFano {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if `bits` contains no set bit.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_bits([true, false, false, true]).unwrap();
-    /// assert_eq!(ef.select(0), 0);
-    /// assert_eq!(ef.select(1), 3);
-    /// ```
     pub fn from_bits<I>(bits: I) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
@@ -110,18 +105,6 @@ impl EliasFano {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if `ints` is empty or is not monotone increasing.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
     pub fn from_ints(ints: &[usize]) -> Result<Self> {
         if ints.is_empty() {
             return Err(anyhow!("The input ints must not be empty."));
@@ -131,105 +114,12 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Builds an index to enable operations [`EliasFano::rank`],
-    /// [`EliasFano::predecessor`], and [`EliasFano::successor`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
-    /// assert_eq!(ef.rank(1), 0);
-    /// assert_eq!(ef.rank(2), 1);
-    /// assert_eq!(ef.rank(3), 1);
-    /// assert_eq!(ef.rank(4), 3);
-    /// ```
+    /// Builds an index to enable operations [`EliasFano::rank1()`],
+    /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
         self
-    }
-
-    /// Searches the `k`-th iteger.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    #[inline(always)]
-    pub fn select(&self, k: usize) -> usize {
-        ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
-            | self
-                .low_bits
-                .get_bits(k * self.low_len, self.low_len)
-                .unwrap()
-    }
-
-    /// Counts the number of integers less than `pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Rank query.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
-    /// assert_eq!(ef.rank(1), 0);
-    /// assert_eq!(ef.rank(2), 1);
-    /// assert_eq!(ef.rank(3), 1);
-    /// assert_eq!(ef.rank(4), 3);
-    /// ```
-    #[inline(always)]
-    pub fn rank(&self, pos: usize) -> usize {
-        debug_assert!(self.high_bits_d0.is_some());
-
-        if pos > self.universe() {
-            return self.len();
-        }
-
-        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
-
-        let h_rank = pos >> self.low_len;
-        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank);
-        let mut rank = h_pos - h_rank;
-        let l_pos = pos & ((1 << self.low_len) - 1);
-
-        while h_pos > 0
-            && self.high_bits.get_bit(h_pos - 1).unwrap()
-            && self
-                .low_bits
-                .get_bits((rank - 1) * self.low_len, self.low_len)
-                .unwrap()
-                >= l_pos
-        {
-            rank -= 1;
-            h_pos -= 1;
-        }
-
-        rank
     }
 
     /// Gets the largest integer `pred` such that `pred <= pos`.
@@ -255,9 +145,9 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn predecessor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank(pos + 1))
+        Some(self.rank1(pos + 1).unwrap())
             .filter(|&i| i > 0)
-            .map(|i| self.select(i - 1))
+            .map(|i| self.select1(i - 1).unwrap())
     }
 
     /// Gets the smallest integer `succ` such that `succ >= pos`.
@@ -283,9 +173,9 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn successor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank(pos))
+        Some(self.rank1(pos).unwrap())
             .filter(|&i| i < self.len())
-            .map(|i| self.select(i))
+            .map(|i| self.select1(i).unwrap())
     }
 
     /// Gets the difference between the `k-1`-th and `k`-th integers
@@ -312,7 +202,7 @@ impl EliasFano {
         if self.len() <= k {
             return None;
         }
-        let high_val = self.high_bits_d1.select(&self.high_bits, k);
+        let high_val = self.high_bits_d1.select(&self.high_bits, k).unwrap();
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
@@ -390,7 +280,7 @@ impl EliasFano {
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
             let mi = (lo + hi) / 2;
-            let x = self.select(mi);
+            let x = self.select1(mi).unwrap();
             if val == x {
                 return Some(mi);
             }
@@ -450,6 +340,97 @@ impl EliasFano {
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
+    }
+}
+
+impl Ranker for EliasFano {
+    /// Returns the number of integers less than `pos`.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{EliasFano, Ranker};
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    ///
+    /// assert_eq!(ef.rank1(1), Some(0));
+    /// assert_eq!(ef.rank1(2), Some(1));
+    /// assert_eq!(ef.rank1(3), Some(1));
+    /// assert_eq!(ef.rank1(4), Some(3));
+    /// ```
+    fn rank1(&self, pos: usize) -> Option<usize> {
+        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
+
+        if pos > self.universe() {
+            return Some(self.len());
+        }
+
+        let h_rank = pos >> self.low_len;
+        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
+        let mut rank = h_pos - h_rank;
+        let l_pos = pos & ((1 << self.low_len) - 1);
+
+        while h_pos > 0
+            && self.high_bits.get_bit(h_pos - 1).unwrap()
+            && self
+                .low_bits
+                .get_bits((rank - 1) * self.low_len, self.low_len)
+                .unwrap()
+                >= l_pos
+        {
+            rank -= 1;
+            h_pos -= 1;
+        }
+
+        Some(rank)
+    }
+
+    /// Panics always because this operation is not supported.
+    fn rank0(&self, _i: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
+    }
+}
+
+impl Selector for EliasFano {
+    /// Returns the position of the `k`-th smallest integer.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{EliasFano, Selector};
+    ///
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+    ///
+    /// assert_eq!(ef.select1(0), Some(1));
+    /// assert_eq!(ef.select1(1), Some(3));
+    /// assert_eq!(ef.select1(2), Some(3));
+    /// assert_eq!(ef.select1(3), Some(7));
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        Some(
+            ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
+                | self
+                    .low_bits
+                    .get_bits(k * self.low_len, self.low_len)
+                    .unwrap(),
+        )
+    }
+
+    /// Panics always because this operation is not supported.
+    fn select0(&self, _k: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
     }
 }
 
@@ -537,21 +518,6 @@ impl EliasFanoBuilder {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if the input integer is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// [1, 3, 3, 7].iter().for_each(|&x| b.push(x).unwrap());
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
     pub fn push(&mut self, i: usize) -> Result<()> {
         if i < self.last {
             return Err(anyhow!(
@@ -594,21 +560,6 @@ impl EliasFanoBuilder {
     /// # Errors
     ///
     /// `anyhow::Error` will be returned if the input integers are invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// b.append(&[1, 3, 3, 7]).unwrap();
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
     pub fn append<'a, I>(&mut self, ints: I) -> Result<()>
     where
         I: IntoIterator<Item = &'a usize>,
@@ -620,21 +571,6 @@ impl EliasFanoBuilder {
     }
 
     /// Builds [`EliasFano`] from the pushed integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// b.append(&[1, 3, 3, 7]).unwrap();
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
     pub fn build(self) -> EliasFano {
         EliasFano {
             high_bits_d1: DArrayIndex::new(&self.high_bits, true),
@@ -703,9 +639,9 @@ mod tests {
     fn test_rank_select(bits: &[bool], ef: &EliasFano) {
         let mut cur_rank = 0;
         for i in 0..bits.len() {
-            assert_eq!(cur_rank, ef.rank(i));
+            assert_eq!(ef.rank1(i), Some(cur_rank));
             if bits[i] {
-                assert_eq!(i, ef.select(cur_rank));
+                assert_eq!(ef.select1(cur_rank), Some(i));
                 cur_rank += 1;
             }
         }
@@ -752,12 +688,12 @@ mod tests {
     #[test]
     fn test_tiny_bits() {
         let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
-        assert_eq!(ef.select(0), 1);
-        assert_eq!(ef.select(1), 3);
-        assert_eq!(ef.select(2), 3);
-        assert_eq!(ef.select(3), 6);
-        assert_eq!(ef.select(4), 7);
-        assert_eq!(ef.select(5), 10);
+        assert_eq!(ef.select1(0), Some(1));
+        assert_eq!(ef.select1(1), Some(3));
+        assert_eq!(ef.select1(2), Some(3));
+        assert_eq!(ef.select1(3), Some(6));
+        assert_eq!(ef.select1(4), Some(7));
+        assert_eq!(ef.select1(5), Some(10));
 
         assert_eq!(ef.find(1), Some(0));
         assert_eq!(ef.find(6), Some(3));
