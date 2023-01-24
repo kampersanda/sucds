@@ -86,7 +86,7 @@ impl CompactVector {
         let &max_int = ints.iter().max().unwrap();
         let mut cv = Self::with_len(ints.len(), util::needed_bits(max_int));
         for (i, &x) in ints.iter().enumerate() {
-            cv.set(i, x);
+            cv.set_int(i, x);
         }
         cv
     }
@@ -104,12 +104,12 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::with_len(2, 8);
-    /// cv.set(0, 10);
-    /// cv.set(1, 255);
+    /// cv.set_int(0, 10);
+    /// cv.set_int(1, 255);
     /// ```
     #[inline(always)]
-    pub fn set(&mut self, pos: usize, value: usize) {
-        self.chunks.set_bits(pos * self.width, value, self.width);
+    pub fn set_int(&mut self, pos: usize, value: usize) -> Option<()> {
+        self.chunks.set_bits(pos * self.width, value, self.width)
     }
 
     /// Pushes integer `value` at the end.
@@ -124,12 +124,12 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::new(8);
-    /// cv.push(10);
-    /// cv.push(255);
+    /// cv.push_int(10);
+    /// cv.push_int(255);
     /// ```
     #[inline(always)]
-    pub fn push(&mut self, value: usize) {
-        self.chunks.push_bits(value, self.width);
+    pub fn push_int(&mut self, value: usize) {
+        self.chunks.push_bits(value, self.width).unwrap();
         self.len += 1;
     }
 

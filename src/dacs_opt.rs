@@ -154,7 +154,7 @@ impl DacsOpt {
         if widths.len() == 1 {
             let mut data = CompactVector::with_len(ints.len(), widths[0]);
             for (i, &x) in ints.iter().enumerate() {
-                data.set(i, x);
+                data.set_int(i, x).unwrap();
             }
             return Ok(Self {
                 data: vec![data],
@@ -168,7 +168,7 @@ impl DacsOpt {
         for mut x in ints.iter().cloned() {
             for (j, &width) in widths.iter().enumerate() {
                 let mask = (1 << width) - 1;
-                data[j].push(x & mask);
+                data[j].push_int(x & mask);
                 x >>= width;
                 if j == widths.len() - 1 {
                     assert_eq!(x, 0);
