@@ -105,7 +105,7 @@ impl Selector for DArray {
     /// assert_eq!(da.select1(1), Some(3));
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        Some(self.da.select(&self.bv, k))
+        self.da.select(&self.bv, k)
     }
 
     /// Panics always because this operation is not supported.
@@ -174,22 +174,24 @@ impl DArrayIndex {
     /// assert_eq!(da.select(&bv, 1), 3);
     /// ```
     #[inline(always)]
-    pub fn select(&self, bv: &BitVector, k: usize) -> usize {
-        debug_assert!(k < self.num_positions);
+    pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
+        if self.num_positions <= k {
+            return None;
+        }
 
         let block = k / BLOCK_LEN;
         let block_pos = self.block_inventory[block];
 
         if block_pos < 0 {
             let overflow_pos = (-block_pos - 1) as usize;
-            return self.overflow_positions[overflow_pos + (k % BLOCK_LEN)];
+            return Some(self.overflow_positions[overflow_pos + (k % BLOCK_LEN)]);
         }
 
         let subblock = k / SUBBLOCK_LEN;
         let mut reminder = k % SUBBLOCK_LEN;
         let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
 
-        if reminder == 0 {
+        let sel = if reminder == 0 {
             start_pos
         } else {
             let w = {
@@ -215,7 +217,8 @@ impl DArrayIndex {
             }
 
             64 * word_idx + broadword::select_in_word(word, reminder)
-        }
+        };
+        Some(sel)
     }
 
     /// Gets the number of integers.
@@ -379,7 +382,7 @@ mod tests {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
             if bv.get_bit(i).unwrap() {
-                assert_eq!(i, da.select(bv, cur_rank));
+                assert_eq!(da.select(bv, cur_rank), Some(i));
                 cur_rank += 1;
             }
         }
@@ -390,7 +393,7 @@ mod tests {
         let mut cur_rank = 0;
         for i in 0..bv.len() {
             if !bv.get_bit(i).unwrap() {
-                assert_eq!(i, da.select(bv, cur_rank));
+                assert_eq!(da.select(bv, cur_rank), Some(i));
                 cur_rank += 1;
             }
         }
@@ -400,14 +403,14 @@ mod tests {
     fn test_tiny_bits() {
         let bv = BitVector::from_bits([true, false, false, true, false, true, true]);
         let da = DArrayIndex::new(&bv, true);
-        assert_eq!(da.select(&bv, 0), 0);
-        assert_eq!(da.select(&bv, 1), 3);
-        assert_eq!(da.select(&bv, 2), 5);
-        assert_eq!(da.select(&bv, 3), 6);
+        assert_eq!(da.select(&bv, 0), Some(0));
+        assert_eq!(da.select(&bv, 1), Some(3));
+        assert_eq!(da.select(&bv, 2), Some(5));
+        assert_eq!(da.select(&bv, 3), Some(6));
         let da = DArrayIndex::new(&bv, false);
-        assert_eq!(da.select(&bv, 0), 1);
-        assert_eq!(da.select(&bv, 1), 2);
-        assert_eq!(da.select(&bv, 2), 4);
+        assert_eq!(da.select(&bv, 0), Some(1));
+        assert_eq!(da.select(&bv, 1), Some(2));
+        assert_eq!(da.select(&bv, 2), Some(4));
     }
 
     #[test]

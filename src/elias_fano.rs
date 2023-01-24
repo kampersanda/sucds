@@ -202,7 +202,7 @@ impl EliasFano {
         if self.len() <= k {
             return None;
         }
-        let high_val = self.high_bits_d1.select(&self.high_bits, k);
+        let high_val = self.high_bits_d1.select(&self.high_bits, k).unwrap();
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
@@ -374,7 +374,7 @@ impl Ranker for EliasFano {
         }
 
         let h_rank = pos >> self.low_len;
-        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank);
+        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
         let mut rank = h_pos - h_rank;
         let l_pos = pos & ((1 << self.low_len) - 1);
 
@@ -420,7 +420,7 @@ impl Selector for EliasFano {
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
         Some(
-            ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
+            ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
                 | self
                     .low_bits
                     .get_bits(k * self.low_len, self.low_len)
