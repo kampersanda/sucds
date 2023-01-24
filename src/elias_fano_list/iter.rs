@@ -1,6 +1,6 @@
 //! Iterator on EliasFanoList.
 
-use crate::EliasFanoList;
+use crate::{EliasFanoList, IntGetter};
 
 /// Iterator for enumerating integers, created by [`EliasFanoList::iter`].
 pub struct Iter<'a> {
@@ -21,7 +21,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.efl.len() {
-            let x = self.efl.get(self.pos);
+            let x = self.efl.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {

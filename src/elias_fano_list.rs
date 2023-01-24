@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::elias_fano_list::iter::Iter;
-use crate::{EliasFano, EliasFanoBuilder, Searial};
+use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///
@@ -17,22 +17,6 @@ use crate::{EliasFano, EliasFanoBuilder, Searial};
 /// When the list consists of small integers, the representation will be very compact.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano_list](https://github.com/ot/succinct/blob/master/elias_fano_list.hpp).
-///
-/// # Example
-///
-/// ```
-/// use sucds::EliasFanoList;
-///
-/// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
-///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 14);
-/// assert_eq!(list.get(2), 2);
-/// assert_eq!(list.get(3), 10);
-///
-/// assert_eq!(list.len(), 4);
-/// assert_eq!(list.sum(), 31);
-/// ```
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFanoList {
     ef: EliasFano,
@@ -67,31 +51,6 @@ impl EliasFanoList {
             b.push(cur)?;
         }
         Ok(Self { ef: b.build() })
-    }
-
-    /// Gets the `i`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `i`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFanoList;
-    ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
-    /// assert_eq!(list.get(0), 5);
-    /// assert_eq!(list.get(1), 14);
-    /// assert_eq!(list.get(2), 2);
-    /// assert_eq!(list.get(3), 10);
-    /// ```
-    pub fn get(&self, i: usize) -> usize {
-        self.ef.delta(i)
     }
 
     /// Creates an iterator for enumerating integers.
@@ -130,6 +89,27 @@ impl EliasFanoList {
     }
 }
 
+impl IntGetter for EliasFanoList {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{EliasFanoList, IntGetter};
+    ///
+    /// let list = EliasFanoList::from_slice(&[5, 14, 2]).unwrap();
+    /// assert_eq!(list.get_int(0), Some(5));
+    /// assert_eq!(list.get_int(1), Some(14));
+    /// assert_eq!(list.get_int(2), Some(2));
+    fn get_int(&self, pos: usize) -> Option<usize> {
+        Some(self.ef.delta(pos))
+    }
+}
+
 impl Searial for EliasFanoList {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         self.ef.serialize_into(writer)
@@ -160,7 +140,7 @@ mod tests {
     fn test_basic(ints: &[usize], list: &EliasFanoList) {
         let mut acc = 0;
         for (i, &x) in ints.iter().enumerate() {
-            assert_eq!(x, list.get(i));
+            assert_eq!(list.get_int(i), Some(x));
             acc += x;
         }
         assert_eq!(ints.len(), list.len());
