@@ -85,3 +85,13 @@ pub trait Ranker {
     /// the number of integers not in $`S`$ that are no greater than `i`.
     fn rank0(&self, i: usize) -> Option<usize>;
 }
+
+/// An interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+pub trait Selector {
+    /// Returns the position of the `k`-th smallest integer in $`S`$.
+    fn select1(&self, k: usize) -> Option<usize>;
+
+    /// Returns the position of the `k`-th smallest integer in $`S^{-1}`$,
+    /// where $`S^{-1} = \{ 0,1,\dots,n-1 \} \setminus S`$.
+    fn select0(&self, k: usize) -> Option<usize>;
+}

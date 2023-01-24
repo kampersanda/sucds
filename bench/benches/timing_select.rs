@@ -7,6 +7,8 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 
+use sucds::Selector;
+
 const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
 const MEASURE_TIME: Duration = Duration::from_secs(10);
@@ -76,7 +78,7 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
         b.iter(|| {
             let mut sum = 0;
             for &q in queries {
-                sum += idx.select1(q);
+                sum += idx.select1(q).unwrap();
             }
             if sum == 0 {
                 panic!();
