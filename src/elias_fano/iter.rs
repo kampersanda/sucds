@@ -59,7 +59,11 @@ impl<'a> Iterator for Iter<'a> {
         }
         if let Some(high_iter) = &mut self.high_iter {
             if self.chunks_avail == 0 {
-                self.low_buf = self.ef.low_bits.get_word64(self.k * self.ef.low_len);
+                self.low_buf = self
+                    .ef
+                    .low_bits
+                    .get_word64(self.k * self.ef.low_len)
+                    .unwrap();
                 self.chunks_avail = self.chunks_in_word - 1;
             } else {
                 self.chunks_avail -= 1;

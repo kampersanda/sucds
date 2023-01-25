@@ -152,10 +152,8 @@ impl DacsOpt {
         assert!(!widths.is_empty());
 
         if widths.len() == 1 {
-            let mut data = CompactVector::with_len(ints.len(), widths[0]);
-            for (i, &x) in ints.iter().enumerate() {
-                data.set_int(i, x).unwrap();
-            }
+            let mut data = CompactVector::with_capacity(ints.len(), widths[0]);
+            ints.iter().for_each(|&x| data.push_int(x));
             return Ok(Self {
                 data: vec![data],
                 flags: vec![],

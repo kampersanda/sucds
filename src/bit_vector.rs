@@ -22,18 +22,15 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// ```
 /// use sucds::{BitGetter, BitVector};
 ///
-/// let bv = BitVector::from_bits([true, false, false, true]);
+/// let mut bv = BitVector::new();
+/// bv.push_bit(true);
+/// bv.push_bit(false);
 ///
-/// assert_eq!(bv.get_bit(0), Some(true));
-/// assert_eq!(bv.get_bit(1), Some(false));
-/// assert_eq!(bv.get_bit(2), Some(false));
-/// assert_eq!(bv.get_bit(3), Some(true));
+/// assert_eq!(bv.len(), 2);
+/// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
 ///
-/// assert_eq!(bv.predecessor1(2), Some(0));
-/// assert_eq!(bv.predecessor0(2), Some(2));
-///
-/// assert_eq!(bv.successor1(1), Some(3));
-/// assert_eq!(bv.successor0(1), Some(1));
+/// assert_eq!(bv.set_bit(0, false), Some(()));
+/// assert_eq!(bv.get_bit(0), Some(false));
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
@@ -43,11 +40,30 @@ pub struct BitVector {
 
 impl BitVector {
     /// Creates a new empty instance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::new();
+    /// assert_eq!(bv.len(), 0);
+    /// ```
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Creates a new instance that `capa` bits are reserved.
+    /// Creates a new instance that at least `capa` bits are reserved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::with_capacity(40);
+    /// assert_eq!(bv.len(), 0);
+    /// assert_eq!(bv.capacity(), 64);
+    /// ```
     pub fn with_capacity(capa: usize) -> Self {
         Self {
             words: Vec::with_capacity(Self::words_for(capa)),
@@ -55,9 +71,17 @@ impl BitVector {
         }
     }
 
-    /// Creates a new instance that stores `len` bits initialized by `bit`.
+    /// Creates a new instance that stores `len` bits, where each bit is initialized by `bit`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bit(false, 5);
+    /// assert_eq!(bv.len(), 5);
+    /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
-        let bit = bit.into();
         let word = if bit { usize::MAX } else { 0 };
         let mut words = vec![word; Self::words_for(len)];
         let shift = len % WORD_LEN;
@@ -69,6 +93,16 @@ impl BitVector {
     }
 
     /// Creates a new instance from input bit stream `bits`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitGetter, BitVector};
+    ///
+    /// let bv = BitVector::from_bits([false, true, false]);
+    /// assert_eq!(bv.len(), 3);
+    /// assert_eq!(bv.get_bit(1), Some(true));
+    /// ```
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
@@ -83,11 +117,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{BitGetter, BitVector};
     ///
-    /// let mut bv = BitVector::from_bits([false, true, true, false]);
-    /// bv.set_bit(0, true).unwrap();
-    /// bv.set_bit(2, false).unwrap();
+    /// let mut bv = BitVector::from_bits([false, true, false]);
+    /// assert_eq!(bv.set_bit(1, false), Some(()));
+    /// assert_eq!(bv.get_bit(1), Some(false));
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Option<()> {
@@ -107,11 +141,12 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitGetter, BitVector};
+    /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
     /// bv.push_bit(false);
+    /// assert_eq!(bv.len(), 2);
     /// ```
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
@@ -125,9 +160,7 @@ impl BitVector {
         self.len += 1;
     }
 
-    /// Returns the `len` bits starting at the `pos`-th bit.
-    ///
-    /// [`None`] is returned if
+    /// Returns the `len` bits starting at the `pos`-th bit, or [`None`] if
     ///
     /// - `len` is greater than [`WORD_LEN`], or
     /// - `pos + len` is out of bounds.
@@ -137,8 +170,8 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits([true, false, true, false, true]);
-    /// assert_eq!(bv.get_bits(1, 4), Some(0b1010));
+    /// let bv = BitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.get_bits(1, 2), Some(0b10));
     /// ```
     #[inline(always)]
     pub fn get_bits(&self, pos: usize, len: usize) -> Option<usize> {
@@ -175,9 +208,9 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let mut bv = BitVector::with_len(5);
-    /// bv.set_bits(1, 0b1010, 4);
-    /// assert_eq!(bv.get_bits(1, 4), Some(0b1010));
+    /// let mut bv = BitVector::from_bit(false, 4);
+    /// assert_eq!(bv.set_bits(1, 0b11, 2), Some(()));
+    /// assert_eq!(bv.get_bits(1, 2), Some(0b11));
     /// ```
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Option<()> {
@@ -222,9 +255,9 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::new();
-    /// bv.push_bits(0b1, 1);
-    /// bv.push_bits(0b1010, 4);
-    /// assert_eq!(bv.get_bits(1, 4), Some(0b1010));
+    /// assert_eq!(bv.push_bits(0b11, 2), Some(()));
+    /// assert_eq!(bv.push_bits(0b101, 3), Some(()));
+    /// assert_eq!(bv.get_bits(1, 3), Some(0b011));
     /// ```
     #[inline(always)]
     pub fn push_bits(&mut self, bits: usize, len: usize) -> Option<()> {
@@ -251,12 +284,8 @@ impl BitVector {
         Some(())
     }
 
-    /// Gets the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
-    /// If not found, `None` is returned.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
+    /// If not found, [`None`] is returned.
     ///
     /// # Examples
     ///
@@ -271,7 +300,9 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn predecessor1(&self, pos: usize) -> Option<usize> {
-        debug_assert!(pos < self.len());
+        if self.len() <= pos {
+            return None;
+        }
         let mut block = pos / WORD_LEN;
         let shift = WORD_LEN - pos % WORD_LEN - 1;
         let mut word = (self.words[block] << shift) >> shift;
@@ -286,12 +317,8 @@ impl BitVector {
         }
     }
 
-    /// Gets the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set.
-    /// If not found, `None` is returned.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set.
+    /// If not found, [`None`] is returned.
     ///
     /// # Examples
     ///
@@ -306,7 +333,9 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn successor1(&self, pos: usize) -> Option<usize> {
-        debug_assert!(pos < self.len());
+        if self.len() <= pos {
+            return None;
+        }
         let mut block = pos / WORD_LEN;
         let shift = pos % WORD_LEN;
         let mut word = (self.words[block] >> shift) << shift;
@@ -322,12 +351,8 @@ impl BitVector {
         }
     }
 
-    /// Gets the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set.
-    /// If not found, `None` is returned.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set.
+    /// If not found, [`None`] is returned.
     ///
     /// # Examples
     ///
@@ -342,7 +367,9 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn predecessor0(&self, pos: usize) -> Option<usize> {
-        debug_assert!(pos < self.len());
+        if self.len() <= pos {
+            return None;
+        }
         let mut block = pos / WORD_LEN;
         let shift = WORD_LEN - pos % WORD_LEN - 1;
         let mut word = (!self.words[block] << shift) >> shift;
@@ -357,12 +384,8 @@ impl BitVector {
         }
     }
 
-    /// Gets the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set.
-    /// If not found, `None` is returned.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set.
+    /// If not found, [`None`] is returned.
     ///
     /// # Examples
     ///
@@ -377,7 +400,9 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn successor0(&self, pos: usize) -> Option<usize> {
-        debug_assert!(pos < self.len());
+        if self.len() <= pos {
+            return None;
+        }
         let mut block = pos / WORD_LEN;
         let shift = pos % WORD_LEN;
         let mut word = (!self.words[block] >> shift) << shift;
@@ -400,47 +425,57 @@ impl BitVector {
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits([false, true, false, false, true]);
+    /// let bv = BitVector::from_bits([false, true, false]);
     /// let mut it = bv.iter();
-    ///
     /// assert_eq!(it.next(), Some(false));
     /// assert_eq!(it.next(), Some(true));
     /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), Some(true));
     /// assert_eq!(it.next(), None);
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
     }
 
-    /// Creates an iterator for enumerating positions of set bits.
+    /// Creates an iterator for enumerating positions of set bits, starting at bit position `pos`.
     ///
     /// # Examples
     ///
     /// ```
     /// use sucds::BitVector;
     ///
-    /// let bv = BitVector::from_bits([false, true, false, false, true]);
+    /// let bv = BitVector::from_bits([true, true, false, true]);
     /// let mut it = bv.unary_iter(1);
-    ///
     /// assert_eq!(it.next(), Some(1));
-    /// assert_eq!(it.next(), Some(4));
+    /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), None);
     /// ```
     pub fn unary_iter(&self, pos: usize) -> UnaryIter {
         UnaryIter::new(self, pos)
     }
 
-    /// Gets `get_bits(pos, 64)` but it can extend further `len()`, padding with zeros.
+    /// Returns `self.get_bits(pos, 64)` but it can extend further `self.len()`,
+    /// padding with zeros. If `self.len() <= pos`, [`None`] is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.get_word64(1), Some(0b10));
+    /// assert_eq!(bv.get_bits(1, 64), None);  // out of bounds
+    /// ```
     #[inline(always)]
-    pub fn get_word64(&self, pos: usize) -> usize {
+    pub fn get_word64(&self, pos: usize) -> Option<usize> {
+        if self.len <= pos {
+            return None;
+        }
         let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
         let mut word = self.words[block] >> shift;
         if shift != 0 && block + 1 < self.words.len() {
             word |= self.words[block + 1] << (64 - shift);
         }
-        word
+        Some(word)
     }
 
     /// Gets the slice of raw words.
@@ -456,6 +491,11 @@ impl BitVector {
     /// Checks if the container is empty.
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Returns the total number of bits it can hold without reallocating.
+    pub fn capacity(&self) -> usize {
+        self.words.capacity() * WORD_LEN
     }
 
     /// Gets the number of words.
@@ -496,6 +536,15 @@ impl BitGetter for BitVector {
         } else {
             None
         }
+    }
+}
+
+impl std::iter::Extend<bool> for BitVector {
+    fn extend<I>(&mut self, bits: I)
+    where
+        I: IntoIterator<Item = bool>,
+    {
+        bits.into_iter().for_each(|b| self.push_bit(b));
     }
 }
 

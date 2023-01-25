@@ -170,8 +170,8 @@ impl DArrayIndex {
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
-    /// assert_eq!(da.select(&bv, 0), 0);
-    /// assert_eq!(da.select(&bv, 1), 3);
+    /// assert_eq!(da.select(&bv, 0), Some(0));
+    /// assert_eq!(da.select(&bv, 1), Some(3));
     /// ```
     #[inline(always)]
     pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {

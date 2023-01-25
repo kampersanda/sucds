@@ -48,20 +48,6 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new [`CompactVector`] of `len` integers.
-    ///
-    /// # Arguments
-    ///
-    /// - `len`: Number of integers to be stored.
-    /// - `width`: Number of bits to represent an integer.
-    pub fn with_len(len: usize, width: usize) -> Self {
-        Self {
-            chunks: BitVector::from_bit(false, len * width),
-            len,
-            width,
-        }
-    }
-
     /// Creates a new [`CompactVector`] that `capa` integers are reserved.
     ///
     /// # Arguments
@@ -82,11 +68,9 @@ impl CompactVector {
     ///
     /// - `ints`: Integers to be stored.
     pub fn from_slice(ints: &[usize]) -> Self {
-        let &max_int = ints.iter().max().unwrap();
-        let mut cv = Self::with_len(ints.len(), util::needed_bits(max_int));
-        for (i, &x) in ints.iter().enumerate() {
-            cv.set_int(i, x);
-        }
+        let max_int = *ints.iter().max().unwrap();
+        let mut cv = Self::with_capacity(ints.len(), util::needed_bits(max_int));
+        ints.iter().for_each(|&x| cv.push_int(x));
         cv
     }
 
