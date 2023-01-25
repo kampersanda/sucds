@@ -5,7 +5,8 @@ pub mod iter;
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::compact_vector::iter::Iter;
 use crate::{util, BitVector, IntGetter, Searial};
@@ -35,7 +36,7 @@ pub struct CompactVector {
 }
 
 impl CompactVector {
-    /// Creates a new empty [`CompactVector`].
+    /// Creates a new empty instance.
     ///
     /// # Arguments
     ///
@@ -48,7 +49,7 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new [`CompactVector`] that `capa` integers are reserved.
+    /// Creates a new instance that `capa` integers are reserved.
     ///
     /// # Arguments
     ///
@@ -62,16 +63,30 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new [`CompactVector`] from a slice of integers.
+    /// Creates a new instance from a slice of integers.
     ///
     /// # Arguments
     ///
     /// - `ints`: Integers to be stored.
-    pub fn from_slice(ints: &[usize]) -> Self {
-        let max_int = *ints.iter().max().unwrap();
+    pub fn from_slice<T>(ints: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
+        if ints.is_empty() {
+            return Err(anyhow!("ints must not be empty."));
+        }
+        let mut max_int = 0;
+        for x in ints {
+            max_int = max_int.max(x.to_usize().ok_or(anyhow!(
+                "ints must consist only of values castable into usize."
+            ))?);
+        }
         let mut cv = Self::with_capacity(ints.len(), util::needed_bits(max_int));
-        ints.iter().for_each(|&x| cv.push_int(x));
-        cv
+        for x in ints {
+            // Casting should be safe.
+            cv.push_int(x.to_usize().unwrap());
+        }
+        Ok(cv)
     }
 
     /// Sets the `pos`-th integer to `value`.
@@ -233,7 +248,7 @@ mod tests {
     fn test_random_ints() {
         for seed in 0..100 {
             let ints = gen_random_ints(10000, seed);
-            let list = CompactVector::from_slice(&ints);
+            let list = CompactVector::from_slice(&ints).unwrap();
             test_basic(&ints, &list);
         }
     }
@@ -241,7 +256,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let cv = CompactVector::from_slice(&gen_random_ints(10000, 42));
+        let cv = CompactVector::from_slice(&gen_random_ints(10000, 42)).unwrap();
         let size = cv.serialize_into(&mut bytes).unwrap();
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);

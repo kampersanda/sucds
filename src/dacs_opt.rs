@@ -355,8 +355,8 @@ mod tests {
         assert_eq!(
             list.data,
             vec![
-                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]),
-                CompactVector::from_slice(&[0b11]),
+                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]).unwrap(),
+                CompactVector::from_slice(&[0b11]).unwrap(),
             ]
         );
 

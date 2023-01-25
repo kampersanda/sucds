@@ -16,6 +16,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+num-traits = "=0.2.15"
 
 [dev-dependencies]
 rand = "0.8.4"
