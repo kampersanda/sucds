@@ -29,7 +29,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.len(), 2);
 /// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
 ///
-/// bv.set_bit(0, false).unwrap();
+/// assert!(bv.set_bit(0, false).is_ok());
 /// assert_eq!(bv.get_bit(0), Some(false));
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
@@ -55,6 +55,10 @@ impl BitVector {
 
     /// Creates a new instance that at least `capa` bits are reserved.
     ///
+    /// # Arguments
+    ///
+    ///  - `capa`: Number of bits reserved at least.
+    ///
     /// # Examples
     ///
     /// ```
@@ -73,6 +77,11 @@ impl BitVector {
 
     /// Creates a new instance that stores `len` bits,
     /// where each bit is initialized by `bit`.
+    ///
+    /// # Arguments
+    ///
+    ///  - `bit`: Bit value used for intinialization.
+    ///  - `len`: Number of bits stored.
     ///
     /// # Examples
     ///
@@ -95,6 +104,10 @@ impl BitVector {
 
     /// Creates a new instance from input bit stream `bits`.
     ///
+    /// # Arguments
+    ///
+    ///  - `bits`: Bit stream.
+    ///
     /// # Examples
     ///
     /// ```
@@ -115,9 +128,14 @@ impl BitVector {
 
     /// Updates the `pos`-th bit to `bit`.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///  - `bit`: Bit value set.
+    ///
     /// # Errors
     ///
-    /// An error is returned if `pos` is out of bounds.
+    /// An error is returned if `self.len() <= pos`.
     ///
     /// # Examples
     ///
@@ -125,7 +143,7 @@ impl BitVector {
     /// use sucds::{BitGetter, BitVector};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
-    /// bv.set_bit(1, false).unwrap();
+    /// assert!(bv.set_bit(1, false).is_ok());
     /// assert_eq!(bv.get_bit(1), Some(false));
     /// ```
     #[inline(always)]
@@ -141,6 +159,10 @@ impl BitVector {
     }
 
     /// Pushes `bit` at the end.
+    ///
+    /// # Arguments
+    ///
+    ///  - `bit`: Bit value pushed.
     ///
     /// # Examples
     ///
@@ -166,8 +188,13 @@ impl BitVector {
 
     /// Returns the `len` bits starting at the `pos`-th bit, or [`None`] if
     ///
-    /// - `len` is greater than [`WORD_LEN`], or
-    /// - `pos + len` is out of bounds.
+    ///  - `len` is greater than [`WORD_LEN`], or
+    ///  - `self.len() < pos + len`.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///  - `len`: Number of bits extracted.
     ///
     /// # Examples
     ///
@@ -203,13 +230,19 @@ impl BitVector {
 
     /// Updates the `len` bits starting at the `pos`-th bit to `bits`.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///  - `bits`: Bit chunk set.
+    ///  - `len`: Number of bits extracted.
+    ///
     /// # Errors
     ///
     /// An error is returned if
     ///
-    /// - `len` is greater than [`WORD_LEN`],
-    /// - `pos + len` is out of bounds, or
-    /// - `bits` has active bits other than the lowest `len` bits.
+    ///  - `len` is greater than [`WORD_LEN`],
+    ///  - `self.len() < pos + len`, or
+    ///  - `bits` has active bits other than the lowest `len` bits.
     ///
     /// # Examples
     ///
@@ -217,19 +250,27 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
-    /// bv.set_bits(1, 0b11, 2).unwrap();
+    /// assert!(bv.set_bits(1, 0b11, 2).is_ok());
     /// assert_eq!(bv.get_bits(1, 2), Some(0b11));
     /// ```
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(anyhow!(""));
+            return Err(anyhow!(
+                "len must be no greater than {WORD_LEN}, but got {len}."
+            ));
         }
         if self.len() < pos + len {
-            return Err(anyhow!(""));
+            return Err(anyhow!(
+                "pos+len must be no greater than self.len()={}, but got {}.",
+                self.len(),
+                pos + len
+            ));
         }
         if len != WORD_LEN && (bits >> len) != 0 {
-            return Err(anyhow!(""));
+            return Err(anyhow!(
+                "bits must not have active bits other than the lowest len={len} bits, but got {bits:#b}."
+            ));
         }
         if len == 0 {
             return Ok(());
@@ -257,6 +298,11 @@ impl BitVector {
 
     /// Pushes `bits` of `len` bits at the end.
     ///
+    /// # Arguments
+    ///
+    ///  - `bits`: Bit chunk set.
+    ///  - `len`: Number of bits extracted.
+    ///
     /// # Errors
     ///
     /// It will return an error if
@@ -270,17 +316,21 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::new();
-    /// bv.push_bits(0b11, 2).unwrap();
-    /// bv.push_bits(0b101, 3).unwrap();
+    /// assert!(bv.push_bits(0b11, 2).is_ok());
+    /// assert!(bv.push_bits(0b101, 3).is_ok());
     /// assert_eq!(bv.get_bits(1, 3), Some(0b011));
     /// ```
     #[inline(always)]
     pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(anyhow!(""));
+            return Err(anyhow!(
+                "len must be no greater than {WORD_LEN}, but got {len}."
+            ));
         }
         if len != WORD_LEN && (bits >> len) != 0 {
-            return Err(anyhow!(""));
+            return Err(anyhow!(
+                "bits must not have active bits other than the lowest len={len} bits, but got {bits:#b}."
+            ));
         }
         if len == 0 {
             return Ok(());
@@ -301,6 +351,10 @@ impl BitVector {
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
     /// If not found, [`None`] is returned.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
     ///
     /// # Examples
     ///
@@ -334,6 +388,10 @@ impl BitVector {
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set.
     /// If not found, [`None`] is returned.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
     ///
     /// # Examples
     ///
@@ -369,6 +427,10 @@ impl BitVector {
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set.
     /// If not found, [`None`] is returned.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///
     /// # Examples
     ///
     /// ```
@@ -401,6 +463,10 @@ impl BitVector {
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set.
     /// If not found, [`None`] is returned.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
     ///
     /// # Examples
     ///
@@ -453,6 +519,10 @@ impl BitVector {
 
     /// Creates an iterator for enumerating positions of set bits, starting at bit position `pos`.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///
     /// # Examples
     ///
     /// ```
@@ -470,6 +540,10 @@ impl BitVector {
 
     /// Returns `self.get_bits(pos, 64)` but it can extend further `self.len()`,
     /// padding with zeros. If `self.len() <= pos`, [`None`] is returned.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
     ///
     /// # Examples
     ///
@@ -532,6 +606,10 @@ impl BitVector {
 
 impl BitGetter for BitVector {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
     ///
     /// # Examples
     ///
