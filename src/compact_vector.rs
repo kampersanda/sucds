@@ -18,15 +18,17 @@ use crate::{util, BitVector, IntGetter, Searial};
 /// ```
 /// use sucds::{CompactVector, IntGetter};
 ///
-/// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
+/// // Can store integers within 3 bits each.
+/// let mut cv = CompactVector::new(3).unwrap();
 ///
+/// assert!(cv.push_int(7).is_ok());
+/// assert!(cv.push_int(2).is_ok());
+///
+/// assert_eq!(cv.len(), 2);
+/// assert_eq!(cv.get_int(0), Some(7)); // Need IntGetter
+///
+/// assert!(cv.set_int(0, 5).is_ok());
 /// assert_eq!(cv.get_int(0), Some(5));
-/// assert_eq!(cv.get_int(1), Some(256));
-/// assert_eq!(cv.get_int(2), Some(0));
-/// assert_eq!(cv.get_int(3), Some(10));
-///
-/// assert_eq!(cv.len(), 4);
-/// assert_eq!(cv.width(), 9);
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct CompactVector {
@@ -44,11 +46,25 @@ impl CompactVector {
         }
     }
 
-    /// Creates a new empty vector storing an integer in `width` bits.
+    /// Creates a new empty vector storing integers within `width` bits each.
+    ///
+    /// # Arguments
+    ///
+    ///  - `width`: Number of bits used to store an integer.
     ///
     /// # Errors
     ///
     /// An error is returned if `width` is not in `1..=64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::CompactVector;
+    ///
+    /// let mut cv = CompactVector::new(3).unwrap();
+    /// assert_eq!(cv.len(), 0);
+    /// assert_eq!(cv.width(), 3);
+    /// ```
     pub fn new(width: usize) -> Result<Self> {
         Self::verify_width(width)?;
         Ok(Self {
@@ -60,6 +76,11 @@ impl CompactVector {
 
     /// Creates a new vector storing an integer in `width` bits,
     /// which at least `capa` integers are reserved.
+    ///
+    /// # Arguments
+    ///
+    ///  - `capa`: Number of elements reserved at least.
+    ///  - `width`: Number of bits used to store an integer.
     ///
     /// # Errors
     ///
@@ -76,6 +97,12 @@ impl CompactVector {
     /// Creates a new vector storing an integer in `width` bits,
     /// which stores `len` values initialized by `val`.
     ///
+    /// # Arguments
+    ///
+    ///  - `val`: Integer value.
+    ///  - `len`: Number of elements.
+    ///  - `width`: Number of bits used to store an integer.
+    ///
     /// # Errors
     ///
     /// An error is returned if `width` is not in `1..=64`.
@@ -83,10 +110,12 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let bv = BitVector::from_bit(false, 5);
-    /// assert_eq!(bv.len(), 5);
+    /// let mut cv = CompactVector::from_int(7, 2, 3).unwrap();
+    /// assert_eq!(cv.len(), 2);
+    /// assert_eq!(cv.width(), 3);
+    /// assert_eq!(cv.get_int(0), Some(7));
     /// ```
     pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
         let mut cv = Self::with_capacity(len, width)?;
@@ -100,9 +129,24 @@ impl CompactVector {
     ///
     /// The width of each element automatically fits to the maximum value in `vals`.
     ///
+    /// # Arguments
+    ///
+    ///  - `vals`: Slice of integers.
+    ///
     /// # Errors
     ///
     /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{CompactVector, IntGetter};
+    ///
+    /// let mut cv = CompactVector::from_slice(&[7, 2]).unwrap();
+    /// assert_eq!(cv.len(), 2);
+    /// assert_eq!(cv.width(), 3);
+    /// assert_eq!(cv.get_int(0), Some(7));
+    /// ```
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: ToPrimitive,
@@ -126,6 +170,11 @@ impl CompactVector {
 
     /// Sets the `pos`-th integer to `val`.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Position.
+    ///  - `val`: Integer value set.
+    ///
     /// # Errors
     ///
     /// An error is returned if
@@ -138,9 +187,9 @@ impl CompactVector {
     /// ```
     /// use sucds::CompactVector;
     ///
-    /// let mut cv = CompactVector::with_len(2, 8);
-    /// assert!(cv.set_int(0, 10).is_ok());
-    /// assert!(cv.set_int(1, 255).is_ok());
+    /// let mut cv = CompactVector::from_int(0, 2, 3).unwrap();
+    /// assert!(cv.set_int(0, 7).is_ok());
+    /// assert!(cv.set_int(1, 8).is_err());
     /// ```
     #[inline(always)]
     pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
@@ -148,6 +197,10 @@ impl CompactVector {
     }
 
     /// Pushes integer `val` at the end.
+    ///
+    /// # Arguments
+    ///
+    ///  - `val`: Integer value pushed.
     ///
     /// # Errors
     ///
@@ -158,9 +211,9 @@ impl CompactVector {
     /// ```
     /// use sucds::CompactVector;
     ///
-    /// let mut cv = CompactVector::new(8);
-    /// assert!(cv.push_int(255).is_ok());
-    /// assert!(cv.push_int(256).is_err());
+    /// let mut cv = CompactVector::new(3).unwrap();
+    /// assert!(cv.push_int(7).is_ok());
+    /// assert!(cv.push_int(8).is_err());
     /// ```
     #[inline(always)]
     pub fn push_int(&mut self, val: usize) -> Result<()> {
@@ -176,13 +229,12 @@ impl CompactVector {
     /// ```
     /// use sucds::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0, 10]);
+    /// let cv = CompactVector::from_slice(&[5, 256, 0]).unwrap();;
     /// let mut it = cv.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(256));
     /// assert_eq!(it.next(), Some(0));
-    /// assert_eq!(it.next(), Some(10));
     /// assert_eq!(it.next(), None);
     /// ```
     pub const fn iter(&self) -> Iter {
@@ -211,12 +263,16 @@ impl CompactVector {
 impl IntGetter for CompactVector {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Position.
+    ///
     /// # Examples
     ///
     /// ```
     /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0]);
+    /// let cv = CompactVector::from_slice(&[5, 256, 0]).unwrap();;
     /// assert_eq!(cv.get_int(0), Some(5));
     /// assert_eq!(cv.get_int(1), Some(256));
     /// assert_eq!(cv.get_int(2), Some(0));

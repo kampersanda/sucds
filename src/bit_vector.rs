@@ -57,7 +57,7 @@ impl BitVector {
     ///
     /// # Arguments
     ///
-    ///  - `capa`: Number of bits reserved at least.
+    ///  - `capa`: Number of elements reserved at least.
     ///
     /// # Examples
     ///
@@ -81,7 +81,7 @@ impl BitVector {
     /// # Arguments
     ///
     ///  - `bit`: Bit value used for intinialization.
-    ///  - `len`: Number of bits stored.
+    ///  - `len`: Number of elements.
     ///
     /// # Examples
     ///
