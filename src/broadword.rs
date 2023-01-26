@@ -64,7 +64,8 @@ pub const fn popcount(x: usize) -> usize {
     }
 }
 
-/// Searches the position of the `k`-th bit set.
+/// Searches the position of the `k`-th bit set,
+/// returning [`None`] if the number of bits set in `x` is no less than `k`.
 ///
 /// # Examples
 ///
@@ -105,7 +106,7 @@ pub(crate) fn bit_position(x: usize) -> usize {
     DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
 }
 
-/// Gets the least significant bit.
+/// Gets the least significant bit, returning [`None`] if `x == 0`.
 ///
 /// # Examples
 ///
@@ -132,7 +133,7 @@ pub fn lsb(x: usize) -> Option<usize> {
     }
 }
 
-/// Gets the most significant bit.
+/// Gets the most significant bit, returning [`None`] if `x == 0`.
 ///
 /// # Examples
 ///
