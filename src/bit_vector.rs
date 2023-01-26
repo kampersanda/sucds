@@ -4,14 +4,13 @@ pub mod unary;
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, BitGetter, Searial};
 
-/// The number of bits in a machine word.
-pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+use crate::WORD_LEN;
 
 /// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 ///
@@ -29,7 +28,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.len(), 2);
 /// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
 ///
-/// assert_eq!(bv.set_bit(0, false), Some(()));
+/// bv.set_bit(0, false).unwrap();
 /// assert_eq!(bv.get_bit(0), Some(false));
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
@@ -71,7 +70,8 @@ impl BitVector {
         }
     }
 
-    /// Creates a new instance that stores `len` bits, where each bit is initialized by `bit`.
+    /// Creates a new instance that stores `len` bits,
+    /// where each bit is initialized by `bit`.
     ///
     /// # Examples
     ///
@@ -112,7 +112,11 @@ impl BitVector {
         this
     }
 
-    /// Updates the `pos`-th bit to `bit`, returning [`None`] if out of bounds.
+    /// Updates the `pos`-th bit to `bit`.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `pos` is out of bounds.
     ///
     /// # Examples
     ///
@@ -120,20 +124,19 @@ impl BitVector {
     /// use sucds::{BitGetter, BitVector};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
-    /// assert_eq!(bv.set_bit(1, false), Some(()));
+    /// bv.set_bit(1, false).unwrap();
     /// assert_eq!(bv.get_bit(1), Some(false));
     /// ```
     #[inline(always)]
-    pub fn set_bit(&mut self, pos: usize, bit: bool) -> Option<()> {
-        if pos < self.len {
-            let word = pos / WORD_LEN;
-            let pos_in_word = pos % WORD_LEN;
-            self.words[word] &= !(1 << pos_in_word);
-            self.words[word] |= (bit as usize) << pos_in_word;
-            Some(())
-        } else {
-            None
+    pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
+        if self.len <= pos {
+            return Err(anyhow!(""));
         }
+        let word = pos / WORD_LEN;
+        let pos_in_word = pos % WORD_LEN;
+        self.words[word] &= !(1 << pos_in_word);
+        self.words[word] |= (bit as usize) << pos_in_word;
+        Ok(())
     }
 
     /// Pushes `bit` at the end.
@@ -197,7 +200,11 @@ impl BitVector {
         Some(bits)
     }
 
-    /// Updates the `len` bits starting at the `pos`-th bit to `bits`, returning [`None`] if
+    /// Updates the `len` bits starting at the `pos`-th bit to `bits`.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if
     ///
     /// - `len` is greater than [`WORD_LEN`],
     /// - `pos + len` is out of bounds, or
@@ -209,19 +216,22 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
-    /// assert_eq!(bv.set_bits(1, 0b11, 2), Some(()));
+    /// bv.set_bits(1, 0b11, 2).unwrap();
     /// assert_eq!(bv.get_bits(1, 2), Some(0b11));
     /// ```
     #[inline(always)]
-    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Option<()> {
-        if WORD_LEN < len || self.len() < pos + len {
-            return None;
+    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
+        if WORD_LEN < len {
+            return Err(anyhow!(""));
+        }
+        if self.len() < pos + len {
+            return Err(anyhow!(""));
         }
         if len != WORD_LEN && (bits >> len) != 0 {
-            return None;
+            return Err(anyhow!(""));
         }
         if len == 0 {
-            return Some(());
+            return Ok(());
         }
         let mask = {
             if len < WORD_LEN {
@@ -241,12 +251,16 @@ impl BitVector {
             self.words[word + 1] &= !(mask >> stored);
             self.words[word + 1] |= bits >> stored;
         }
-        Some(())
+        Ok(())
     }
 
-    /// Pushes `bits` of `len` bits at the end, returning [`None`] if
+    /// Pushes `bits` of `len` bits at the end.
     ///
-    /// - `len` is greater than [`WORD_LEN`],
+    /// # Errors
+    ///
+    /// It will return an error if
+    ///
+    /// - `len` is greater than [`WORD_LEN`], or
     /// - `bits` has active bits other than the lowest `len` bits.
     ///
     /// # Examples
@@ -255,20 +269,20 @@ impl BitVector {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::new();
-    /// assert_eq!(bv.push_bits(0b11, 2), Some(()));
-    /// assert_eq!(bv.push_bits(0b101, 3), Some(()));
+    /// bv.push_bits(0b11, 2).unwrap();
+    /// bv.push_bits(0b101, 3).unwrap();
     /// assert_eq!(bv.get_bits(1, 3), Some(0b011));
     /// ```
     #[inline(always)]
-    pub fn push_bits(&mut self, bits: usize, len: usize) -> Option<()> {
+    pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return None;
+            return Err(anyhow!(""));
         }
         if len != WORD_LEN && (bits >> len) != 0 {
-            return None;
+            return Err(anyhow!(""));
         }
         if len == 0 {
-            return Some(());
+            return Ok(());
         }
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
@@ -281,7 +295,7 @@ impl BitVector {
             }
         }
         self.len += len;
-        Some(())
+        Ok(())
     }
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.

@@ -447,7 +447,7 @@ impl WaveletMatrixBuilder {
     /// instead if the maximum value of input integers is known.
     pub fn new() -> Self {
         Self {
-            vals: CompactVector::new(64),
+            vals: CompactVector::new(64).unwrap(),
         }
     }
 
@@ -459,7 +459,7 @@ impl WaveletMatrixBuilder {
     /// - `width`: Number of bits needed to represent an input integer.
     pub fn with_width(width: usize) -> Self {
         Self {
-            vals: CompactVector::new(width),
+            vals: CompactVector::new(width).unwrap(),
         }
     }
 
@@ -476,7 +476,7 @@ impl WaveletMatrixBuilder {
                 val
             ))
         } else {
-            self.vals.push_int(val);
+            self.vals.push_int(val).unwrap();
             Ok(())
         }
     }
@@ -496,12 +496,12 @@ impl WaveletMatrixBuilder {
         let width = Self::get_width(dim);
 
         let mut zeros = self.vals;
-        let mut ones = CompactVector::new(width);
+        let mut ones = CompactVector::new(width).unwrap();
         let mut layers = vec![];
 
         for depth in 0..width {
-            let mut next_zeros = CompactVector::new(width);
-            let mut next_ones = CompactVector::new(width);
+            let mut next_zeros = CompactVector::new(width).unwrap();
+            let mut next_ones = CompactVector::new(width).unwrap();
             let mut bv = BitVector::new();
             Self::filter(
                 &zeros,
@@ -541,9 +541,9 @@ impl WaveletMatrixBuilder {
             let bit = ((val >> shift) & 1) == 1;
             bv.push_bit(bit);
             if bit {
-                next_ones.push_int(val);
+                next_ones.push_int(val).unwrap();
             } else {
-                next_zeros.push_int(val);
+                next_zeros.push_int(val).unwrap();
             }
         }
     }

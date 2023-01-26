@@ -8,6 +8,8 @@ use anyhow::{anyhow, Result};
 use crate::util;
 use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector, Searial};
 
+use crate::WORD_LEN;
+
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
 /// DACs are a compact representation of an integer array consisting of many small values.
@@ -56,10 +58,10 @@ impl DacsOpt {
     ///
     /// $`O(nw + w^3)`$ where $`n`$ is the number of integers, and $`w`$ is the word size in bits.
     pub fn from_slice(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
-        let max_levels = max_levels.unwrap_or(64);
+        let max_levels = max_levels.unwrap_or(WORD_LEN);
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
-                "max_levels must be in 1..=64, but got {max_levels}"
+                "max_levels must be in 1..={WORD_LEN}, but got {max_levels}"
             ));
         }
 
@@ -68,11 +70,12 @@ impl DacsOpt {
         }
 
         let widths = Self::compute_opt_widths(ints, max_levels);
-        Self::build(ints, &widths)
+        Ok(Self::build(ints, &widths))
     }
 
     // A modified implementation of Algorithm 3.5 in Navarro's book.
     fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
+        assert!(!ints.is_empty());
         assert_ne!(max_levels, 0);
 
         // Computes the number of bits needed to represent an integer at least.
@@ -143,30 +146,32 @@ impl DacsOpt {
         assert_eq!(j, num_bits);
         assert_eq!(r, num_levels);
         assert_eq!(widths.iter().sum::<usize>(), num_bits);
-
         widths
     }
 
-    fn build(ints: &[usize], widths: &[usize]) -> Result<Self> {
+    fn build(ints: &[usize], widths: &[usize]) -> Self {
         assert!(!ints.is_empty());
         assert!(!widths.is_empty());
 
         if widths.len() == 1 {
-            let mut data = CompactVector::with_capacity(ints.len(), widths[0]);
-            ints.iter().for_each(|&x| data.push_int(x));
-            return Ok(Self {
+            let mut data = CompactVector::with_capacity(ints.len(), widths[0]).unwrap();
+            ints.iter().for_each(|&x| data.push_int(x).unwrap());
+            return Self {
                 data: vec![data],
                 flags: vec![],
-            });
+            };
         }
 
-        let mut data: Vec<_> = widths.iter().map(|&w| CompactVector::new(w)).collect();
+        let mut data: Vec<_> = widths
+            .iter()
+            .map(|&w| CompactVector::new(w).unwrap())
+            .collect();
         let mut flags = vec![BitVector::default(); widths.len() - 1];
 
         for mut x in ints.iter().cloned() {
             for (j, &width) in widths.iter().enumerate() {
                 let mask = (1 << width) - 1;
-                data[j].push_int(x & mask);
+                data[j].push_int(x & mask).unwrap();
                 x >>= width;
                 if j == widths.len() - 1 {
                     assert_eq!(x, 0);
@@ -180,7 +185,7 @@ impl DacsOpt {
         }
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
-        Ok(Self { data, flags })
+        Self { data, flags }
     }
 
     /// Creates an iterator for enumerating integers.

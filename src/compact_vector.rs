@@ -36,65 +36,102 @@ pub struct CompactVector {
 }
 
 impl CompactVector {
-    /// Creates a new empty instance.
+    fn verify_width(width: usize) -> Result<()> {
+        if 0 < width && width <= 64 {
+            Ok(())
+        } else {
+            Err(anyhow!("width must be in 1..=64."))
+        }
+    }
+
+    /// Creates a new empty vector storing an integer in `width` bits.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// - `width`: Number of bits to represent an integer.
-    pub fn new(width: usize) -> Self {
-        Self {
+    /// An error is returned if `width` is not in `1..=64`.
+    pub fn new(width: usize) -> Result<Self> {
+        Self::verify_width(width)?;
+        Ok(Self {
             chunks: BitVector::default(),
             len: 0,
             width,
-        }
+        })
     }
 
-    /// Creates a new instance that `capa` integers are reserved.
+    /// Creates a new vector storing an integer in `width` bits,
+    /// which at least `capa` integers are reserved.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// - `capa`: Number of integers to be reserved.
-    /// - `width`: Number of bits to represent an integer.
-    pub fn with_capacity(capa: usize, width: usize) -> Self {
-        Self {
+    /// An error is returned if `width` is not in `1..=64`.
+    pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
+        Self::verify_width(width)?;
+        Ok(Self {
             chunks: BitVector::with_capacity(capa * width),
             len: 0,
             width,
-        }
+        })
     }
 
-    /// Creates a new instance from a slice of integers.
+    /// Creates a new vector storing an integer in `width` bits,
+    /// which stores `len` values initialized by `val`.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// - `ints`: Integers to be stored.
-    pub fn from_slice<T>(ints: &[T]) -> Result<Self>
-    where
-        T: ToPrimitive,
-    {
-        if ints.is_empty() {
-            return Err(anyhow!("ints must not be empty."));
-        }
-        let mut max_int = 0;
-        for x in ints {
-            max_int = max_int.max(x.to_usize().ok_or(anyhow!(
-                "ints must consist only of values castable into usize."
-            ))?);
-        }
-        let mut cv = Self::with_capacity(ints.len(), util::needed_bits(max_int));
-        for x in ints {
-            // Casting should be safe.
-            cv.push_int(x.to_usize().unwrap());
+    /// An error is returned if `width` is not in `1..=64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::BitVector;
+    ///
+    /// let bv = BitVector::from_bit(false, 5);
+    /// assert_eq!(bv.len(), 5);
+    /// ```
+    pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
+        let mut cv = Self::with_capacity(len, width)?;
+        for _ in 0..len {
+            cv.push_int(val)?;
         }
         Ok(cv)
     }
 
-    /// Sets the `pos`-th integer to `value`.
+    /// Creates a new vector from a slice of integers `vals`.
     ///
-    /// # Arguments
+    /// The width of each element automatically fits to the maximum value in `vals`.
     ///
-    /// - `pos`: Position.
-    /// - `value`: Integer to be set.
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
+        if vals.is_empty() {
+            return Ok(Self::default());
+        }
+        let mut max_int = 0;
+        for x in vals {
+            max_int = max_int.max(x.to_usize().ok_or(anyhow!(
+                "vals must consist only of values castable into usize."
+            ))?);
+        }
+        let mut cv = Self::with_capacity(vals.len(), util::needed_bits(max_int))?;
+        for x in vals {
+            // Casting and pushing should be safe.
+            cv.push_int(x.to_usize().unwrap()).unwrap();
+        }
+        Ok(cv)
+    }
+
+    /// Sets the `pos`-th integer to `val`.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if
+    ///
+    /// - `pos` is out of bounds, or
+    /// - `val` cannot be represent in `self.width()` bits.
     ///
     /// # Examples
     ///
@@ -102,19 +139,19 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::with_len(2, 8);
-    /// cv.set_int(0, 10);
-    /// cv.set_int(1, 255);
+    /// assert!(cv.set_int(0, 10).is_ok());
+    /// assert!(cv.set_int(1, 255).is_ok());
     /// ```
     #[inline(always)]
-    pub fn set_int(&mut self, pos: usize, value: usize) -> Option<()> {
-        self.chunks.set_bits(pos * self.width, value, self.width)
+    pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
+        self.chunks.set_bits(pos * self.width, val, self.width)
     }
 
-    /// Pushes integer `value` at the end.
+    /// Pushes integer `val` at the end.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// - `value`: Integer to be set.
+    /// An error is returned if `val` cannot be represent in `self.width()` bits.
     ///
     /// # Examples
     ///
@@ -122,13 +159,14 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::new(8);
-    /// cv.push_int(10);
-    /// cv.push_int(255);
+    /// assert!(cv.push_int(255).is_ok());
+    /// assert!(cv.push_int(256).is_err());
     /// ```
     #[inline(always)]
-    pub fn push_int(&mut self, value: usize) {
-        self.chunks.push_bits(value, self.width).unwrap();
+    pub fn push_int(&mut self, val: usize) -> Result<()> {
+        self.chunks.push_bits(val, self.width)?;
         self.len += 1;
+        Ok(())
     }
 
     /// Creates an iterator for enumerating integers.

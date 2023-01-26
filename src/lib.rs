@@ -60,6 +60,9 @@ pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 pub use wavelet_matrix::WaveletMatrixBuilder;
 
+/// The number of bits in a machine word.
+pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+
 // NOTE(kampersanda): We should use `get()` because it has been already used in most std
 // containers with different type annotations.
 

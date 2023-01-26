@@ -543,9 +543,11 @@ impl EliasFanoBuilder {
         self.last = i;
         let low_mask = (1 << self.low_len) - 1;
         if self.low_len != 0 {
-            self.low_bits.push_bits(i & low_mask, self.low_len);
+            self.low_bits.push_bits(i & low_mask, self.low_len).unwrap();
         }
-        self.high_bits.set_bit((i >> self.low_len) + self.pos, true);
+        self.high_bits
+            .set_bit((i >> self.low_len) + self.pos, true)
+            .unwrap();
         self.pos += 1;
 
         Ok(())
