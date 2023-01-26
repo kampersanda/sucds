@@ -15,6 +15,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 ///
 /// [`RsBitVector`] builds rank/select indexes on a bit vector.
 /// For a bit vector of $`n`$ bits,
+///
 ///  - the rank index takes $`0.25n`$ bits, and
 ///  - the select index takes $`0.03n`$ bits in addition to the space of the rank index.
 ///
