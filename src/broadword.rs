@@ -71,14 +71,16 @@ pub const fn popcount(x: usize) -> usize {
 /// ```
 /// use sucds::broadword::select_in_word;
 ///
-/// assert_eq!(select_in_word(0b1010011, 0), 0);
-/// assert_eq!(select_in_word(0b1010011, 1), 1);
-/// assert_eq!(select_in_word(0b1010011, 2), 4);
-/// assert_eq!(select_in_word(0b1010011, 3), 6);
+/// assert_eq!(select_in_word(0b1010011, 0), Some(0));
+/// assert_eq!(select_in_word(0b1010011, 1), Some(1));
+/// assert_eq!(select_in_word(0b1010011, 2), Some(4));
+/// assert_eq!(select_in_word(0b1010011, 3), Some(6));
 /// ```
 #[inline(always)]
-pub fn select_in_word(x: usize, k: usize) -> usize {
-    debug_assert!(k < popcount(x));
+pub fn select_in_word(x: usize, k: usize) -> Option<usize> {
+    if popcount(x) <= k {
+        return None;
+    }
     let byte_sums = ONES_STEP_8.wrapping_mul(byte_counts(x));
     let k_step_8 = k * ONES_STEP_8;
     let geq_k_step_8 = ((k_step_8 | MSBS_STEP_8) - byte_sums) & MSBS_STEP_8;
@@ -93,7 +95,8 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
         }
     };
     let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF);
-    place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
+    let sel = place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize;
+    Some(sel)
 }
 
 #[inline(always)]
@@ -251,7 +254,7 @@ mod tests {
             0, 1, 4, 8, 9, 13, 19, 23, 28, 38, 41, 42, 43, 48, 49, 54, 55, 58,
         ];
         for (i, &k) in sels.iter().enumerate() {
-            assert_eq!(select_in_word(x, i), k);
+            assert_eq!(select_in_word(x, i), Some(k));
         }
     }
 }

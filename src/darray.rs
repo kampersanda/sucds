@@ -216,7 +216,7 @@ impl DArrayIndex {
                 word = w(bv, word_idx);
             }
 
-            64 * word_idx + broadword::select_in_word(word, reminder)
+            64 * word_idx + broadword::select_in_word(word, reminder).unwrap()
         };
         Some(sel)
     }

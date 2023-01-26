@@ -56,7 +56,7 @@ impl<'a> UnaryIter<'a> {
             buf = self.bv.words()[word_pos];
         }
         debug_assert!(buf != 0);
-        let pos_in_word = broadword::select_in_word(buf, k - skipped);
+        let pos_in_word = broadword::select_in_word(buf, k - skipped).unwrap();
         self.buf = buf & usize::max_value().wrapping_shl(pos_in_word as u32);
         self.pos = (self.pos & !(WORD_LEN - 1)) + pos_in_word;
         Some(self.pos)
@@ -95,7 +95,7 @@ impl<'a> UnaryIter<'a> {
             buf = !self.bv.words()[word_pos];
         }
         debug_assert!(buf != 0);
-        let pos_in_word = broadword::select_in_word(buf, k - skipped);
+        let pos_in_word = broadword::select_in_word(buf, k - skipped).unwrap();
         self.buf = !buf & usize::max_value().wrapping_shl(pos_in_word as u32);
         self.pos = (self.pos & !(WORD_LEN - 1)) + pos_in_word;
         Some(self.pos).filter(|&x| x < self.bv.len())

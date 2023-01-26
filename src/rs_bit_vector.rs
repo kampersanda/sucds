@@ -346,7 +346,7 @@ impl Selector for RsBitVector {
 
         let word_offset = block_offset + sub_block_offset;
         let sel = word_offset * 64
-            + broadword::select_in_word(self.bv.words()[word_offset], k - cur_rank);
+            + broadword::select_in_word(self.bv.words()[word_offset], k - cur_rank).unwrap();
         Some(sel)
     }
 
@@ -407,7 +407,7 @@ impl Selector for RsBitVector {
 
         let word_offset = block_offset + sub_block_offset;
         let sel = word_offset * 64
-            + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank);
+            + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank).unwrap();
         Some(sel)
     }
 }
