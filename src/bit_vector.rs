@@ -148,8 +148,11 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
-        if self.len <= pos {
-            return Err(anyhow!(""));
+        if self.len() <= pos {
+            return Err(anyhow!(
+                "pos must be no greater than self.len()={}, but got {pos}.",
+                self.len()
+            ));
         }
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
