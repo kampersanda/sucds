@@ -8,8 +8,6 @@ use anyhow::{anyhow, Result};
 use crate::util;
 use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector, Searial};
 
-use crate::WORD_LEN;
-
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
 /// DACs are a compact representation of an integer array consisting of many small values.
@@ -58,10 +56,10 @@ impl DacsOpt {
     ///
     /// $`O(nw + w^3)`$ where $`n`$ is the number of integers, and $`w`$ is the word size in bits.
     pub fn from_slice(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
-        let max_levels = max_levels.unwrap_or(WORD_LEN);
+        let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
-                "max_levels must be in 1..={WORD_LEN}, but got {max_levels}"
+                "max_levels must be in 1..=64, but got {max_levels}"
             ));
         }
 

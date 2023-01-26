@@ -10,7 +10,8 @@ use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, BitGetter, Searial};
 
-use crate::WORD_LEN;
+/// The number of bits in a machine word.
+pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
 /// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
 ///
