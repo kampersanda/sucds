@@ -26,14 +26,16 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// ```
 /// use sucds::{RsBitVector, BitGetter, Ranker, Selector};
 ///
-/// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints().select0_hints();
+/// let bv = RsBitVector::from_bits([true, false, false, true])
+///     .select1_hints()
+///     .select0_hints();
 ///
-/// assert_eq!(bv.get_bit(1), Some(false));
-/// assert_eq!(bv.rank1(1), Some(1));
-/// assert_eq!(bv.rank0(1), Some(0));
-/// assert_eq!(bv.select1(1), Some(3));
-/// assert_eq!(bv.select0(0), Some(1));
 /// assert_eq!(bv.len(), 4);
+/// assert_eq!(bv.get_bit(1), Some(false)); // Need BitGetter
+/// assert_eq!(bv.rank1(1), Some(1));  // Need Ranker
+/// assert_eq!(bv.rank0(1), Some(0));  // Need Ranker
+/// assert_eq!(bv.select1(1), Some(3));  // Need Selector
+/// assert_eq!(bv.select0(0), Some(1));  // Need Selector
 /// ```
 ///
 /// # References
@@ -48,16 +50,16 @@ pub struct RsBitVector {
 }
 
 impl RsBitVector {
-    /// Creates a new [`RsBitVector`] from input bit vector `bv`.
+    /// Creates a new vector from input bit vector `bv`.
     pub fn new(bv: BitVector) -> Self {
         Self::build_rank(bv)
     }
 
-    /// Creates a new [`RsBitVector`] from input bitset `bits`.
+    /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
     ///
-    /// - `bits`: List of bits.
+    /// - `bits`: Bit stream.
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,

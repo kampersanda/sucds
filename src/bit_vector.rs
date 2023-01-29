@@ -39,7 +39,7 @@ pub struct BitVector {
 }
 
 impl BitVector {
-    /// Creates a new empty instance.
+    /// Creates a new empty vector.
     ///
     /// # Examples
     ///
@@ -53,7 +53,7 @@ impl BitVector {
         Self::default()
     }
 
-    /// Creates a new instance that at least `capa` bits are reserved.
+    /// Creates a new vector that at least `capa` bits are reserved.
     ///
     /// # Arguments
     ///
@@ -75,7 +75,7 @@ impl BitVector {
         }
     }
 
-    /// Creates a new instance that stores `len` bits,
+    /// Creates a new vector that stores `len` bits,
     /// where each bit is initialized by `bit`.
     ///
     /// # Arguments
@@ -102,7 +102,7 @@ impl BitVector {
         Self { words, len }
     }
 
-    /// Creates a new instance from input bit stream `bits`.
+    /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
     ///
