@@ -51,6 +51,10 @@ impl DacsByte {
     /// # Arguments
     ///
     /// - `vals`: Slice of integers to be stored.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: ToPrimitive,

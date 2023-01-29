@@ -30,6 +30,10 @@ impl EliasFanoList {
     ///
     /// - `vals`: Slice of integers to be stored.
     ///
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    ///
     /// # Examples
     ///
     /// ```

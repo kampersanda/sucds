@@ -56,6 +56,13 @@ impl DacsOpt {
     /// # Complexities
     ///
     /// $`O(nw + w^3)`$ where $`n`$ is the number of integers, and $`w`$ is the word size in bits.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if
+    ///
+    /// - `vals` contains an integer that cannot be cast to `usize`, or
+    /// - `max_levels` is not within `1..=64` if it is [`Some`].
     pub fn from_slice<T>(vals: &[T], max_levels: Option<usize>) -> Result<Self>
     where
         T: ToPrimitive,
@@ -70,13 +77,18 @@ impl DacsOpt {
         if vals.is_empty() {
             return Ok(Self::default());
         }
+        for x in vals {
+            x.to_usize().ok_or(anyhow!(
+                "vals must consist only of values castable into usize."
+            ))?;
+        }
 
-        let widths = Self::compute_opt_widths(vals, max_levels)?;
+        let widths = Self::compute_opt_widths(vals, max_levels);
         Self::build(vals, &widths)
     }
 
     // A modified implementation of Algorithm 3.5 in Navarro's book.
-    fn compute_opt_widths<T>(vals: &[T], max_levels: usize) -> Result<Vec<usize>>
+    fn compute_opt_widths<T>(vals: &[T], max_levels: usize) -> Vec<usize>
     where
         T: ToPrimitive,
     {
@@ -86,9 +98,7 @@ impl DacsOpt {
         // Computes the number of bits needed to represent an integer at least.
         let mut maxv = 0;
         for x in vals {
-            maxv = maxv.max(x.to_usize().ok_or(anyhow!(
-                "vals must consist only of values castable into usize."
-            ))?);
+            maxv = maxv.max(x.to_usize().unwrap());
         }
         let num_bits = util::needed_bits(maxv);
         let max_levels = max_levels.min(num_bits);
@@ -157,7 +167,8 @@ impl DacsOpt {
         assert_eq!(j, num_bits);
         assert_eq!(r, num_levels);
         assert_eq!(widths.iter().sum::<usize>(), num_bits);
-        Ok(widths)
+
+        widths
     }
 
     fn build<T>(vals: &[T], widths: &[usize]) -> Result<Self>
@@ -341,31 +352,31 @@ mod tests {
 
     #[test]
     fn test_opt_witdhs_0() {
-        let widths = DacsOpt::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3).unwrap();
+        let widths = DacsOpt::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3);
         assert_eq!(widths, vec![1]);
     }
 
     #[test]
     fn test_opt_witdhs_1() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1).unwrap();
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1);
         assert_eq!(widths, vec![4]);
     }
 
     #[test]
     fn test_opt_witdhs_2() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2).unwrap();
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_3() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3).unwrap();
+        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_4() {
-        let widths = DacsOpt::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3).unwrap();
+        let widths = DacsOpt::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3);
         assert_eq!(widths, vec![4]);
     }
 
