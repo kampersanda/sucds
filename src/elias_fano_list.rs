@@ -5,7 +5,8 @@ pub mod iter;
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::elias_fano_list::iter::Iter;
 use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
@@ -27,7 +28,7 @@ impl EliasFanoList {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Integers to be stored.
+    /// - `vals`: Slice of integers to be stored.
     ///
     /// # Examples
     ///
@@ -39,15 +40,20 @@ impl EliasFanoList {
     /// assert_eq!(list.len(), 4);
     /// assert_eq!(list.sum(), 31);
     /// ```
-    pub fn from_slice(ints: &[usize]) -> Result<Self> {
+    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
         let mut universe = 0;
-        for &x in ints {
-            universe += x;
+        for x in vals {
+            universe += x.to_usize().ok_or(anyhow!(
+                "vals must consist only of values castable into usize."
+            ))?;
         }
-        let mut b = EliasFanoBuilder::new(universe + 1, ints.len())?;
+        let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
         let mut cur = 0;
-        for &x in ints {
-            cur += x;
+        for x in vals {
+            cur += x.to_usize().unwrap();
             b.push(cur)?;
         }
         Ok(Self { ef: b.build() })
@@ -137,25 +143,25 @@ mod tests {
         (0..len).map(|_| rng.gen_range(0..10000)).collect()
     }
 
-    fn test_basic(ints: &[usize], list: &EliasFanoList) {
+    fn test_basic(vals: &[usize], list: &EliasFanoList) {
         let mut acc = 0;
-        for (i, &x) in ints.iter().enumerate() {
+        for (i, &x) in vals.iter().enumerate() {
             assert_eq!(list.get_int(i), Some(x));
             acc += x;
         }
-        assert_eq!(ints.len(), list.len());
+        assert_eq!(vals.len(), list.len());
         assert_eq!(acc, list.sum());
         for (i, x) in list.iter().enumerate() {
-            assert_eq!(ints[i], x);
+            assert_eq!(vals[i], x);
         }
     }
 
     #[test]
     fn test_random_ints() {
         for seed in 0..100 {
-            let ints = gen_random_ints(10000, seed);
-            let list = EliasFanoList::from_slice(&ints).unwrap();
-            test_basic(&ints, &list);
+            let vals = gen_random_ints(10000, seed);
+            let list = EliasFanoList::from_slice(&vals).unwrap();
+            test_basic(&vals, &list);
         }
     }
 

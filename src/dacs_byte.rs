@@ -4,7 +4,8 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::util;
 use crate::{BitGetter, BitVector, IntGetter, Ranker, RsBitVector, Searial};
@@ -49,28 +50,41 @@ impl DacsByte {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Integers to be stored.
-    pub fn from_slice(ints: &[usize]) -> Self {
-        if ints.is_empty() {
-            return Self::default();
+    /// - `vals`: Slice of integers to be stored.
+    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
+        if vals.is_empty() {
+            return Ok(Self::default());
         }
 
-        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let mut maxv = 0;
+        for x in vals {
+            maxv = maxv.max(x.to_usize().ok_or(anyhow!(
+                "vals must consist only of values castable into usize."
+            ))?);
+        }
+        let num_bits = util::needed_bits(maxv);
         let num_levels = util::ceiled_divide(num_bits, LEVEL_WIDTH);
         assert_ne!(num_levels, 0);
 
         if num_levels == 1 {
-            let data: Vec<_> = ints.iter().map(|&x| u8::try_from(x).unwrap()).collect();
-            return Self {
+            let data: Vec<_> = vals
+                .iter()
+                .map(|x| u8::try_from(x.to_usize().unwrap()).unwrap())
+                .collect();
+            return Ok(Self {
                 data: vec![data],
                 flags: vec![],
-            };
+            });
         }
 
         let mut data = vec![vec![]; num_levels];
         let mut flags = vec![BitVector::default(); num_levels - 1];
 
-        for mut x in ints.iter().cloned() {
+        for x in vals {
+            let mut x = x.to_usize().unwrap();
             for j in 0..num_levels {
                 data[j].push(u8::try_from(x & LEVEL_MASK).unwrap());
                 x >>= LEVEL_WIDTH;
@@ -86,7 +100,7 @@ impl DacsByte {
         }
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
-        Self { data, flags }
+        Ok(Self { data, flags })
     }
 
     /// Creates an iterator for enumerating integers.
@@ -225,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let list = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let list = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
 
         assert_eq!(
             list.data,
@@ -258,7 +272,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let list = DacsByte::from_slice(&[]);
+        let list = DacsByte::from_slice::<usize>(&[]).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
@@ -267,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsByte::from_slice(&[0, 0, 0, 0]);
+        let list = DacsByte::from_slice(&[0, 0, 0, 0]).unwrap();
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
@@ -281,7 +295,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let list = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);

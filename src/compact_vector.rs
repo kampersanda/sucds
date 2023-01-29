@@ -131,7 +131,7 @@ impl CompactVector {
     ///
     /// # Arguments
     ///
-    ///  - `vals`: Slice of integers.
+    ///  - `vals`: Slice of integers to be stored.
     ///
     /// # Errors
     ///
