@@ -237,7 +237,7 @@ impl BitVector {
     ///
     ///  - `pos`: Bit position.
     ///  - `bits`: Bit chunk set.
-    ///  - `len`: Number of bits extracted.
+    ///  - `len`: Number of bits of the chunk.
     ///
     /// # Errors
     ///
@@ -304,7 +304,7 @@ impl BitVector {
     /// # Arguments
     ///
     ///  - `bits`: Bit chunk set.
-    ///  - `len`: Number of bits extracted.
+    ///  - `len`: Number of bits of the chunk.
     ///
     /// # Errors
     ///
