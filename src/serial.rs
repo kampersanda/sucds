@@ -12,17 +12,20 @@ use anyhow::Result;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{BitVector, Searial};
 ///
 /// let bv = BitVector::from_bits([true, false, false, true]);
 ///
 /// let mut bytes = vec![];
-/// let size = bv.serialize_into(&mut bytes).unwrap();
-/// let other = BitVector::deserialize_from(&bytes[..]).unwrap();
+/// let size = bv.serialize_into(&mut bytes)?;
+/// let other = BitVector::deserialize_from(&bytes[..])?;
 ///
 /// assert_eq!(bv, other);
 /// assert_eq!(size, bytes.len());
 /// assert_eq!(size, bv.size_in_bytes());
+/// # Ok(())
+/// # }
 /// ```
 pub trait Searial: Sized {
     /// Serializes the data structure into the writer,
