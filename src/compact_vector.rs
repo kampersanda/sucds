@@ -16,19 +16,22 @@ use crate::{util, BitVector, IntGetter, Searial};
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{CompactVector, IntGetter};
 ///
 /// // Can store integers within 3 bits each.
-/// let mut cv = CompactVector::new(3).unwrap();
+/// let mut cv = CompactVector::new(3)?;
 ///
-/// assert!(cv.push_int(7).is_ok());
-/// assert!(cv.push_int(2).is_ok());
+/// cv.push_int(7)?;
+/// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
 /// assert_eq!(cv.get_int(0), Some(7)); // Need IntGetter
 ///
-/// assert!(cv.set_int(0, 5).is_ok());
+/// cv.set_int(0, 5)?;
 /// assert_eq!(cv.get_int(0), Some(5));
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct CompactVector {
@@ -59,11 +62,14 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::CompactVector;
     ///
-    /// let mut cv = CompactVector::new(3).unwrap();
+    /// let mut cv = CompactVector::new(3)?;
     /// assert_eq!(cv.len(), 0);
     /// assert_eq!(cv.width(), 3);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn new(width: usize) -> Result<Self> {
         Self::verify_width(width)?;
@@ -75,7 +81,7 @@ impl CompactVector {
     }
 
     /// Creates a new vector storing an integer in `width` bits,
-    /// which at least `capa` integers are reserved.
+    /// where space for storing at least `capa` integers is reserved.
     ///
     /// # Arguments
     ///
@@ -85,6 +91,23 @@ impl CompactVector {
     /// # Errors
     ///
     /// An error is returned if `width` is not in `1..=64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::CompactVector;
+    ///
+    /// let mut cv = CompactVector::with_capacity(10, 3)?;
+    ///
+    /// assert_eq!(cv.len(), 0);
+    /// assert_eq!(cv.width(), 3);
+    ///
+    /// // Space for storing 21 integers is reserved due to the data structure.
+    /// assert_eq!(cv.capacity(), 21);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
         Self::verify_width(width)?;
         Ok(Self {
@@ -110,12 +133,15 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let mut cv = CompactVector::from_int(7, 2, 3).unwrap();
+    /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
         let mut cv = Self::with_capacity(len, width)?;
@@ -140,12 +166,15 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let mut cv = CompactVector::from_slice(&[7, 2]).unwrap();
+    /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
@@ -185,11 +214,14 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::CompactVector;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let mut cv = CompactVector::from_int(0, 2, 3).unwrap();
-    /// assert!(cv.set_int(0, 7).is_ok());
-    /// assert!(cv.set_int(1, 8).is_err());
+    /// let mut cv = CompactVector::from_int(0, 2, 3)?;
+    /// cv.set_int(1, 8)?
+    /// assert_eq!(cv.get_int(1), Some(8));
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
@@ -209,11 +241,15 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::CompactVector;
     ///
-    /// let mut cv = CompactVector::new(3).unwrap();
-    /// assert!(cv.push_int(7).is_ok());
-    /// assert!(cv.push_int(8).is_err());
+    /// let mut cv = CompactVector::new(3)?;
+    /// cv.push_int(7)?;
+    /// cv.push_int(8)?;
+    /// assert_eq!(cv.len(), 2);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn push_int(&mut self, val: usize) -> Result<()> {
@@ -227,15 +263,18 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0]).unwrap();;
+    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
     /// let mut it = cv.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(256));
     /// assert_eq!(it.next(), Some(0));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -251,6 +290,11 @@ impl CompactVector {
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Returns the total number of bits it can hold without reallocating.
+    pub fn capacity(&self) -> usize {
+        self.chunks.capacity() / self.width()
     }
 
     /// Gets the number of bits to represent an integer.
@@ -270,13 +314,16 @@ impl IntGetter for CompactVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{CompactVector, IntGetter};
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0]).unwrap();;
+    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
     /// assert_eq!(cv.get_int(0), Some(5));
     /// assert_eq!(cv.get_int(1), Some(256));
     /// assert_eq!(cv.get_int(2), Some(0));
     /// assert_eq!(cv.get_int(3), None);
+    /// # Ok(())
+    /// # }
     fn get_int(&self, pos: usize) -> Option<usize> {
         self.chunks.get_bits(pos * self.width, self.width)
     }
