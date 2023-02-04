@@ -13,7 +13,7 @@ use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///
-/// [`EliasFanoList`] stores a list of integers by converting it into an increasing sequence
+/// This stores a list of integers by converting it into an increasing sequence
 /// in a prefix-summing manner and representing the sequence through Elias-Fano encoding.
 /// When the list consists of small integers, the representation will be very compact.
 ///
@@ -24,7 +24,7 @@ pub struct EliasFanoList {
 }
 
 impl EliasFanoList {
-    /// Creates a new [`EliasFanoList`] from a slice of integers.
+    /// Creates a new list from a slice of integers.
     ///
     /// # Arguments
     ///
@@ -32,7 +32,10 @@ impl EliasFanoList {
     ///
     /// # Errors
     ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    /// An error is returned if
+    ///
+    /// - `vals` contains an integer that cannot be cast to [`usize`], or
+    /// - `vals` is empty.
     ///
     /// # Examples
     ///
@@ -48,6 +51,9 @@ impl EliasFanoList {
     where
         T: ToPrimitive,
     {
+        if vals.is_empty() {
+            return Err(anyhow!("vals must not be empty."));
+        }
         let mut universe = 0;
         for x in vals {
             universe += x.to_usize().ok_or(anyhow!(
