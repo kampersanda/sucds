@@ -72,10 +72,10 @@ pub const fn popcount(x: usize) -> usize {
 /// ```
 /// use sucds::broadword::select_in_word;
 ///
-/// assert_eq!(select_in_word(0b1010011, 0), Some(0));
-/// assert_eq!(select_in_word(0b1010011, 1), Some(1));
-/// assert_eq!(select_in_word(0b1010011, 2), Some(4));
-/// assert_eq!(select_in_word(0b1010011, 3), Some(6));
+/// assert_eq!(select_in_word(0b1000011, 0), Some(0));
+/// assert_eq!(select_in_word(0b1000011, 1), Some(1));
+/// assert_eq!(select_in_word(0b1000011, 2), Some(6));
+/// assert_eq!(select_in_word(0b1000011, 3), None);
 /// ```
 #[inline(always)]
 pub fn select_in_word(x: usize, k: usize) -> Option<usize> {
