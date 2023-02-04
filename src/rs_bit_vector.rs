@@ -31,11 +31,17 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 ///     .select0_hints();
 ///
 /// assert_eq!(bv.len(), 4);
-/// assert_eq!(bv.get_bit(1), Some(false)); // Need BitGetter
-/// assert_eq!(bv.rank1(1), Some(1));  // Need Ranker
-/// assert_eq!(bv.rank0(1), Some(0));  // Need Ranker
-/// assert_eq!(bv.select1(1), Some(3));  // Need Selector
-/// assert_eq!(bv.select0(0), Some(1));  // Need Selector
+///
+/// // Need BitGetter
+/// assert_eq!(bv.get_bit(1), Some(false));
+///
+/// // Need Ranker
+/// assert_eq!(bv.rank1(1), Some(1));
+/// assert_eq!(bv.rank0(1), Some(0));
+///
+/// // Need Selector
+/// assert_eq!(bv.select1(1), Some(3));
+/// assert_eq!(bv.select0(0), Some(1));
 /// ```
 ///
 /// # References
@@ -252,6 +258,7 @@ impl Ranker for RsBitVector {
     /// assert_eq!(bv.rank1(2), Some(1));
     /// assert_eq!(bv.rank1(3), Some(1));
     /// assert_eq!(bv.rank1(4), Some(2));
+    /// assert_eq!(bv.rank1(5), None);
     /// ```
     fn rank1(&self, pos: usize) -> Option<usize> {
         if self.len() < pos {
@@ -285,6 +292,7 @@ impl Ranker for RsBitVector {
     /// assert_eq!(bv.rank0(2), Some(1));
     /// assert_eq!(bv.rank0(3), Some(2));
     /// assert_eq!(bv.rank0(4), Some(2));
+    /// assert_eq!(bv.rank0(5), None);
     /// ```
     fn rank0(&self, pos: usize) -> Option<usize> {
         Some(pos - self.rank1(pos)?)
@@ -306,6 +314,7 @@ impl Selector for RsBitVector {
     /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
     /// assert_eq!(bv.select1(0), Some(0));
     /// assert_eq!(bv.select1(1), Some(3));
+    /// assert_eq!(bv.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
         if self.num_ones() <= k {
@@ -367,6 +376,7 @@ impl Selector for RsBitVector {
     /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
     /// assert_eq!(bv.select0(0), Some(1));
     /// assert_eq!(bv.select0(1), Some(2));
+    /// assert_eq!(bv.select0(2), None);
     /// ```
     fn select0(&self, k: usize) -> Option<usize> {
         if self.num_zeros() <= k {
