@@ -103,6 +103,7 @@ impl Selector for DArray {
     ///
     /// assert_eq!(da.select1(0), Some(0));
     /// assert_eq!(da.select1(1), Some(3));
+    /// assert_eq!(da.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
         self.da.select(&self.bv, k)
@@ -172,6 +173,7 @@ impl DArrayIndex {
     /// let da = DArrayIndex::new(&bv, true);
     /// assert_eq!(da.select(&bv, 0), Some(0));
     /// assert_eq!(da.select(&bv, 1), Some(3));
+    /// assert_eq!(da.select(&bv, 2), None);
     /// ```
     #[inline(always)]
     pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
