@@ -28,9 +28,11 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{EliasFano, Ranker, Selector};
+/// use sucds::{EliasFanoBuilder, Ranker, Selector};
 ///
-/// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
+/// let mut efb = EliasFanoBuilder::new(8, 4)?;
+/// efb.append([1, 3, 3, 7])?;
+/// let ef = efb.build();
 ///
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
@@ -100,24 +102,6 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Creates a new [`EliasFano`] from a list of monotone increasing integers.
-    ///
-    /// # Arguments
-    ///
-    /// - `ints`: List of monotone increasing integers .
-    ///
-    /// # Errors
-    ///
-    /// `anyhow::Error` will be returned if `ints` is empty or is not monotone increasing.
-    pub fn from_ints(ints: &[usize]) -> Result<Self> {
-        if ints.is_empty() {
-            return Err(anyhow!("The input ints must not be empty."));
-        }
-        let mut b = EliasFanoBuilder::new(*ints.last().unwrap() + 1, ints.len())?;
-        b.append(ints)?;
-        Ok(b.build())
-    }
-
     /// Builds an index to enable operations [`EliasFano::rank1()`],
     /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
     #[must_use]
@@ -140,9 +124,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
     /// assert_eq!(ef.predecessor(4), Some(3));
     /// assert_eq!(ef.predecessor(3), Some(3));
     /// assert_eq!(ef.predecessor(2), Some(1));
@@ -171,9 +158,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
     /// assert_eq!(ef.successor(0), Some(1));
     /// assert_eq!(ef.successor(2), Some(3));
     /// assert_eq!(ef.successor(3), Some(3));
@@ -199,9 +189,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
     /// assert_eq!(ef.delta(0), Some(1));
     /// assert_eq!(ef.delta(1), Some(2));
     /// assert_eq!(ef.delta(2), Some(0));
@@ -249,9 +242,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10])?;
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.append([1, 3, 3, 6, 7, 10])?;
+    /// let ef = efb.build();
+    ///
     /// assert_eq!(ef.find(6), Some(3));
     /// assert_eq!(ef.find(10), Some(5));
     /// assert_eq!(ef.find(9), None);
@@ -280,9 +276,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10])?;
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.append([1, 3, 3, 6, 7, 10])?;
+    /// let ef = efb.build();
+    ///
     /// assert_eq!(ef.find_range(1..4, 6), Some(3));
     /// assert_eq!(ef.find_range(5..6, 10), Some(5));
     /// assert_eq!(ef.find_range(1..3, 6), None);
@@ -331,9 +330,12 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFano;
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
     /// let mut it = ef.iter(1);
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(3));
@@ -380,9 +382,11 @@ impl Ranker for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFano, Ranker};
+    /// use sucds::{EliasFanoBuilder, Ranker};
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.rank1(1), Some(0));
     /// assert_eq!(ef.rank1(2), Some(1));
@@ -435,9 +439,11 @@ impl Selector for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFano, Selector};
+    /// use sucds::{EliasFanoBuilder, Selector};
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.append([1, 3, 3, 7])?;
+    /// let ef = efb.build();
     ///
     /// assert_eq!(ef.select1(0), Some(1));
     /// assert_eq!(ef.select1(1), Some(3));
@@ -505,6 +511,28 @@ impl Searial for EliasFano {
 }
 
 /// Builder for [`EliasFano`].
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::EliasFanoBuilder;
+///
+/// let mut efb = EliasFanoBuilder::new(8, 5)?;
+///
+/// assert_eq!(efb.universe(), 8);
+/// assert_eq!(efb.num_vals(), 5);
+///
+/// efb.push(1)?;
+/// efb.push(3)?;
+/// efb.append([3, 5, 7])?;
+///
+/// let ef = efb.build();
+/// assert_eq!(ef.len(), 5);
+/// assert_eq!(ef.universe(), 8);
+/// # Ok(())
+/// # }
+/// ```
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
@@ -596,20 +624,20 @@ impl EliasFanoBuilder {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Pushed integers that are increasing.
+    /// - `vals`: Pushed integers that are monotone increasing.
     ///
     /// # Errors
     ///
     /// An error is returned if
     ///
-    /// - `vals` are not increasing,
+    /// - `vals` is not monotone increasing (also compared to the current last value),
     /// - values in `vals` is no less than [`Self::universe()`], or
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
     where
-        I: IntoIterator<Item = &'a usize>,
+        I: IntoIterator<Item = usize>,
     {
-        for &x in vals {
+        for x in vals {
             self.push(x)?;
         }
         Ok(())
@@ -743,31 +771,6 @@ mod tests {
     }
 
     #[test]
-    fn test_tiny_bits() {
-        let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
-        assert_eq!(ef.select1(0), Some(1));
-        assert_eq!(ef.select1(1), Some(3));
-        assert_eq!(ef.select1(2), Some(3));
-        assert_eq!(ef.select1(3), Some(6));
-        assert_eq!(ef.select1(4), Some(7));
-        assert_eq!(ef.select1(5), Some(10));
-
-        assert_eq!(ef.find(1), Some(0));
-        assert_eq!(ef.find(6), Some(3));
-        assert_eq!(ef.find(7), Some(4));
-        assert_eq!(ef.find(10), Some(5));
-        assert_eq!(ef.find(0), None);
-        assert_eq!(ef.find(9), None);
-        assert_eq!(ef.find(100), None);
-
-        assert_eq!(ef.find_range(1..4, 6), Some(3));
-        assert_eq!(ef.find_range(1..3, 6), None);
-        assert_eq!(ef.find_range(4..6, 6), None);
-        assert_eq!(ef.find_range(5..6, 10), Some(5));
-        assert_eq!(ef.find_range(5..5, 10), None);
-    }
-
-    #[test]
     fn test_random_bits_dense() {
         for seed in 0..100 {
             let bits = gen_random_bits(10000, 0.5, seed);
@@ -842,13 +845,13 @@ mod tests {
     #[should_panic]
     fn test_exclusive_ints() {
         let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append(&[1, 2, 3, 4, 5]).unwrap();
+        b.append([1, 2, 3, 4, 5]).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_non_increasing() {
         let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append(&[1, 2, 3, 2]).unwrap();
+        b.append([1, 2, 3, 2]).unwrap();
     }
 }
