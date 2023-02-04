@@ -18,6 +18,35 @@ use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
 /// When the list consists of small integers, the representation will be very compact.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano_list](https://github.com/ot/succinct/blob/master/elias_fano_list.hpp).
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::{EliasFanoList, IntGetter};
+///
+/// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
+///
+/// // Need IntGetter
+/// assert_eq!(list.get_int(0), Some(5));
+/// assert_eq!(list.get_int(1), Some(14));
+/// assert_eq!(list.get_int(2), Some(334));
+/// assert_eq!(list.get_int(3), Some(10));
+///
+/// assert_eq!(list.len(), 4);
+/// assert_eq!(list.sum(), 363);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # References
+///
+///  - P. Elias, "Efficient storage and retrieval by content and address of static files,"
+///    Journal of the ACM, 1974.
+///  - R. Fano, "On the number of bits required to implement an associative memory,"
+///    Memorandum 61. Computer Structures Group, Project MAC, MIT, 1971.
+///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
+///    In ALENEX, 2007.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFanoList {
     ef: EliasFano,
@@ -40,12 +69,15 @@ impl EliasFanoList {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFanoList;
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
+    /// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
     ///
     /// assert_eq!(list.len(), 4);
-    /// assert_eq!(list.sum(), 31);
+    /// assert_eq!(list.sum(), 363);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
@@ -74,16 +106,19 @@ impl EliasFanoList {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFanoList;
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2, 10]).unwrap();
+    /// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(14));
-    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), Some(10));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -115,12 +150,17 @@ impl IntGetter for EliasFanoList {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{EliasFanoList, IntGetter};
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 2]).unwrap();
+    /// let list = EliasFanoList::from_slice(&[5, 14, 334])?;
     /// assert_eq!(list.get_int(0), Some(5));
     /// assert_eq!(list.get_int(1), Some(14));
-    /// assert_eq!(list.get_int(2), Some(2));
+    /// assert_eq!(list.get_int(2), Some(334));
+    /// assert_eq!(list.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn get_int(&self, pos: usize) -> Option<usize> {
         self.ef.delta(pos)
     }
