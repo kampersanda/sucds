@@ -486,21 +486,20 @@ impl WaveletMatrix {
     /// # Examples
     ///
     /// ```
-    /// use sucds::WaveletMatrixBuilder;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{CompactVector, WaveletMatrix};
     ///
-    /// let mut wmb = WaveletMatrixBuilder::with_width(8);
-    /// wmb.push(20).unwrap();
-    /// wmb.push(7).unwrap();
-    /// wmb.push(13).unwrap();
-    /// wmb.push(2).unwrap();
-    /// let wm = wmb.build().unwrap();
+    /// let mut seq = CompactVector::new(8)?;
+    /// seq.append("ban".chars().map(|c| c as usize))?;
+    /// let wm = WaveletMatrix::new(seq)?;
+    ///
     /// let mut it = wm.iter();
-    ///
-    /// assert_eq!(it.next(), Some(20));
-    /// assert_eq!(it.next(), Some(7));
-    /// assert_eq!(it.next(), Some(13));
-    /// assert_eq!(it.next(), Some(2));
+    /// assert_eq!(it.next(), Some('b' as usize));
+    /// assert_eq!(it.next(), Some('a' as usize));
+    /// assert_eq!(it.next(), Some('n' as usize));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -553,115 +552,6 @@ impl Searial for WaveletMatrix {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    // use rand::{Rng, SeedableRng};
-    // use rand_chacha::ChaChaRng;
-
-    // const SIGMA: usize = 256;
-    // const LOG_SIGMA: usize = 8;
-
-    // fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
-    //     let mut rng = ChaChaRng::seed_from_u64(seed);
-    //     (0..len).map(|_| rng.gen_range(0..SIGMA)).collect()
-    // }
-
-    // fn gen_random_ranges(len: usize, end: usize, seed: u64) -> Vec<Range<usize>> {
-    //     let mut rng = ChaChaRng::seed_from_u64(seed);
-    //     let mut ranges = vec![];
-    //     for _ in 0..len {
-    //         let i = rng.gen_range(0..end);
-    //         let j = rng.gen_range(i..end);
-    //         ranges.push(i..j);
-    //     }
-    //     ranges
-    // }
-
-    // fn test_lookup(ints: &[usize], wm: &WaveletMatrix) {
-    //     for (i, &v) in ints.iter().enumerate() {
-    //         assert_eq!(v, wm.get(i));
-    //     }
-    // }
-
-    // fn test_iter(ints: &[usize], wm: &WaveletMatrix) {
-    //     for (i, x) in wm.iter().enumerate() {
-    //         assert_eq!(ints[i], x);
-    //     }
-    // }
-
-    // fn test_rank_select(ints: &[usize], wm: &WaveletMatrix, val: usize) {
-    //     let mut cur_rank = 0;
-    //     for i in 0..ints.len() {
-    //         assert_eq!(cur_rank, wm.rank(i, val));
-    //         if ints[i] == val {
-    //             assert_eq!(i, wm.select(cur_rank, val));
-    //             cur_rank += 1;
-    //         }
-    //     }
-    // }
-
-    // fn test_rank_range(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>], val: usize) {
-    //     for rng in ranges {
-    //         let (i, j) = (rng.start, rng.end);
-    //         let expected = ints[i..j].iter().filter(|&&x| x == val).count();
-    //         assert_eq!(expected, wm.rank_range(i..j, val));
-    //     }
-    // }
-
-    // fn test_quantile(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>]) {
-    //     for rng in ranges {
-    //         let (i, j) = (rng.start, rng.end);
-    //         let mut tgt = ints[i..j].to_vec();
-    //         for k in 0..rng.len() {
-    //             let min_i = {
-    //                 let exp = tgt.iter().enumerate().min_by_key(|&(_, x)| x).unwrap();
-    //                 assert_eq!(*exp.1, wm.quantile(i..j, k));
-    //                 exp.0
-    //             };
-    //             tgt.remove(min_i);
-    //         }
-    //     }
-    // }
-
-    // fn test_intersect(ints: &[usize], wm: &WaveletMatrix, ranges: &[Range<usize>]) {
-    //     let mut sets = vec![];
-    //     for rng in ranges {
-    //         let mut set = std::collections::BTreeSet::new();
-    //         ints[rng.start..rng.end].iter().for_each(|&x| {
-    //             set.insert(x);
-    //         });
-    //         sets.push(set);
-    //     }
-
-    //     const K: usize = 1;
-
-    //     for i in 0..ranges.len() - 3 {
-    //         let q_rngs = &ranges[i..i + 3];
-    //         let q_sets = &sets[i..i + 3];
-    //         let expected = {
-    //             let mut expected = std::collections::BTreeSet::new();
-    //             for c in 0..SIGMA {
-    //                 let mut cnt = 0;
-    //                 for qs in q_sets {
-    //                     if qs.contains(&c) {
-    //                         cnt += 1;
-    //                     }
-    //                 }
-    //                 if cnt >= K {
-    //                     expected.insert(c);
-    //                 }
-    //             }
-    //             expected
-    //         };
-    //         let answer = {
-    //             let mut answer = std::collections::BTreeSet::new();
-    //             for x in wm.intersect(q_rngs, K) {
-    //                 answer.insert(x);
-    //             }
-    //             answer
-    //         };
-    //         assert_eq!(expected, answer);
-    //     }
-    // }
 
     #[test]
     fn test_build() {
