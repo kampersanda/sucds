@@ -27,8 +27,8 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// use sucds::{RsBitVector, BitGetter, Ranker, Selector};
 ///
 /// let bv = RsBitVector::from_bits([true, false, false, true])
-///     .select1_hints()
-///     .select0_hints();
+///     .select1_hints()  // To accelerate select1
+///     .select0_hints(); // To accelerate select0
 ///
 /// assert_eq!(bv.len(), 4);
 ///
