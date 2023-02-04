@@ -27,13 +27,15 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Example
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{EliasFano, Ranker, Selector};
 ///
-/// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+/// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
 ///
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
 ///
+/// // Need Selector
 /// assert_eq!(ef.select1(0), Some(1));
 /// assert_eq!(ef.select1(1), Some(3));
 /// assert_eq!(ef.select1(2), Some(3));
@@ -42,14 +44,16 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
 ///
+/// // Need Ranker
 /// assert_eq!(ef.rank1(3), Some(1));
 /// assert_eq!(ef.rank1(4), Some(3));
 ///
 /// assert_eq!(ef.predecessor(4), Some(3));
 /// assert_eq!(ef.predecessor(3), Some(3));
-///
 /// assert_eq!(ef.successor(3), Some(3));
 /// assert_eq!(ef.successor(4), Some(7));
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -135,13 +139,16 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
     /// assert_eq!(ef.predecessor(4), Some(3));
     /// assert_eq!(ef.predecessor(3), Some(3));
     /// assert_eq!(ef.predecessor(2), Some(1));
     /// assert_eq!(ef.predecessor(0), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn predecessor(&self, pos: usize) -> Option<usize> {
@@ -163,13 +170,16 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
     /// assert_eq!(ef.successor(0), Some(1));
     /// assert_eq!(ef.successor(2), Some(3));
     /// assert_eq!(ef.successor(3), Some(3));
     /// assert_eq!(ef.successor(8), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn successor(&self, pos: usize) -> Option<usize> {
@@ -188,14 +198,17 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
     /// assert_eq!(ef.delta(0), Some(1));
     /// assert_eq!(ef.delta(1), Some(2));
     /// assert_eq!(ef.delta(2), Some(0));
     /// assert_eq!(ef.delta(3), Some(4));
     /// assert_eq!(ef.delta(4), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn delta(&self, k: usize) -> Option<usize> {
@@ -235,12 +248,15 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10])?;
     /// assert_eq!(ef.find(6), Some(3));
     /// assert_eq!(ef.find(10), Some(5));
     /// assert_eq!(ef.find(9), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn find(&self, val: usize) -> Option<usize> {
@@ -263,12 +279,15 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10])?;
     /// assert_eq!(ef.find_range(1..4, 6), Some(3));
     /// assert_eq!(ef.find_range(5..6, 10), Some(5));
     /// assert_eq!(ef.find_range(1..3, 6), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn find_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
@@ -311,14 +330,17 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::EliasFano;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?;
     /// let mut it = ef.iter(1);
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(7));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn iter(&self, k: usize) -> Iter {
         Iter::new(self, k)
@@ -344,7 +366,7 @@ impl EliasFano {
 }
 
 impl Ranker for EliasFano {
-    /// Returns the number of integers less than `pos`.
+    /// Returns the number of integers less than `pos` (and never [`None`]).
     ///
     /// # Complexity
     ///
@@ -357,14 +379,17 @@ impl Ranker for EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{EliasFano, Ranker};
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7])?.enable_rank();
     ///
     /// assert_eq!(ef.rank1(1), Some(0));
     /// assert_eq!(ef.rank1(2), Some(1));
     /// assert_eq!(ef.rank1(3), Some(1));
     /// assert_eq!(ef.rank1(4), Some(3));
+    /// # Ok(())
+    /// # }
     /// ```
     fn rank1(&self, pos: usize) -> Option<usize> {
         let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
@@ -409,6 +434,7 @@ impl Selector for EliasFano {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{EliasFano, Selector};
     ///
     /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
@@ -417,15 +443,22 @@ impl Selector for EliasFano {
     /// assert_eq!(ef.select1(1), Some(3));
     /// assert_eq!(ef.select1(2), Some(3));
     /// assert_eq!(ef.select1(3), Some(7));
+    /// assert_eq!(ef.select1(4), None);
+    /// # Ok(())
+    /// # }
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        Some(
-            ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
-                | self
-                    .low_bits
-                    .get_bits(k * self.low_len, self.low_len)
-                    .unwrap(),
-        )
+        if self.len() <= k {
+            None
+        } else {
+            Some(
+                ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
+                    | self
+                        .low_bits
+                        .get_bits(k * self.low_len, self.low_len)
+                        .unwrap(),
+            )
+        }
     }
 
     /// Panics always because this operation is not supported.
@@ -476,7 +509,7 @@ pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
     universe: usize,
-    num_ints: usize,
+    num_vals: usize,
     pos: usize,
     last: usize,
     low_len: usize,
@@ -488,21 +521,21 @@ impl EliasFanoBuilder {
     /// # Arguments
     ///
     /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
-    /// - `num_ints`: The number of integers that will be pushed (> 0).
+    /// - `num_vals`: The number of integers that will be pushed (> 0).
     ///
     /// # Errors
     ///
-    /// An error is returned if `num_ints == 0`.
-    pub fn new(universe: usize, num_ints: usize) -> Result<Self> {
-        if num_ints == 0 {
-            return Err(anyhow!("num_ints must not be zero."));
+    /// An error is returned if `num_vals == 0`.
+    pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
+        if num_vals == 0 {
+            return Err(anyhow!("num_vals must not be zero."));
         }
-        let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
+        let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
         Ok(Self {
-            high_bits: BitVector::from_bit(false, (num_ints + 1) + (universe >> low_len) + 1),
+            high_bits: BitVector::from_bit(false, (num_vals + 1) + (universe >> low_len) + 1),
             low_bits: BitVector::new(),
             universe,
-            num_ints,
+            num_vals,
             pos: 0,
             last: 0,
             low_len,
@@ -521,7 +554,7 @@ impl EliasFanoBuilder {
     ///
     /// - `val` is less than the last one,
     /// - `val` is no less than [`Self::universe()`], or
-    /// - the number of stored integers becomes no less than [`Self::num_ints()`].
+    /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn push(&mut self, val: usize) -> Result<()> {
         if val < self.last {
             return Err(anyhow!(
@@ -537,10 +570,10 @@ impl EliasFanoBuilder {
                 self.universe
             ));
         }
-        if self.num_ints <= self.pos {
+        if self.num_vals <= self.pos {
             return Err(anyhow!(
                 "The number of stored integers exceeds the given upper bound {}",
-                self.num_ints
+                self.num_vals
             ));
         }
 
@@ -571,7 +604,7 @@ impl EliasFanoBuilder {
     ///
     /// - `vals` are not increasing,
     /// - values in `vals` is no less than [`Self::universe()`], or
-    /// - the number of stored integers becomes no less than [`Self::num_ints()`].
+    /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = &'a usize>,
@@ -602,8 +635,8 @@ impl EliasFanoBuilder {
 
     /// Returns the number of integers that can be stored.
     #[inline(always)]
-    pub const fn num_ints(&self) -> usize {
-        self.num_ints
+    pub const fn num_vals(&self) -> usize {
+        self.num_vals
     }
 }
 
