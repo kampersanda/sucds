@@ -58,9 +58,8 @@ pub use elias_fano_list::EliasFanoList;
 pub use rs_bit_vector::RsBitVector;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
-pub use wavelet_matrix::WaveletMatrixBuilder;
 
-// NOTE(kampersanda): We should use `get()` because it has been already used in most std
+// NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
 
 /// An interface for accessing elements on bit arrays.

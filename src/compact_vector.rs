@@ -161,7 +161,7 @@ impl CompactVector {
     ///
     /// # Errors
     ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
     ///
     /// # Examples
     ///
@@ -255,6 +255,38 @@ impl CompactVector {
     pub fn push_int(&mut self, val: usize) -> Result<()> {
         self.chunks.push_bits(val, self.width)?;
         self.len += 1;
+        Ok(())
+    }
+
+    /// Appends integers at the end.
+    ///
+    /// # Arguments
+    ///
+    ///  - `vals`: Integer stream to be pushed.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if values in `vals` cannot be represent in `self.width()` bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::CompactVector;
+    ///
+    /// let mut cv = CompactVector::new(3)?;
+    /// cv.append([2, 1, 3])?;
+    /// assert_eq!(cv.len(), 3);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
+    where
+        I: IntoIterator<Item = usize>,
+    {
+        for x in vals {
+            self.push_int(x)?;
+        }
         Ok(())
     }
 

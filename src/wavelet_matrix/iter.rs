@@ -22,7 +22,7 @@ impl<'a> Iterator for Iter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         // TODO: Optimization with caching.
         if self.pos < self.wm.len() {
-            let x = self.wm.get(self.pos);
+            let x = self.wm.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
