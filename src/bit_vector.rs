@@ -20,6 +20,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{BitGetter, BitVector};
 ///
 /// let mut bv = BitVector::new();
@@ -29,8 +30,10 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.len(), 2);
 /// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
 ///
-/// assert!(bv.set_bit(0, false).is_ok());
+/// bv.set_bit(0, false)?;
 /// assert_eq!(bv.get_bit(0), Some(false));
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
@@ -140,11 +143,14 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::{BitGetter, BitVector};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
-    /// assert!(bv.set_bit(1, false).is_ok());
+    /// bv.set_bit(1, false)?;
     /// assert_eq!(bv.get_bit(1), Some(false));
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
@@ -206,6 +212,7 @@ impl BitVector {
     ///
     /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.get_bits(1, 2), Some(0b10));
+    /// assert_eq!(bv.get_bits(2, 3), None);
     /// ```
     #[inline(always)]
     pub fn get_bits(&self, pos: usize, len: usize) -> Option<usize> {
@@ -250,11 +257,14 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
-    /// assert!(bv.set_bits(1, 0b11, 2).is_ok());
+    /// bv.set_bits(1, 0b11, 2)?;
     /// assert_eq!(bv.get_bits(1, 2), Some(0b11));
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
@@ -316,12 +326,15 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::BitVector;
     ///
     /// let mut bv = BitVector::new();
-    /// assert!(bv.push_bits(0b11, 2).is_ok());
-    /// assert!(bv.push_bits(0b101, 3).is_ok());
+    /// bv.push_bits(0b11, 2)?;
+    /// bv.push_bits(0b101, 3)?;
     /// assert_eq!(bv.get_bits(1, 3), Some(0b011));
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
