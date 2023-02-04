@@ -218,8 +218,8 @@ impl CompactVector {
     /// use sucds::{CompactVector, IntGetter};
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
-    /// cv.set_int(1, 8)?
-    /// assert_eq!(cv.get_int(1), Some(8));
+    /// cv.set_int(1, 4)?;
+    /// assert_eq!(cv.get_int(1), Some(4));
     /// # Ok(())
     /// # }
     /// ```
@@ -245,8 +245,8 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
-    /// cv.push_int(7)?;
-    /// cv.push_int(8)?;
+    /// cv.push_int(2)?;
+    /// cv.push_int(1)?;
     /// assert_eq!(cv.len(), 2);
     /// # Ok(())
     /// # }

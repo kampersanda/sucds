@@ -27,6 +27,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
+/// // Need IntGetter
 /// assert_eq!(list.get_int(0), Some(5));
 /// assert_eq!(list.get_int(1), Some(0));
 /// assert_eq!(list.get_int(2), Some(100000));
@@ -175,6 +176,22 @@ impl IntGetter for DacsByte {
     ///
     /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
     ///   the `pos`-th integer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{DacsByte, IntGetter};
+    ///
+    /// let list = DacsByte::from_slice(&[5, 999, 334])?;
+    ///
+    /// assert_eq!(list.get_int(0), Some(5));
+    /// assert_eq!(list.get_int(1), Some(999));
+    /// assert_eq!(list.get_int(2), Some(334));
+    /// assert_eq!(list.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn get_int(&self, mut pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
