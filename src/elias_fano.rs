@@ -15,7 +15,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
-/// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
+/// This implements an Elias-Fano representation for monotone increasing sequences.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
 /// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space.
 /// That is, a sparse sequence can be stored in a very compressed space.
@@ -71,7 +71,7 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
-    /// Creates a new [`EliasFano`] from a bit stream.
+    /// Creates a new sequence from a bit stream.
     ///
     /// # Arguments
     ///
@@ -79,7 +79,7 @@ impl EliasFano {
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if `bits` contains no set bit.
+    /// An error is returned if `bits` contains no set bit.
     pub fn from_bits<I>(bits: I) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
@@ -336,7 +336,7 @@ impl EliasFano {
         self.len() == 0
     }
 
-    /// Gets the (exclusive) upper bound of integers.
+    /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
@@ -471,7 +471,7 @@ impl Searial for EliasFano {
     }
 }
 
-/// Builder of [`EliasFano`].
+/// Builder for [`EliasFano`].
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
@@ -483,19 +483,19 @@ pub struct EliasFanoBuilder {
 }
 
 impl EliasFanoBuilder {
-    /// Creates a new [`EliasFanoBuilder`].
+    /// Creates a new builder.
     ///
     /// # Arguments
     ///
     /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
-    /// - `num_ints`: The number of integers to be stored (> 0).
+    /// - `num_ints`: The number of integers that will be pushed (> 0).
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the given setting is invalid.
+    /// An error is returned if `num_ints == 0`.
     pub fn new(universe: usize, num_ints: usize) -> Result<Self> {
         if num_ints == 0 {
-            return Err(anyhow!("num_ints must not be zero"));
+            return Err(anyhow!("num_ints must not be zero."));
         }
         let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
         Ok(Self {
@@ -509,27 +509,31 @@ impl EliasFanoBuilder {
         })
     }
 
-    /// Pushes integer `i` at the end.
+    /// Pushes integer `val` at the end.
     ///
     /// # Arguments
     ///
-    /// - `i`: Pushed integer that must be no less than the last one.
+    /// - `val`: Pushed integer that must be no less than the last one.
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the input integer is invalid.
-    pub fn push(&mut self, i: usize) -> Result<()> {
-        if i < self.last {
+    /// An error is returned if
+    ///
+    /// - `val` is less than the last one,
+    /// - `val` is no less than [`Self::universe()`], or
+    /// - the number of stored integers becomes no less than [`Self::num_ints()`].
+    pub fn push(&mut self, val: usize) -> Result<()> {
+        if val < self.last {
             return Err(anyhow!(
                 "The input integer {} must be no less than the last one {}",
-                i,
+                val,
                 self.last
             ));
         }
-        if self.universe <= i {
+        if self.universe <= val {
             return Err(anyhow!(
                 "The input integer {} must be less than the universe {}",
-                i,
+                val,
                 self.universe
             ));
         }
@@ -540,13 +544,15 @@ impl EliasFanoBuilder {
             ));
         }
 
-        self.last = i;
+        self.last = val;
         let low_mask = (1 << self.low_len) - 1;
         if self.low_len != 0 {
-            self.low_bits.push_bits(i & low_mask, self.low_len).unwrap();
+            self.low_bits
+                .push_bits(val & low_mask, self.low_len)
+                .unwrap();
         }
         self.high_bits
-            .set_bit((i >> self.low_len) + self.pos, true)
+            .set_bit((val >> self.low_len) + self.pos, true)
             .unwrap();
         self.pos += 1;
 
@@ -561,12 +567,16 @@ impl EliasFanoBuilder {
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the input integers are invalid.
-    pub fn append<'a, I>(&mut self, ints: I) -> Result<()>
+    /// An error is returned if
+    ///
+    /// - `vals` are not increasing,
+    /// - values in `vals` is no less than [`Self::universe()`], or
+    /// - the number of stored integers becomes no less than [`Self::num_ints()`].
+    pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = &'a usize>,
     {
-        for &x in ints {
+        for &x in vals {
             self.push(x)?;
         }
         Ok(())
@@ -582,6 +592,18 @@ impl EliasFanoBuilder {
             low_len: self.low_len,
             universe: self.universe,
         }
+    }
+
+    /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
+    #[inline(always)]
+    pub fn universe(&self) -> usize {
+        self.universe
+    }
+
+    /// Returns the number of integers that can be stored.
+    #[inline(always)]
+    pub const fn num_ints(&self) -> usize {
+        self.num_ints
     }
 }
 
