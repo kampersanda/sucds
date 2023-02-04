@@ -18,11 +18,13 @@ use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector,
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{DacsOpt, IntGetter};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
-/// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+/// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
 ///
+/// // Need IntGetter
 /// assert_eq!(list.get_int(0), Some(5));
 /// assert_eq!(list.get_int(1), Some(0));
 /// assert_eq!(list.get_int(2), Some(100000));
@@ -30,6 +32,8 @@ use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector,
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 2);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -220,9 +224,10 @@ impl DacsOpt {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::DacsOpt;
     ///
-    /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+    /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -230,6 +235,8 @@ impl DacsOpt {
     /// assert_eq!(it.next(), Some(100000));
     /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -276,6 +283,22 @@ impl IntGetter for DacsOpt {
     ///
     /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
     ///   the `pos`-th integer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{DacsOpt, IntGetter};
+    ///
+    /// let list = DacsOpt::from_slice(&[5, 999, 334], None)?;
+    ///
+    /// assert_eq!(list.get_int(0), Some(5));
+    /// assert_eq!(list.get_int(1), Some(999));
+    /// assert_eq!(list.get_int(2), Some(334));
+    /// assert_eq!(list.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn get_int(&self, mut pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
