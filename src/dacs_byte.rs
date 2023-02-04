@@ -22,9 +22,10 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::{DacsByte, IntGetter};
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
+/// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
 /// assert_eq!(list.get_int(0), Some(5));
 /// assert_eq!(list.get_int(1), Some(0));
@@ -33,6 +34,8 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 3);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -54,7 +57,7 @@ impl DacsByte {
     ///
     /// # Errors
     ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to `usize`.
+    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: ToPrimitive,
@@ -112,9 +115,10 @@ impl DacsByte {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::DacsByte;
     ///
-    /// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
+    /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -122,6 +126,8 @@ impl DacsByte {
     /// assert_eq!(it.next(), Some(100000));
     /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
