@@ -1,10 +1,16 @@
 name: build
 
 on:
+  schedule:
+    - cron: '0 0 * * *'
   push:
-    branches: [ main ]
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,50 +22,56 @@ jobs:
     strategy:
       matrix:
         rust:
+          - 1.58.1 # MSRV
           - stable
-          - beta
           - nightly
     steps:
-      - uses: actions/checkout@v2
-      - name: Install latest stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-          components: rustfmt, clippy
-
+      - uses: actions/checkout@v3
+      - name: Install ${{ matrix.rust }}
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal --component rustfmt,clippy
+          rustup default ${{ matrix.rust }}
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: check
+        run: cargo check
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: clippy
-          args: -- -D warnings -W clippy::nursery
+        # Run clippy only on stable to ignore unreasonable old warnings.
+        continue-on-error: ${{ matrix.rust != 'stable' }}
+        run: cargo clippy -- -D warnings -W clippy::nursery
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: test
-          args: --release --all-features
-          
+        run: cargo test --release
+
+      - name: Run cargo test (intrinsics)
+        continue-on-error: ${{ matrix.rust == 'nightly' }}
+        run: cargo test --release --features intrinsics
+        env:
+          RUSTDOCFLAGS: '-C target-cpu=native'
+
       - name: Run cargo doc
-        uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: doc
-          args: --no-deps
+        run: cargo doc --no-deps
         env:
           RUSTDOCFLAGS: '--html-in-header katex.html'
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    if: "startsWith(github.ref, 'refs/tags/')"
+    needs: [ build ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install latest stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Run cargo publish
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
