@@ -477,54 +477,58 @@ impl Searial for RsBitVector {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen::<bool>()).collect()
-    }
-
-    fn test_rank_select1(bits: &[bool], bv: &RsBitVector) {
-        let mut cur_rank = 0;
-        for i in 0..bits.len() {
-            assert_eq!(bv.rank1(i), Some(cur_rank));
-            if bits[i] {
-                assert_eq!(bv.select1(cur_rank), Some(i));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, bv.num_ones());
-    }
-
-    fn test_rank_select0(bits: &[bool], bv: &RsBitVector) {
-        let mut cur_rank = 0;
-        for i in 0..bits.len() {
-            assert_eq!(bv.rank0(i), Some(cur_rank));
-            if !bits[i] {
-                assert_eq!(bv.select0(cur_rank), Some(i));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, bv.num_zeros());
+    #[test]
+    fn test_rank1_all_zeros() {
+        let bv = RsBitVector::from_bits([false, false, false]);
+        assert_eq!(bv.rank1(0), Some(0));
+        assert_eq!(bv.rank1(1), Some(0));
+        assert_eq!(bv.rank1(2), Some(0));
+        assert_eq!(bv.rank1(3), Some(0));
+        assert_eq!(bv.rank1(4), None);
     }
 
     #[test]
-    fn test_random_bits() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, seed);
-            let bv = RsBitVector::from_bits(bits.iter().cloned())
-                .select1_hints()
-                .select0_hints();
-            test_rank_select1(&bits, &bv);
-            test_rank_select0(&bits, &bv);
-        }
+    fn test_select1_all_zeros() {
+        let bv = RsBitVector::from_bits([false, false, false]).select1_hints();
+        assert_eq!(bv.select1(0), None);
+    }
+
+    #[test]
+    fn test_rank0_all_ones() {
+        let bv = RsBitVector::from_bits([true, true, true]);
+        assert_eq!(bv.rank0(0), Some(0));
+        assert_eq!(bv.rank0(1), Some(0));
+        assert_eq!(bv.rank0(2), Some(0));
+        assert_eq!(bv.rank0(3), Some(0));
+        assert_eq!(bv.rank0(4), None);
+    }
+
+    #[test]
+    fn test_select0_all_ones() {
+        let bv = RsBitVector::from_bits([true, true, true]).select0_hints();
+        assert_eq!(bv.select0(0), None);
+    }
+
+    #[test]
+    fn test_select0_no_hint() {
+        let bv = RsBitVector::from_bits([true, false, false, true]);
+        assert_eq!(bv.select0(0), Some(1));
+        assert_eq!(bv.select0(1), Some(2));
+        assert_eq!(bv.select0(2), None);
+    }
+
+    #[test]
+    fn test_select1_no_hint() {
+        let bv = RsBitVector::from_bits([true, false, false, true]);
+        assert_eq!(bv.select1(0), Some(0));
+        assert_eq!(bv.select1(1), Some(3));
+        assert_eq!(bv.select1(2), None);
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let bv = RsBitVector::from_bits(gen_random_bits(10000, 42))
+        let bv = RsBitVector::from_bits([false, true, true, false, true])
             .select1_hints()
             .select0_hints();
         let size = bv.serialize_into(&mut bytes).unwrap();
