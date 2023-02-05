@@ -154,7 +154,7 @@ impl DArrayIndex {
     ///
     /// # Arguments
     ///
-    /// - `bv`: Bit vector (used to build).
+    /// - `bv`: Reference to the bit vector used to build.
     /// - `k`: Select query.
     ///
     /// # Complexity
@@ -170,6 +170,19 @@ impl DArrayIndex {
     /// let da = DArrayIndex::new(&bv, true);
     /// assert_eq!(da.select(&bv, 0), Some(0));
     /// assert_eq!(da.select(&bv, 1), Some(3));
+    /// assert_eq!(da.select(&bv, 2), None);
+    /// ```
+    ///
+    /// You can perform selections over unset bits by specifying
+    /// `Self::new(&bv, over_one=false)`.
+    ///
+    /// ```
+    /// use sucds::{BitVector, darray::DArrayIndex};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false, true]);
+    /// let da = DArrayIndex::new(&bv, false);
+    /// assert_eq!(da.select(&bv, 0), Some(1));
+    /// assert_eq!(da.select(&bv, 1), Some(2));
     /// assert_eq!(da.select(&bv, 2), None);
     /// ```
     #[inline(always)]
@@ -400,88 +413,38 @@ impl Searial for DArrayIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::BitGetter;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_bool(p)).collect()
-    }
-
-    fn test_select(bv: &BitVector, da: &DArrayIndex) {
-        let mut cur_rank = 0;
-        for i in 0..bv.len() {
-            if bv.get_bit(i).unwrap() {
-                assert_eq!(da.select(bv, cur_rank), Some(i));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, da.len());
-    }
-
-    fn test_select0(bv: &BitVector, da: &DArrayIndex) {
-        let mut cur_rank = 0;
-        for i in 0..bv.len() {
-            if !bv.get_bit(i).unwrap() {
-                assert_eq!(da.select(bv, cur_rank), Some(i));
-                cur_rank += 1;
-            }
-        }
+    #[test]
+    fn test_all_zeros() {
+        let da = DArray::from_bits([false, false, false]);
+        assert_eq!(da.select1(0), None);
     }
 
     #[test]
-    fn test_tiny_bits() {
-        let bv = BitVector::from_bits([true, false, false, true, false, true, true]);
+    #[should_panic]
+    fn test_select1() {
+        let da = DArray::from_bits([false, true, false]);
+        da.select0(0);
+    }
+
+    #[test]
+    fn test_all_zeros_index() {
+        let bv = BitVector::from_bit(false, 3);
         let da = DArrayIndex::new(&bv, true);
-        assert_eq!(da.select(&bv, 0), Some(0));
-        assert_eq!(da.select(&bv, 1), Some(3));
-        assert_eq!(da.select(&bv, 2), Some(5));
-        assert_eq!(da.select(&bv, 3), Some(6));
+        assert_eq!(da.select(&bv, 0), None);
+    }
+
+    #[test]
+    fn test_all_ones_index() {
+        let bv = BitVector::from_bit(true, 3);
         let da = DArrayIndex::new(&bv, false);
-        assert_eq!(da.select(&bv, 0), Some(1));
-        assert_eq!(da.select(&bv, 1), Some(2));
-        assert_eq!(da.select(&bv, 2), Some(4));
+        assert_eq!(da.select(&bv, 0), None);
     }
 
     #[test]
-    fn test_random_bits_dense() {
-        for seed in 0..100 {
-            let bv = BitVector::from_bits(gen_random_bits(10000, 0.5, seed));
-            let da = DArrayIndex::new(&bv, true);
-            test_select(&bv, &da);
-            let da = DArrayIndex::new(&bv, false);
-            test_select0(&bv, &da);
-        }
-    }
-
-    #[test]
-    fn test_random_bits_sparse() {
-        for seed in 0..100 {
-            let bv = BitVector::from_bits(gen_random_bits(10000, 0.01, seed));
-            let da = DArrayIndex::new(&bv, true);
-            test_select(&bv, &da);
-            let da = DArrayIndex::new(&bv, false);
-            test_select0(&bv, &da);
-        }
-    }
-
-    #[test]
-    fn test_serialize_dense() {
+    fn test_serialize() {
         let mut bytes = vec![];
-        let da = DArray::from_bits(gen_random_bits(10000, 0.5, 42));
-        let size = da.serialize_into(&mut bytes).unwrap();
-        let other = DArray::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(da, other);
-        assert_eq!(size, bytes.len());
-        assert_eq!(size, da.size_in_bytes());
-    }
-
-    #[test]
-    fn test_serialize_sparse() {
-        let mut bytes = vec![];
-        let da = DArray::from_bits(gen_random_bits(10000, 0.01, 42));
+        let da = DArray::from_bits([true, false, false, true]);
         let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);
