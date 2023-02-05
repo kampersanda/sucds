@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitGetter, BitVector, Ranker, Searial, Selector};
+use crate::{bit_vector::Iter, broadword, BitGetter, BitVector, Ranker, Searial, Selector};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -83,6 +83,24 @@ impl RsBitVector {
     #[must_use]
     pub fn select0_hints(self) -> Self {
         self.build_select0()
+    }
+
+    /// Creates an iterator for enumerating bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::RsBitVector;
+    ///
+    /// let bv = RsBitVector::from_bits([false, true, false]);
+    /// let mut it = bv.iter();
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), Some(true));
+    /// assert_eq!(it.next(), Some(false));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    pub const fn iter(&self) -> Iter {
+        Iter::new(&self.bv)
     }
 
     /// Gets the reference of the internal bit vector.
