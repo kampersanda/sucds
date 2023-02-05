@@ -1,12 +1,10 @@
 //! Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
-pub mod iter;
 pub mod unary;
 
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vector::iter::Iter;
 use crate::bit_vector::unary::UnaryIter;
 use crate::{broadword, BitGetter, Searial};
 
@@ -645,6 +643,39 @@ impl BitGetter for BitVector {
         } else {
             None
         }
+    }
+}
+
+/// Iterator for enumerating bits, created by [`BitVector::iter()`].
+pub struct Iter<'a> {
+    bv: &'a BitVector,
+    pos: usize,
+}
+
+impl<'a> Iter<'a> {
+    /// Creates a new iterator.
+    pub const fn new(bv: &'a BitVector) -> Self {
+        Self { bv, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = bool;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.bv.len() {
+            let x = self.bv.get_bit(self.pos).unwrap();
+            self.pos += 1;
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.bv.len(), Some(self.bv.len()))
     }
 }
 
