@@ -2,15 +2,12 @@
 //! supporting some queries such as ranking, selection, and intersection.
 #![cfg(target_pointer_width = "64")]
 
-pub mod iter;
-
 use std::io::{Read, Write};
 use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::wavelet_matrix::iter::Iter;
 use crate::{BitGetter, BitVector, CompactVector, Ranker, RsBitVector, Searial, Selector};
 
 /// Time- and space-efficient data structure for a sequence of integers,
@@ -537,6 +534,40 @@ impl WaveletMatrix {
     #[inline(always)]
     pub fn alph_width(&self) -> usize {
         self.layers.len()
+    }
+}
+
+/// Iterator for enumerating integers, created by [`WaveletMatrix::iter()`].
+pub struct Iter<'a> {
+    wm: &'a WaveletMatrix,
+    pos: usize,
+}
+
+impl<'a> Iter<'a> {
+    /// Creates a new iterator.
+    pub const fn new(wm: &'a WaveletMatrix) -> Self {
+        Self { wm, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = usize;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        // TODO(kampersanda): Optimization with caching.
+        if self.pos < self.wm.len() {
+            let x = self.wm.access(self.pos).unwrap();
+            self.pos += 1;
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.wm.len(), Some(self.wm.len()))
     }
 }
 
