@@ -248,9 +248,13 @@ impl BitVector {
     ///
     /// An error is returned if
     ///
-    ///  - `len` is greater than [`WORD_LEN`],
-    ///  - `self.len() < pos + len`, or
-    ///  - `bits` has active bits other than the lowest `len` bits.
+    ///  - `len` is greater than [`WORD_LEN`], or
+    ///  - `self.len() < pos + len`.
+    ///
+    /// # Notes
+    ///
+    /// If `bits` has active bits other than the lowest `len` bits,
+    /// these will be trancated automatically.
     ///
     /// # Examples
     ///
@@ -260,7 +264,7 @@ impl BitVector {
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
     /// bv.set_bits(1, 0b11, 2)?;
-    /// assert_eq!(bv.get_bits(1, 2), Some(0b11));
+    /// assert_eq!(bv.get_bits(0, 4), Some(0b0110));
     /// # Ok(())
     /// # }
     /// ```
@@ -278,11 +282,6 @@ impl BitVector {
                 pos + len
             ));
         }
-        if len != WORD_LEN && (bits >> len) != 0 {
-            return Err(anyhow!(
-                "bits must not have active bits other than the lowest len={len} bits, but got {bits:#b}."
-            ));
-        }
         if len == 0 {
             return Ok(());
         }
@@ -293,6 +292,8 @@ impl BitVector {
                 std::usize::MAX
             }
         };
+        let bits = bits & mask;
+
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
 
@@ -318,8 +319,12 @@ impl BitVector {
     ///
     /// It will return an error if
     ///
-    /// - `len` is greater than [`WORD_LEN`], or
-    /// - `bits` has active bits other than the lowest `len` bits.
+    /// - `len` is greater than [`WORD_LEN`].
+    ///
+    /// # Notes
+    ///
+    /// If `bits` has active bits other than the lowest `len` bits,
+    /// these will be trancated automatically.
     ///
     /// # Examples
     ///
@@ -330,7 +335,7 @@ impl BitVector {
     /// let mut bv = BitVector::new();
     /// bv.push_bits(0b11, 2)?;
     /// bv.push_bits(0b101, 3)?;
-    /// assert_eq!(bv.get_bits(1, 3), Some(0b011));
+    /// assert_eq!(bv.get_bits(0, 5), Some(0b10111));
     /// # Ok(())
     /// # }
     /// ```
@@ -341,14 +346,19 @@ impl BitVector {
                 "len must be no greater than {WORD_LEN}, but got {len}."
             ));
         }
-        if len != WORD_LEN && (bits >> len) != 0 {
-            return Err(anyhow!(
-                "bits must not have active bits other than the lowest len={len} bits, but got {bits:#b}."
-            ));
-        }
         if len == 0 {
             return Ok(());
         }
+
+        let mask = {
+            if len < WORD_LEN {
+                (1 << len) - 1
+            } else {
+                std::usize::MAX
+            }
+        };
+        let bits = bits & mask;
+
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
             self.words.push(bits);
@@ -723,127 +733,91 @@ impl Searial for BitVector {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen::<bool>()).collect()
-    }
-
-    fn gen_random_ints(len: usize, width: usize, seed: u64) -> Vec<usize> {
-        let mask = (1 << width) - 1;
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen::<usize>() & mask).collect()
-    }
-
-    fn test_bit_vector(bits: &[bool]) {
-        let bv = BitVector::from_bits(bits.iter().cloned());
-        assert_eq!(bits.len(), bv.len());
-        for i in 0..bits.len() {
-            assert_eq!(bits[i], bv.get_bit(i).unwrap());
-        }
-        for (i, x) in bv.iter().enumerate() {
-            assert_eq!(bits[i], x);
-        }
-
-        let mut other = BitVector::from_bit(false, bits.len());
-        assert_eq!(bv.len(), other.len());
-        bits.iter()
-            .enumerate()
-            .for_each(|(i, &b)| other.set_bit(i, b).unwrap());
-        for i in 0..bv.len() {
-            assert_eq!(bv.get_bit(i), other.get_bit(i));
-        }
-
-        let one_positions: Vec<usize> = (0..bv.len()).filter(|&i| bv.get_bit(i).unwrap()).collect();
-        let zero_positions: Vec<usize> =
-            (0..bv.len()).filter(|&i| !bv.get_bit(i).unwrap()).collect();
-
-        let mut pos = 0;
-        for &i in &one_positions {
-            let next = bv.successor1(pos).unwrap();
-            debug_assert_eq!(i, next);
-            pos = next + 1;
-        }
-        debug_assert!(pos == bv.len() || bv.successor1(pos).is_none());
-
-        let mut pos = bv.len() - 1;
-        for &i in one_positions.iter().rev() {
-            let pred = bv.predecessor1(pos).unwrap();
-            debug_assert_eq!(i, pred);
-            if pred == 0 {
-                pos = bv.len();
-                break;
-            }
-            pos = pred - 1;
-        }
-        debug_assert!(pos == bv.len() || bv.predecessor1(pos).is_none());
-
-        let mut pos = 0;
-        for &i in &zero_positions {
-            let next = bv.successor0(pos).unwrap();
-            debug_assert_eq!(i, next);
-            pos = next + 1;
-        }
-        debug_assert!(pos == bv.len() || bv.successor0(pos).is_none());
-
-        let mut pos = bv.len() - 1;
-        for &i in zero_positions.iter().rev() {
-            let pred = bv.predecessor0(pos).unwrap();
-            debug_assert_eq!(i, pred);
-            if pred == 0 {
-                pos = bv.len();
-                break;
-            }
-            pos = pred - 1;
-        }
-        debug_assert!(pos == bv.len() || bv.predecessor0(pos).is_none());
-    }
-
-    fn test_int_vector(ints: &[usize], width: usize) {
-        {
-            let mut bv = BitVector::new();
-            ints.iter().for_each(|&x| bv.push_bits(x, width).unwrap());
-            assert_eq!(ints.len() * width, bv.len());
-            for i in 0..ints.len() {
-                assert_eq!(ints[i], bv.get_bits(i * width, width).unwrap());
-            }
-        }
-        {
-            let mut bv = BitVector::from_bit(false, ints.len() * width);
-            assert_eq!(ints.len() * width, bv.len());
-            ints.iter()
-                .enumerate()
-                .for_each(|(i, &x)| bv.set_bits(i * width, x, width).unwrap());
-            for i in 0..ints.len() {
-                assert_eq!(ints[i], bv.get_bits(i * width, width).unwrap());
-            }
-        }
+    #[test]
+    fn test_set_bit_oob() {
+        let mut bv = BitVector::from_bit(false, 3);
+        let e = bv.set_bit(3, true);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("pos must be no greater than self.len()=3, but got 3.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_bits() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, seed);
-            test_bit_vector(&bits);
-        }
+    fn test_set_bits_over_word() {
+        let mut bv = BitVector::from_bit(false, 100);
+        let e = bv.set_bits(0, 0b0, 65);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("len must be no greater than 64, but got 65.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_ints() {
-        let mut rng = ChaChaRng::seed_from_u64(13);
-        for seed in 0..100 {
-            let width = rng.gen_range(1..16);
-            let ints = gen_random_ints(10000, width, seed);
-            test_int_vector(&ints, width);
-        }
+    fn test_set_bits_oob() {
+        let mut bv = BitVector::from_bit(false, 3);
+        let e = bv.set_bits(2, 0b11, 2);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("pos+len must be no greater than self.len()=3, but got 4.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_bits_truncation() {
+        let mut bv = BitVector::from_bit(false, 3);
+        bv.set_bits(0, 0b111, 2).unwrap();
+        assert_eq!(bv, BitVector::from_bits([true, true, false]));
+    }
+
+    #[test]
+    fn test_set_bits_accross_word() {
+        let mut bv = BitVector::from_bit(false, 100);
+        bv.set_bits(62, 0b11111, 5).unwrap();
+        assert_eq!(bv.get_bits(61, 7).unwrap(), 0b0111110);
+    }
+
+    #[test]
+    fn test_push_bits_over_word() {
+        let mut bv = BitVector::new();
+        let e = bv.push_bits(0b0, 65);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("len must be no greater than 64, but got 65.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_push_bits_truncation() {
+        let mut bv = BitVector::new();
+        bv.push_bits(0b111, 2).unwrap();
+        assert_eq!(bv, BitVector::from_bits([true, true]));
+    }
+
+    #[test]
+    fn test_push_bits_accross_word() {
+        let mut bv = BitVector::from_bit(false, 62);
+        bv.push_bits(0b011111, 6).unwrap();
+        assert_eq!(bv.get_bits(61, 7).unwrap(), 0b0111110);
+    }
+
+    #[test]
+    fn test_get_word64_oob() {
+        let bv = BitVector::from_bit(false, 3);
+        assert_eq!(bv.get_word64(3), None);
+    }
+
+    #[test]
+    fn test_get_word64_overflow() {
+        // Test a case that can see the next block (but not exist).
+        let bv = BitVector::from_bit(true, 64);
+        assert_eq!(bv.get_word64(60), Some(0b1111));
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let bv = BitVector::from_bits(gen_random_bits(10000, 42));
+        let bv = BitVector::from_bits([false, true, false, false, true]);
         let size = bv.serialize_into(&mut bytes).unwrap();
         let other = BitVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);

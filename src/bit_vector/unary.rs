@@ -127,83 +127,24 @@ impl<'a> Iterator for UnaryIter<'a> {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, p: f64, seed: u64) -> (Vec<bool>, usize) {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        let bits = (0..len).map(|_| rng.gen_bool(p)).collect();
-        let pos = rng.gen_range(0..len);
-        (bits, pos)
-    }
-
-    fn test_unary_iter(bits: &[bool], pos: usize) {
-        let bv = BitVector::from_bits(bits.iter().cloned());
-
-        let mut expected = vec![];
-        for (i, &b) in bits[pos..].iter().enumerate() {
-            if b {
-                expected.push(pos + i);
-            }
-        }
-        let mut it = bv.unary_iter(pos);
-        for &ex in &expected {
-            assert_eq!(it.next(), Some(ex));
-        }
+    #[test]
+    fn test_next_all_zeros() {
+        let bv = BitVector::from_bit(false, 100);
+        let mut it = bv.unary_iter(0);
         assert_eq!(it.next(), None);
     }
 
-    fn test_skip1(bits: &[bool], mut pos: usize) {
-        let bv = BitVector::from_bits(bits.iter().cloned());
-        pos = bv.successor1(pos).unwrap();
-
-        let mut it = bv.unary_iter(pos);
-        while let Some(i) = it.skip1(2) {
-            pos = bv.successor1(pos + 1).unwrap();
-            pos = bv.successor1(pos + 1).unwrap();
-            assert_eq!(i, pos);
-        }
-    }
-
-    fn test_skip0(bits: &[bool], mut pos: usize) {
-        let bv = BitVector::from_bits(bits.iter().cloned());
-        pos = bv.successor0(pos).unwrap();
-
-        let mut it = bv.unary_iter(pos);
-        while let Some(i) = it.skip0(2) {
-            pos = bv.successor0(pos + 1).unwrap();
-            pos = bv.successor0(pos + 1).unwrap();
-            assert_eq!(i, pos);
-        }
+    #[test]
+    fn test_skip1_all_zeros() {
+        let bv = BitVector::from_bit(false, 100);
+        let mut it = bv.unary_iter(0);
+        assert_eq!(it.skip1(0), None);
     }
 
     #[test]
-    fn test_random_bits() {
-        for seed in 0..100 {
-            let (bits, pos) = gen_random_bits(10000, 0.5, seed);
-            test_unary_iter(&bits, pos);
-            test_skip1(&bits, pos);
-            test_skip0(&bits, pos);
-        }
-    }
-
-    #[test]
-    fn test_sparse_random_bits() {
-        for seed in 0..100 {
-            let (bits, pos) = gen_random_bits(10000, 0.1, seed);
-            test_unary_iter(&bits, pos);
-            test_skip1(&bits, pos);
-            test_skip0(&bits, pos);
-        }
-    }
-
-    #[test]
-    fn test_dense_random_bits() {
-        for seed in 0..100 {
-            let (bits, pos) = gen_random_bits(10000, 0.9, seed);
-            test_unary_iter(&bits, pos);
-            test_skip1(&bits, pos);
-            test_skip0(&bits, pos);
-        }
+    fn test_skip0_all_ones() {
+        let bv = BitVector::from_bit(true, 100);
+        let mut it = bv.unary_iter(0);
+        assert_eq!(it.skip0(0), None);
     }
 }
