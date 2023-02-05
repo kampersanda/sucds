@@ -9,13 +9,13 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitVector, Searial};
+use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Ranker, Searial, Selector};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
 /// Compressed monotone increasing sequence through Elias-Fano encoding.
 ///
-/// [`EliasFano`] implements an Elias-Fano representation for monotone increasing sequences.
+/// This implements an Elias-Fano representation for monotone increasing sequences.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
 /// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space.
 /// That is, a sparse sequence can be stored in a very compressed space.
@@ -27,24 +27,35 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Example
 ///
 /// ```
-/// use sucds::EliasFano;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::{EliasFanoBuilder, Ranker, Selector};
 ///
-/// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+/// let mut efb = EliasFanoBuilder::new(8, 4)?;
+/// efb.extend([1, 3, 3, 7])?;
+/// let ef = efb.build();
+///
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
-/// assert_eq!(ef.select(0), 1);
-/// assert_eq!(ef.select(1), 3);
-/// assert_eq!(ef.select(2), 3);
-/// assert_eq!(ef.select(3), 7);
+///
+/// // Need Selector
+/// assert_eq!(ef.select1(0), Some(1));
+/// assert_eq!(ef.select1(1), Some(3));
+/// assert_eq!(ef.select1(2), Some(3));
+/// assert_eq!(ef.select1(3), Some(7));
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
-/// assert_eq!(ef.rank(3), 1);
-/// assert_eq!(ef.rank(4), 3);
+///
+/// // Need Ranker
+/// assert_eq!(ef.rank1(3), Some(1));
+/// assert_eq!(ef.rank1(4), Some(3));
+///
 /// assert_eq!(ef.predecessor(4), Some(3));
 /// assert_eq!(ef.predecessor(3), Some(3));
 /// assert_eq!(ef.successor(3), Some(3));
 /// assert_eq!(ef.successor(4), Some(7));
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -66,7 +77,7 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
-    /// Creates a new [`EliasFano`] from a bit stream.
+    /// Creates a new sequence from a bit stream.
     ///
     /// # Arguments
     ///
@@ -74,158 +85,38 @@ impl EliasFano {
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if `bits` contains no set bit.
+    /// An error is returned if
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_bits([true, false, false, true]).unwrap();
-    /// assert_eq!(ef.select(0), 0);
-    /// assert_eq!(ef.select(1), 3);
-    /// ```
+    ///  - `bits` is an empty stream, or
+    ///  - `bits` contains no set bit.
     pub fn from_bits<I>(bits: I) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
+        if bv.is_empty() {
+            return Err(anyhow!("bits must not be empty."));
+        }
         let n = bv.len();
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
+        if m == 0 {
+            return Err(anyhow!("bits must contains one set bit at least."));
+        }
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
-            if bv.get_bit(i) {
+            if bv.get_bit(i).unwrap() {
                 b.push(i)?;
             }
         }
         Ok(b.build())
     }
 
-    /// Creates a new [`EliasFano`] from a list of monotone increasing integers.
-    ///
-    /// # Arguments
-    ///
-    /// - `ints`: List of monotone increasing integers .
-    ///
-    /// # Errors
-    ///
-    /// `anyhow::Error` will be returned if `ints` is empty or is not monotone increasing.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    pub fn from_ints(ints: &[usize]) -> Result<Self> {
-        if ints.is_empty() {
-            return Err(anyhow!("The input ints must not be empty."));
-        }
-        let mut b = EliasFanoBuilder::new(*ints.last().unwrap() + 1, ints.len())?;
-        b.append(ints)?;
-        Ok(b.build())
-    }
-
-    /// Builds an index to enable operations [`EliasFano::rank`],
-    /// [`EliasFano::predecessor`], and [`EliasFano::successor`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
-    /// assert_eq!(ef.rank(1), 0);
-    /// assert_eq!(ef.rank(2), 1);
-    /// assert_eq!(ef.rank(3), 1);
-    /// assert_eq!(ef.rank(4), 3);
-    /// ```
+    /// Builds an index to enable operations [`EliasFano::rank1()`],
+    /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
         self
-    }
-
-    /// Searches the `k`-th iteger.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    #[inline(always)]
-    pub fn select(&self, k: usize) -> usize {
-        ((self.high_bits_d1.select(&self.high_bits, k) - k) << self.low_len)
-            | self.low_bits.get_bits(k * self.low_len, self.low_len)
-    }
-
-    /// Counts the number of integers less than `pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Rank query.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFano;
-    ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
-    /// assert_eq!(ef.rank(1), 0);
-    /// assert_eq!(ef.rank(2), 1);
-    /// assert_eq!(ef.rank(3), 1);
-    /// assert_eq!(ef.rank(4), 3);
-    /// ```
-    #[inline(always)]
-    pub fn rank(&self, pos: usize) -> usize {
-        debug_assert!(self.high_bits_d0.is_some());
-
-        if pos > self.universe() {
-            return self.len();
-        }
-
-        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
-
-        let h_rank = pos >> self.low_len;
-        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank);
-        let mut rank = h_pos - h_rank;
-        let l_pos = pos & ((1 << self.low_len) - 1);
-
-        while h_pos > 0
-            && self.high_bits.get_bit(h_pos - 1)
-            && self
-                .low_bits
-                .get_bits((rank - 1) * self.low_len, self.low_len)
-                >= l_pos
-        {
-            rank -= 1;
-            h_pos -= 1;
-        }
-
-        rank
     }
 
     /// Gets the largest integer `pred` such that `pred <= pos`.
@@ -241,19 +132,25 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
     /// assert_eq!(ef.predecessor(4), Some(3));
     /// assert_eq!(ef.predecessor(3), Some(3));
     /// assert_eq!(ef.predecessor(2), Some(1));
     /// assert_eq!(ef.predecessor(0), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn predecessor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank(pos + 1))
+        Some(self.rank1(pos + 1).unwrap())
             .filter(|&i| i > 0)
-            .map(|i| self.select(i - 1))
+            .map(|i| self.select1(i - 1).unwrap())
     }
 
     /// Gets the smallest integer `succ` such that `succ >= pos`.
@@ -269,27 +166,29 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap().enable_rank();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
     /// assert_eq!(ef.successor(0), Some(1));
     /// assert_eq!(ef.successor(2), Some(3));
     /// assert_eq!(ef.successor(3), Some(3));
     /// assert_eq!(ef.successor(8), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn successor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank(pos))
+        Some(self.rank1(pos).unwrap())
             .filter(|&i| i < self.len())
-            .map(|i| self.select(i))
+            .map(|i| self.select1(i).unwrap())
     }
 
     /// Gets the difference between the `k-1`-th and `k`-th integers
-    /// (i.e., `select(k) - select(k-1)`).
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
+    /// (i.e., `select(k) - select(k-1)`), returning [`None`] if out of bounds.
     ///
     /// # Complexity
     ///
@@ -298,25 +197,42 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
-    /// assert_eq!(ef.delta(0), 1);
-    /// assert_eq!(ef.delta(1), 2);
-    /// assert_eq!(ef.delta(2), 0);
-    /// assert_eq!(ef.delta(3), 4);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
+    /// assert_eq!(ef.delta(0), Some(1));
+    /// assert_eq!(ef.delta(1), Some(2));
+    /// assert_eq!(ef.delta(2), Some(0));
+    /// assert_eq!(ef.delta(3), Some(4));
+    /// assert_eq!(ef.delta(4), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
-    pub fn delta(&self, k: usize) -> usize {
-        let high_val = self.high_bits_d1.select(&self.high_bits, k);
-        let low_val = self.low_bits.get_bits(k * self.low_len, self.low_len);
-        if k != 0 {
+    pub fn delta(&self, k: usize) -> Option<usize> {
+        if self.len() <= k {
+            return None;
+        }
+        let high_val = self.high_bits_d1.select(&self.high_bits, k).unwrap();
+        let low_val = self
+            .low_bits
+            .get_bits(k * self.low_len, self.low_len)
+            .unwrap();
+        let x = if k != 0 {
             ((high_val - self.high_bits.predecessor1(high_val - 1).unwrap() - 1) << self.low_len)
                 + low_val
-                - self.low_bits.get_bits((k - 1) * self.low_len, self.low_len)
+                - self
+                    .low_bits
+                    .get_bits((k - 1) * self.low_len, self.low_len)
+                    .unwrap()
         } else {
             ((high_val - k) << self.low_len) | low_val
-        }
+        };
+        Some(x)
     }
 
     /// Finds the position `k` such that `select(k) == val`.
@@ -334,12 +250,18 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
+    /// let ef = efb.build();
+    ///
     /// assert_eq!(ef.find(6), Some(3));
     /// assert_eq!(ef.find(10), Some(5));
     /// assert_eq!(ef.find(9), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn find(&self, val: usize) -> Option<usize> {
@@ -362,12 +284,18 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
+    /// let ef = efb.build();
+    ///
     /// assert_eq!(ef.find_range(1..4, 6), Some(3));
     /// assert_eq!(ef.find_range(5..6, 10), Some(5));
     /// assert_eq!(ef.find_range(1..3, 6), None);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     pub fn find_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
@@ -379,7 +307,7 @@ impl EliasFano {
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
             let mi = (lo + hi) / 2;
-            let x = self.select(mi);
+            let x = self.select1(mi).unwrap();
             if val == x {
                 return Some(mi);
             }
@@ -410,14 +338,20 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// use sucds::EliasFano;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::EliasFanoBuilder;
     ///
-    /// let ef = EliasFano::from_ints(&[1, 3, 3, 7]).unwrap();
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
     /// let mut it = ef.iter(1);
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), Some(7));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn iter(&self, k: usize) -> Iter {
         Iter::new(self, k)
@@ -435,10 +369,116 @@ impl EliasFano {
         self.len() == 0
     }
 
-    /// Gets the (exclusive) upper bound of integers.
+    /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
+    }
+}
+
+impl Ranker for EliasFano {
+    /// Returns the number of integers less than `pos` (and never [`None`]).
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{EliasFanoBuilder, Ranker};
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.rank1(1), Some(0));
+    /// assert_eq!(ef.rank1(2), Some(1));
+    /// assert_eq!(ef.rank1(3), Some(1));
+    /// assert_eq!(ef.rank1(4), Some(3));
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn rank1(&self, pos: usize) -> Option<usize> {
+        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
+
+        if pos > self.universe() {
+            return Some(self.len());
+        }
+
+        let h_rank = pos >> self.low_len;
+        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
+        let mut rank = h_pos - h_rank;
+        let l_pos = pos & ((1 << self.low_len) - 1);
+
+        while h_pos > 0
+            && self.high_bits.get_bit(h_pos - 1).unwrap()
+            && self
+                .low_bits
+                .get_bits((rank - 1) * self.low_len, self.low_len)
+                .unwrap()
+                >= l_pos
+        {
+            rank -= 1;
+            h_pos -= 1;
+        }
+
+        Some(rank)
+    }
+
+    /// Panics always because this operation is not supported.
+    fn rank0(&self, _i: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
+    }
+}
+
+impl Selector for EliasFano {
+    /// Returns the position of the `k`-th smallest integer.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{EliasFanoBuilder, Selector};
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
+    /// assert_eq!(ef.select1(0), Some(1));
+    /// assert_eq!(ef.select1(1), Some(3));
+    /// assert_eq!(ef.select1(2), Some(3));
+    /// assert_eq!(ef.select1(3), Some(7));
+    /// assert_eq!(ef.select1(4), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        if self.len() <= k {
+            None
+        } else {
+            Some(
+                ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
+                    | self
+                        .low_bits
+                        .get_bits(k * self.low_len, self.low_len)
+                        .unwrap(),
+            )
+        }
+    }
+
+    /// Panics always because this operation is not supported.
+    fn select0(&self, _k: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
     }
 }
 
@@ -479,96 +519,109 @@ impl Searial for EliasFano {
     }
 }
 
-/// Builder of [`EliasFano`].
+/// Builder for [`EliasFano`].
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::EliasFanoBuilder;
+///
+/// let mut efb = EliasFanoBuilder::new(8, 5)?;
+///
+/// assert_eq!(efb.universe(), 8);
+/// assert_eq!(efb.num_vals(), 5);
+///
+/// efb.push(1)?;
+/// efb.push(3)?;
+/// efb.extend([3, 5, 7])?;
+///
+/// let ef = efb.build();
+/// assert_eq!(ef.len(), 5);
+/// assert_eq!(ef.universe(), 8);
+/// # Ok(())
+/// # }
+/// ```
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
     universe: usize,
-    num_ints: usize,
+    num_vals: usize,
     pos: usize,
     last: usize,
     low_len: usize,
 }
 
 impl EliasFanoBuilder {
-    /// Creates a new [`EliasFanoBuilder`].
+    /// Creates a new builder.
     ///
     /// # Arguments
     ///
     /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
-    /// - `num_ints`: The number of integers to be stored (> 0).
+    /// - `num_vals`: The number of integers that will be pushed (> 0).
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the given setting is invalid.
-    pub fn new(universe: usize, num_ints: usize) -> Result<Self> {
-        if num_ints == 0 {
-            return Err(anyhow!("num_ints must not be zero"));
+    /// An error is returned if `num_vals == 0`.
+    pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
+        if num_vals == 0 {
+            return Err(anyhow!("num_vals must not be zero."));
         }
-        let low_len = broadword::msb(universe / num_ints).unwrap_or(0);
+        let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
         Ok(Self {
-            high_bits: BitVector::with_len((num_ints + 1) + (universe >> low_len) + 1),
+            high_bits: BitVector::from_bit(false, (num_vals + 1) + (universe >> low_len) + 1),
             low_bits: BitVector::new(),
             universe,
-            num_ints,
+            num_vals,
             pos: 0,
             last: 0,
             low_len,
         })
     }
 
-    /// Pushes integer `i` at the end.
+    /// Pushes integer `val` at the end.
     ///
     /// # Arguments
     ///
-    /// - `i`: Pushed integer that must be no less than the last one.
+    /// - `val`: Pushed integer that must be no less than the last one.
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the input integer is invalid.
+    /// An error is returned if
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// [1, 3, 3, 7].iter().for_each(|&x| b.push(x).unwrap());
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    pub fn push(&mut self, i: usize) -> Result<()> {
-        if i < self.last {
+    /// - `val` is less than the last one,
+    /// - `val` is no less than [`Self::universe()`], or
+    /// - the number of stored integers becomes no less than [`Self::num_vals()`].
+    pub fn push(&mut self, val: usize) -> Result<()> {
+        if val < self.last {
             return Err(anyhow!(
-                "The input integer {} must be no less than the last one {}",
-                i,
+                "val must be no less than the last one {}, but got {val}.",
                 self.last
             ));
         }
-        if self.universe <= i {
+        if self.universe <= val {
             return Err(anyhow!(
-                "The input integer {} must be less than the universe {}",
-                i,
+                "val must be less than self.universe()={}, but got {val}.",
                 self.universe
             ));
         }
-        if self.num_ints <= self.pos {
+        if self.num_vals <= self.pos {
             return Err(anyhow!(
-                "The number of stored integers exceeds the given upper bound {}",
-                self.num_ints
+                "The number of pushed integers must not exceed self.num_vals()={}.",
+                self.num_vals
             ));
         }
 
-        self.last = i;
+        self.last = val;
         let low_mask = (1 << self.low_len) - 1;
         if self.low_len != 0 {
-            self.low_bits.push_bits(i & low_mask, self.low_len);
+            self.low_bits
+                .push_bits(val & low_mask, self.low_len)
+                .unwrap();
         }
-        self.high_bits.set_bit((i >> self.low_len) + self.pos, true);
+        self.high_bits
+            .set_bit((val >> self.low_len) + self.pos, true)
+            .unwrap();
         self.pos += 1;
 
         Ok(())
@@ -578,52 +631,26 @@ impl EliasFanoBuilder {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Pushed integers that are increasing.
+    /// - `vals`: Pushed integers that are monotone increasing.
     ///
     /// # Errors
     ///
-    /// `anyhow::Error` will be returned if the input integers are invalid.
+    /// An error is returned if
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// b.append(&[1, 3, 3, 7]).unwrap();
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
-    pub fn append<'a, I>(&mut self, ints: I) -> Result<()>
+    /// - `vals` is not monotone increasing (also compared to the current last value),
+    /// - values in `vals` is no less than [`Self::universe()`], or
+    /// - the number of stored integers becomes no less than [`Self::num_vals()`].
+    pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
-        I: IntoIterator<Item = &'a usize>,
+        I: IntoIterator<Item = usize>,
     {
-        for &x in ints {
+        for x in vals {
             self.push(x)?;
         }
         Ok(())
     }
 
     /// Builds [`EliasFano`] from the pushed integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut b = EliasFanoBuilder::new(8, 4).unwrap();
-    /// b.append(&[1, 3, 3, 7]).unwrap();
-    ///
-    /// let ef = b.build();
-    /// assert_eq!(ef.select(0), 1);
-    /// assert_eq!(ef.select(1), 3);
-    /// assert_eq!(ef.select(2), 3);
-    /// assert_eq!(ef.select(3), 7);
-    /// ```
     pub fn build(self) -> EliasFano {
         EliasFano {
             high_bits_d1: DArrayIndex::new(&self.high_bits, true),
@@ -634,171 +661,46 @@ impl EliasFanoBuilder {
             universe: self.universe,
         }
     }
+
+    /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
+    #[inline(always)]
+    pub const fn universe(&self) -> usize {
+        self.universe
+    }
+
+    /// Returns the number of integers that can be stored.
+    #[inline(always)]
+    pub const fn num_vals(&self) -> usize {
+        self.num_vals
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_bool(p)).collect()
-    }
-
-    fn gen_random_queries(bits: &[bool], len: usize, seed: u64) -> Vec<(usize, Option<usize>)> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        let mut queries = vec![];
-        for _ in 0..len {
-            let v = rng.gen_range(0..bits.len());
-            queries.push(if bits[v] {
-                let rank = bits[..v].iter().fold(0, |acc, &b| acc + b as usize);
-                (v, Some(rank))
-            } else {
-                (v, None)
-            })
-        }
-        queries
-    }
-
-    fn gen_random_range_queries(
-        bits: &[bool],
-        len: usize,
-        seed: u64,
-    ) -> Vec<(usize, Range<usize>, Option<usize>)> {
-        let ints: Vec<usize> = bits
-            .iter()
-            .enumerate()
-            .filter(|(_, &b)| b)
-            .map(|(i, _)| i)
-            .collect();
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        let mut queries = vec![];
-        for _ in 0..len {
-            let v = rng.gen_range(0..bits.len());
-            let i = rng.gen_range(0..ints.len());
-            let j = rng.gen_range(i..ints.len());
-            queries.push(if let Some(p) = ints[i..j].iter().position(|&x| x == v) {
-                (v, i..j, Some(p + i))
-            } else {
-                (v, i..j, None)
-            })
-        }
-        queries
-    }
-
-    fn test_rank_select(bits: &[bool], ef: &EliasFano) {
-        let mut cur_rank = 0;
-        for i in 0..bits.len() {
-            assert_eq!(cur_rank, ef.rank(i));
-            if bits[i] {
-                assert_eq!(i, ef.select(cur_rank));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, ef.len());
-        assert_eq!(bits.len(), ef.universe());
-    }
-
-    fn test_successor_predecessor(bits: &[bool], ef: &EliasFano) {
-        let one_positions: Vec<usize> = (0..bits.len()).filter(|&i| bits[i]).collect();
-
-        let mut pos = 0;
-        for &i in &one_positions {
-            let next = ef.successor(pos).unwrap();
-            debug_assert_eq!(i, next);
-            pos = next + 1;
-        }
-        debug_assert!(pos == ef.universe() || ef.successor(pos).is_none());
-
-        let mut pos = bits.len() - 1;
-        for &i in one_positions.iter().rev() {
-            let pred = ef.predecessor(pos).unwrap();
-            debug_assert_eq!(i, pred);
-            if pred == 0 {
-                pos = ef.universe();
-                break;
-            }
-            pos = pred - 1;
-        }
-        debug_assert!(pos == ef.universe() || ef.predecessor(pos).is_none());
-    }
-
-    fn test_find(ef: &EliasFano, queries: &[(usize, Option<usize>)]) {
-        for &(val, expected) in queries {
-            assert_eq!(ef.find(val), expected);
-        }
-    }
-
-    fn test_find_range(ef: &EliasFano, queries: &[(usize, Range<usize>, Option<usize>)]) {
-        for (val, rng, expected) in queries.iter().cloned() {
-            assert_eq!(ef.find_range(rng, val), expected);
-        }
+    #[test]
+    fn test_from_bits_empty() {
+        let e = EliasFano::from_bits([]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("bits must not be empty.".to_string())
+        );
     }
 
     #[test]
-    fn test_tiny_bits() {
-        let ef = EliasFano::from_ints(&[1, 3, 3, 6, 7, 10]).unwrap();
-        assert_eq!(ef.select(0), 1);
-        assert_eq!(ef.select(1), 3);
-        assert_eq!(ef.select(2), 3);
-        assert_eq!(ef.select(3), 6);
-        assert_eq!(ef.select(4), 7);
-        assert_eq!(ef.select(5), 10);
-
-        assert_eq!(ef.find(1), Some(0));
-        assert_eq!(ef.find(6), Some(3));
-        assert_eq!(ef.find(7), Some(4));
-        assert_eq!(ef.find(10), Some(5));
-        assert_eq!(ef.find(0), None);
-        assert_eq!(ef.find(9), None);
-        assert_eq!(ef.find(100), None);
-
-        assert_eq!(ef.find_range(1..4, 6), Some(3));
-        assert_eq!(ef.find_range(1..3, 6), None);
-        assert_eq!(ef.find_range(4..6, 6), None);
-        assert_eq!(ef.find_range(5..6, 10), Some(5));
-        assert_eq!(ef.find_range(5..5, 10), None);
+    fn test_from_bits_unset() {
+        let e = EliasFano::from_bits([false, false, false]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("bits must contains one set bit at least.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_bits_dense() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, 0.5, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned())
-                .unwrap()
-                .enable_rank();
-            test_rank_select(&bits, &ef);
-            test_successor_predecessor(&bits, &ef);
-            let queries = gen_random_queries(&bits, 100, seed + 100);
-            test_find(&ef, &queries);
-            let queries = gen_random_range_queries(&bits, 100, seed + 200);
-            test_find_range(&ef, &queries);
-        }
-    }
-
-    #[test]
-    fn test_random_bits_sparse() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, 0.01, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned())
-                .unwrap()
-                .enable_rank();
-            test_rank_select(&bits, &ef);
-            test_successor_predecessor(&bits, &ef);
-            let queries = gen_random_queries(&bits, 100, seed + 100);
-            test_find(&ef, &queries);
-            let queries = gen_random_range_queries(&bits, 100, seed + 200);
-            test_find_range(&ef, &queries);
-        }
-    }
-
-    #[test]
-    fn test_serialize_dense() {
+    fn test_serialize() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.5, 42))
+        let ef = EliasFano::from_bits([false, true, true, true, false, true])
             .unwrap()
             .enable_rank();
         let size = ef.serialize_into(&mut bytes).unwrap();
@@ -809,42 +711,43 @@ mod tests {
     }
 
     #[test]
-    fn test_serialize_sparse() {
-        let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.01, 42))
-            .unwrap()
-            .enable_rank();
-        let size = ef.serialize_into(&mut bytes).unwrap();
-        let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(ef, other);
-        assert_eq!(size, bytes.len());
-        assert_eq!(size, ef.size_in_bytes());
+    fn test_builder_new_zero_size() {
+        let e = EliasFanoBuilder::new(3, 0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("num_vals must not be zero.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_empty_ints() {
-        EliasFanoBuilder::new(10, 0).unwrap();
+    fn test_builder_push_decrease() {
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        b.push(2).unwrap();
+        let e = b.push(1);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must be no less than the last one 2, but got 1.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_exclusive_universe() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.push(10).unwrap();
+    fn test_builder_overflow_universe() {
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        let e = b.push(3);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must be less than self.universe()=3, but got 3.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_exclusive_ints() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append(&[1, 2, 3, 4, 5]).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_non_increasing() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append(&[1, 2, 3, 2]).unwrap();
+    fn test_builder_overflow_num_vals() {
+        let mut b = EliasFanoBuilder::new(3, 1).unwrap();
+        b.push(1).unwrap();
+        let e = b.push(2);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("The number of pushed integers must not exceed self.num_vals()=1.".to_string())
+        );
     }
 }

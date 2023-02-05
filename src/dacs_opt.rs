@@ -4,9 +4,10 @@
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::util;
-use crate::{BitVector, CompactVector, RsBitVector, Searial};
+use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector, Searial};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -17,18 +18,22 @@ use crate::{BitVector, CompactVector, RsBitVector, Searial};
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsOpt;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::{DacsOpt, IntGetter};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
-/// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+/// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
 ///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 100000);
-/// assert_eq!(list.get(3), 334);
+/// // Need IntGetter
+/// assert_eq!(list.get_int(0), Some(5));
+/// assert_eq!(list.get_int(1), Some(0));
+/// assert_eq!(list.get_int(2), Some(100000));
+/// assert_eq!(list.get_int(3), Some(334));
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 2);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -46,7 +51,7 @@ impl DacsOpt {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Integers to be stored.
+    /// - `vals`: Slice of integers to be stored.
     /// - `max_levels`: Maximum number of levels. The resulting number of levels is related to
     ///                 the access time. The smaller this value is, the faster operations can be,
     ///                 but the larger the memory can be. If [`None`], it computes configuration
@@ -55,7 +60,17 @@ impl DacsOpt {
     /// # Complexities
     ///
     /// $`O(nw + w^3)`$ where $`n`$ is the number of integers, and $`w`$ is the word size in bits.
-    pub fn from_slice(ints: &[usize], max_levels: Option<usize>) -> Result<Self> {
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if
+    ///
+    /// - `vals` contains an integer that cannot be cast to `usize`, or
+    /// - `max_levels` is not within `1..=64` if it is [`Some`].
+    pub fn from_slice<T>(vals: &[T], max_levels: Option<usize>) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
             return Err(anyhow!(
@@ -63,27 +78,39 @@ impl DacsOpt {
             ));
         }
 
-        if ints.is_empty() {
+        if vals.is_empty() {
             return Ok(Self::default());
         }
+        for x in vals {
+            x.to_usize()
+                .ok_or_else(|| anyhow!("vals must consist only of values castable into usize."))?;
+        }
 
-        let widths = Self::compute_opt_widths(ints, max_levels);
-        Self::build(ints, &widths)
+        let widths = Self::compute_opt_widths(vals, max_levels);
+        Self::build(vals, &widths)
     }
 
     // A modified implementation of Algorithm 3.5 in Navarro's book.
-    fn compute_opt_widths(ints: &[usize], max_levels: usize) -> Vec<usize> {
+    fn compute_opt_widths<T>(vals: &[T], max_levels: usize) -> Vec<usize>
+    where
+        T: ToPrimitive,
+    {
+        assert!(!vals.is_empty());
         assert_ne!(max_levels, 0);
 
         // Computes the number of bits needed to represent an integer at least.
-        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let mut maxv = 0;
+        for x in vals {
+            maxv = maxv.max(x.to_usize().unwrap());
+        }
+        let num_bits = util::needed_bits(maxv);
         let max_levels = max_levels.min(num_bits);
 
         // Computes the number of integers with more than j bits.
         let nums_ints = {
             let mut nums_ints = vec![0; num_bits + 1];
-            for &x in ints {
-                nums_ints[util::needed_bits(x) - 1] += 1;
+            for x in vals {
+                nums_ints[util::needed_bits(x.to_usize().unwrap()) - 1] += 1;
             }
             for j in (0..num_bits).rev() {
                 nums_ints[j] += nums_ints[j + 1];
@@ -91,7 +118,7 @@ impl DacsOpt {
             nums_ints
         };
 
-        debug_assert_eq!(nums_ints[0], ints.len());
+        debug_assert_eq!(nums_ints[0], vals.len());
         debug_assert_eq!(*nums_ints.last().unwrap(), 0);
 
         // dp_s[j,r]: Possible smallest total space to encode integers with more than j bits,
@@ -147,28 +174,34 @@ impl DacsOpt {
         widths
     }
 
-    fn build(ints: &[usize], widths: &[usize]) -> Result<Self> {
-        assert!(!ints.is_empty());
+    fn build<T>(vals: &[T], widths: &[usize]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
+        assert!(!vals.is_empty());
         assert!(!widths.is_empty());
 
         if widths.len() == 1 {
-            let mut data = CompactVector::with_len(ints.len(), widths[0]);
-            for (i, &x) in ints.iter().enumerate() {
-                data.set(i, x);
-            }
+            let mut data = CompactVector::with_capacity(vals.len(), widths[0]).unwrap();
+            vals.iter()
+                .for_each(|x| data.push_int(x.to_usize().unwrap()).unwrap());
             return Ok(Self {
                 data: vec![data],
                 flags: vec![],
             });
         }
 
-        let mut data: Vec<_> = widths.iter().map(|&w| CompactVector::new(w)).collect();
+        let mut data: Vec<_> = widths
+            .iter()
+            .map(|&w| CompactVector::new(w).unwrap())
+            .collect();
         let mut flags = vec![BitVector::default(); widths.len() - 1];
 
-        for mut x in ints.iter().cloned() {
+        for x in vals {
+            let mut x = x.to_usize().unwrap();
             for (j, &width) in widths.iter().enumerate() {
                 let mask = (1 << width) - 1;
-                data[j].push(x & mask);
+                data[j].push_int(x & mask).unwrap();
                 x >>= width;
                 if j == widths.len() - 1 {
                     assert_eq!(x, 0);
@@ -185,38 +218,15 @@ impl DacsOpt {
         Ok(Self { data, flags })
     }
 
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        let mut width = 0;
-        for j in 0..self.num_levels() {
-            x |= self.data[j].get(pos) << (j * width);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-            width = self.data[j].width();
-        }
-        x
-    }
-
     /// Creates an iterator for enumerating integers.
     ///
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::DacsOpt;
     ///
-    /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2)).unwrap();
+    /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -224,6 +234,8 @@ impl DacsOpt {
     /// assert_eq!(it.next(), Some(100000));
     /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -263,6 +275,47 @@ impl Default for DacsOpt {
     }
 }
 
+impl IntGetter for DacsOpt {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{DacsOpt, IntGetter};
+    ///
+    /// let list = DacsOpt::from_slice(&[5, 999, 334], None)?;
+    ///
+    /// assert_eq!(list.get_int(0), Some(5));
+    /// assert_eq!(list.get_int(1), Some(999));
+    /// assert_eq!(list.get_int(2), Some(334));
+    /// assert_eq!(list.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn get_int(&self, mut pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut x = 0;
+        let mut width = 0;
+        for j in 0..self.num_levels() {
+            x |= self.data[j].get_int(pos).unwrap() << (j * width);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
+                break;
+            }
+            pos = self.flags[j].rank1(pos).unwrap();
+            width = self.data[j].width();
+        }
+        Some(x)
+    }
+}
+
 /// Iterator for enumerating integers, created by [`DacsOpt::iter()`].
 pub struct Iter<'a> {
     list: &'a DacsOpt,
@@ -282,7 +335,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.list.len() {
-            let x = self.list.get(self.pos);
+            let x = self.list.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -356,8 +409,8 @@ mod tests {
         assert_eq!(
             list.data,
             vec![
-                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]),
-                CompactVector::from_slice(&[0b11]),
+                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]).unwrap(),
+                CompactVector::from_slice(&[0b11]).unwrap(),
             ]
         );
 
@@ -371,15 +424,15 @@ mod tests {
         assert_eq!(list.num_levels(), 2);
         assert_eq!(list.widths(), vec![2, 2]);
 
-        assert_eq!(list.get(0), 0b11);
-        assert_eq!(list.get(1), 0b1);
-        assert_eq!(list.get(2), 0b1111);
-        assert_eq!(list.get(3), 0b11);
+        assert_eq!(list.get_int(0), Some(0b11));
+        assert_eq!(list.get_int(1), Some(0b1));
+        assert_eq!(list.get_int(2), Some(0b1111));
+        assert_eq!(list.get_int(3), Some(0b11));
     }
 
     #[test]
     fn test_empty() {
-        let list = DacsOpt::from_slice(&[], None).unwrap();
+        let list = DacsOpt::from_slice::<usize>(&[], None).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
@@ -393,10 +446,19 @@ mod tests {
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.widths(), vec![1]);
-        assert_eq!(list.get(0), 0);
-        assert_eq!(list.get(1), 0);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 0);
+        assert_eq!(list.get_int(0), Some(0));
+        assert_eq!(list.get_int(1), Some(0));
+        assert_eq!(list.get_int(2), Some(0));
+        assert_eq!(list.get_int(3), Some(0));
+    }
+
+    #[test]
+    fn test_from_slice_uncastable() {
+        let e = DacsOpt::from_slice(&[u128::MAX], None);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("vals must consist only of values castable into usize.".to_string())
+        );
     }
 
     #[test]

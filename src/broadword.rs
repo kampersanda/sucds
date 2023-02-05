@@ -1,5 +1,6 @@
 //! Broadword tools.
 #![cfg(target_pointer_width = "64")]
+#![allow(dead_code)]
 
 #[cfg(feature = "intrinsics")]
 use crate::intrinsics;
@@ -13,13 +14,11 @@ pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
 pub(crate) const INV_COUNT_STEP_9: usize =
     1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn uleq_step_8(x: usize, y: usize) -> usize {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
@@ -37,7 +36,6 @@ pub(crate) const fn byte_counts(mut x: usize) -> usize {
     (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) const fn bytes_sum(x: usize) -> usize {
     ONES_STEP_8.wrapping_mul(x) >> 56
@@ -66,21 +64,24 @@ pub const fn popcount(x: usize) -> usize {
     }
 }
 
-/// Searches the position of the `k`-th bit set.
+/// Searches the position of the `k`-th bit set,
+/// returning [`None`] if the number of bits set in `x` is no less than `k`.
 ///
 /// # Examples
 ///
 /// ```
 /// use sucds::broadword::select_in_word;
 ///
-/// assert_eq!(select_in_word(0b1010011, 0), 0);
-/// assert_eq!(select_in_word(0b1010011, 1), 1);
-/// assert_eq!(select_in_word(0b1010011, 2), 4);
-/// assert_eq!(select_in_word(0b1010011, 3), 6);
+/// assert_eq!(select_in_word(0b1000011, 0), Some(0));
+/// assert_eq!(select_in_word(0b1000011, 1), Some(1));
+/// assert_eq!(select_in_word(0b1000011, 2), Some(6));
+/// assert_eq!(select_in_word(0b1000011, 3), None);
 /// ```
 #[inline(always)]
-pub fn select_in_word(x: usize, k: usize) -> usize {
-    debug_assert!(k < popcount(x));
+pub const fn select_in_word(x: usize, k: usize) -> Option<usize> {
+    if popcount(x) <= k {
+        return None;
+    }
     let byte_sums = ONES_STEP_8.wrapping_mul(byte_counts(x));
     let k_step_8 = k * ONES_STEP_8;
     let geq_k_step_8 = ((k_step_8 | MSBS_STEP_8) - byte_sums) & MSBS_STEP_8;
@@ -95,17 +96,17 @@ pub fn select_in_word(x: usize, k: usize) -> usize {
         }
     };
     let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF);
-    place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize
+    let sel = place + SELECT_IN_BYTE[((x >> place) & 0xFF) | (byte_rank << 8)] as usize;
+    Some(sel)
 }
 
-#[allow(dead_code)]
 #[inline(always)]
 pub(crate) fn bit_position(x: usize) -> usize {
     debug_assert!(popcount(x) == 1);
     DEBRUIJN64_MAPPING[(DEBRUIJN64.wrapping_mul(x)) >> 58] as usize
 }
 
-/// Gets the least significant bit.
+/// Gets the least significant bit, returning [`None`] if `x == 0`.
 ///
 /// # Examples
 ///
@@ -132,7 +133,7 @@ pub fn lsb(x: usize) -> Option<usize> {
     }
 }
 
-/// Gets the most significant bit.
+/// Gets the most significant bit, returning [`None`] if `x == 0`.
 ///
 /// # Examples
 ///
@@ -254,7 +255,7 @@ mod tests {
             0, 1, 4, 8, 9, 13, 19, 23, 28, 38, 41, 42, 43, 48, 49, 54, 55, 58,
         ];
         for (i, &k) in sels.iter().enumerate() {
-            assert_eq!(select_in_word(x, i), k);
+            assert_eq!(select_in_word(x, i), Some(k));
         }
     }
 }

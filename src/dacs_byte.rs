@@ -4,10 +4,11 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::util;
-use crate::{BitVector, RsBitVector, Searial};
+use crate::{BitGetter, BitVector, IntGetter, Ranker, RsBitVector, Searial};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -21,17 +22,21 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
-/// use sucds::DacsByte;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::{DacsByte, IntGetter};
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
+/// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
-/// assert_eq!(list.get(0), 5);
-/// assert_eq!(list.get(1), 0);
-/// assert_eq!(list.get(2), 100000);
-/// assert_eq!(list.get(3), 334);
+/// // Need IntGetter
+/// assert_eq!(list.get_int(0), Some(5));
+/// assert_eq!(list.get_int(1), Some(0));
+/// assert_eq!(list.get_int(2), Some(100000));
+/// assert_eq!(list.get_int(3), Some(334));
 ///
 /// assert_eq!(list.len(), 4);
 /// assert_eq!(list.num_levels(), 3);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
@@ -49,28 +54,46 @@ impl DacsByte {
     ///
     /// # Arguments
     ///
-    /// - `ints`: Integers to be stored.
-    pub fn from_slice(ints: &[usize]) -> Self {
-        if ints.is_empty() {
-            return Self::default();
+    /// - `vals`: Slice of integers to be stored.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
+    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+    {
+        if vals.is_empty() {
+            return Ok(Self::default());
         }
 
-        let num_bits = util::needed_bits(ints.iter().cloned().max().unwrap());
+        let mut maxv = 0;
+        for x in vals {
+            maxv =
+                maxv.max(x.to_usize().ok_or_else(|| {
+                    anyhow!("vals must consist only of values castable into usize.")
+                })?);
+        }
+        let num_bits = util::needed_bits(maxv);
         let num_levels = util::ceiled_divide(num_bits, LEVEL_WIDTH);
         assert_ne!(num_levels, 0);
 
         if num_levels == 1 {
-            let data: Vec<_> = ints.iter().map(|&x| u8::try_from(x).unwrap()).collect();
-            return Self {
+            let data: Vec<_> = vals
+                .iter()
+                .map(|x| u8::try_from(x.to_usize().unwrap()).unwrap())
+                .collect();
+            return Ok(Self {
                 data: vec![data],
                 flags: vec![],
-            };
+            });
         }
 
         let mut data = vec![vec![]; num_levels];
         let mut flags = vec![BitVector::default(); num_levels - 1];
 
-        for mut x in ints.iter().cloned() {
+        for x in vals {
+            let mut x = x.to_usize().unwrap();
             for j in 0..num_levels {
                 data[j].push(u8::try_from(x & LEVEL_MASK).unwrap());
                 x >>= LEVEL_WIDTH;
@@ -86,29 +109,7 @@ impl DacsByte {
         }
 
         let flags = flags.into_iter().map(RsBitVector::new).collect();
-        Self { data, flags }
-    }
-
-    /// Gets the `pos`-th integer.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Position to get.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
-    pub fn get(&self, mut pos: usize) -> usize {
-        let mut x = 0;
-        for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos) {
-                break;
-            }
-            pos = self.flags[j].rank1(pos);
-        }
-        x
+        Ok(Self { data, flags })
     }
 
     /// Creates an iterator for enumerating integers.
@@ -116,9 +117,10 @@ impl DacsByte {
     /// # Examples
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::DacsByte;
     ///
-    /// let list = DacsByte::from_slice(&[5, 0, 100000, 334]);
+    /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -126,6 +128,8 @@ impl DacsByte {
     /// assert_eq!(it.next(), Some(100000));
     /// assert_eq!(it.next(), Some(334));
     /// assert_eq!(it.next(), None);
+    /// # Ok(())
+    /// # }
     /// ```
     pub const fn iter(&self) -> Iter {
         Iter::new(self)
@@ -166,6 +170,45 @@ impl Default for DacsByte {
     }
 }
 
+impl IntGetter for DacsByte {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    ///   the `pos`-th integer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{DacsByte, IntGetter};
+    ///
+    /// let list = DacsByte::from_slice(&[5, 999, 334])?;
+    ///
+    /// assert_eq!(list.get_int(0), Some(5));
+    /// assert_eq!(list.get_int(1), Some(999));
+    /// assert_eq!(list.get_int(2), Some(334));
+    /// assert_eq!(list.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn get_int(&self, mut pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut x = 0;
+        for j in 0..self.num_levels() {
+            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
+            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
+                break;
+            }
+            pos = self.flags[j].rank1(pos).unwrap();
+        }
+        Some(x)
+    }
+}
+
 /// Iterator for enumerating integers, created by [`DacsByte::iter()`].
 pub struct Iter<'a> {
     list: &'a DacsByte,
@@ -185,7 +228,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.list.len() {
-            let x = self.list.get(self.pos);
+            let x = self.list.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -224,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let list = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let list = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
 
         assert_eq!(
             list.data,
@@ -248,16 +291,16 @@ mod tests {
         assert_eq!(list.num_levels(), 3);
         assert_eq!(list.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
 
-        assert_eq!(list.get(0), 0xFFFF);
-        assert_eq!(list.get(1), 0xFF);
-        assert_eq!(list.get(2), 0xF);
-        assert_eq!(list.get(3), 0xFFFFF);
-        assert_eq!(list.get(4), 0xF);
+        assert_eq!(list.get_int(0), Some(0xFFFF));
+        assert_eq!(list.get_int(1), Some(0xFF));
+        assert_eq!(list.get_int(2), Some(0xF));
+        assert_eq!(list.get_int(3), Some(0xFFFFF));
+        assert_eq!(list.get_int(4), Some(0xF));
     }
 
     #[test]
     fn test_empty() {
-        let list = DacsByte::from_slice(&[]);
+        let list = DacsByte::from_slice::<usize>(&[]).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.len(), 0);
         assert_eq!(list.num_levels(), 1);
@@ -266,21 +309,30 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsByte::from_slice(&[0, 0, 0, 0]);
+        let list = DacsByte::from_slice(&[0, 0, 0, 0]).unwrap();
         assert!(!list.is_empty());
         assert_eq!(list.len(), 4);
         assert_eq!(list.num_levels(), 1);
         assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
-        assert_eq!(list.get(0), 0);
-        assert_eq!(list.get(1), 0);
-        assert_eq!(list.get(2), 0);
-        assert_eq!(list.get(3), 0);
+        assert_eq!(list.get_int(0), Some(0));
+        assert_eq!(list.get_int(1), Some(0));
+        assert_eq!(list.get_int(2), Some(0));
+        assert_eq!(list.get_int(3), Some(0));
+    }
+
+    #[test]
+    fn test_from_slice_uncastable() {
+        let e = DacsByte::from_slice(&[u128::MAX]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("vals must consist only of values castable into usize.".to_string())
+        );
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let list = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);

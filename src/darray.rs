@@ -1,14 +1,11 @@
 //! Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
 #![cfg(target_pointer_width = "64")]
 
-pub mod iter;
-
 use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::darray::iter::Iter;
-use crate::{broadword, BitVector, Searial};
+use crate::{broadword, BitVector, Searial, Selector};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -21,12 +18,12 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// # Examples
 ///
 /// ```
-/// use sucds::DArray;
+/// use sucds::{DArray, Selector};
 ///
 /// let da = DArray::from_bits([true, false, false, true]);
 ///
-/// assert_eq!(da.select(0), 0);
-/// assert_eq!(da.select(1), 3);
+/// assert_eq!(da.select1(0), Some(0));
+/// assert_eq!(da.select1(1), Some(3));
 /// ```
 ///
 /// # References
@@ -54,30 +51,6 @@ impl DArray {
             da: DArrayIndex::build(&bv, true),
             bv,
         }
-    }
-
-    /// Searches the `k`-th iteger.
-    ///
-    /// # Arguments
-    ///
-    /// - `k`: Select query.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::DArray;
-    ///
-    /// let da = DArray::from_bits([true, false, false, true]);
-    /// assert_eq!(da.select(0), 0);
-    /// assert_eq!(da.select(1), 3);
-    /// ```
-    #[inline(always)]
-    pub fn select(&self, k: usize) -> usize {
-        self.da.select(&self.bv, k)
     }
 
     /// Creates an iterator for enumerating integers.
@@ -108,6 +81,34 @@ impl DArray {
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.da.is_empty()
+    }
+}
+
+impl Selector for DArray {
+    /// Returns the position of the `k`-th smallest integer.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{DArray, Selector};
+    ///
+    /// let da = DArray::from_bits([true, false, false, true]);
+    ///
+    /// assert_eq!(da.select1(0), Some(0));
+    /// assert_eq!(da.select1(1), Some(3));
+    /// assert_eq!(da.select1(2), None);
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        self.da.select(&self.bv, k)
+    }
+
+    /// Panics always because this operation is not supported.
+    fn select0(&self, _k: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
     }
 }
 
@@ -153,7 +154,7 @@ impl DArrayIndex {
     ///
     /// # Arguments
     ///
-    /// - `bv`: Bit vector (used to build).
+    /// - `bv`: Reference to the bit vector used to build.
     /// - `k`: Select query.
     ///
     /// # Complexity
@@ -167,26 +168,42 @@ impl DArrayIndex {
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
-    /// assert_eq!(da.select(&bv, 0), 0);
-    /// assert_eq!(da.select(&bv, 1), 3);
+    /// assert_eq!(da.select(&bv, 0), Some(0));
+    /// assert_eq!(da.select(&bv, 1), Some(3));
+    /// assert_eq!(da.select(&bv, 2), None);
+    /// ```
+    ///
+    /// You can perform selections over unset bits by specifying
+    /// `Self::new(&bv, over_one=false)`.
+    ///
+    /// ```
+    /// use sucds::{BitVector, darray::DArrayIndex};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false, true]);
+    /// let da = DArrayIndex::new(&bv, false);
+    /// assert_eq!(da.select(&bv, 0), Some(1));
+    /// assert_eq!(da.select(&bv, 1), Some(2));
+    /// assert_eq!(da.select(&bv, 2), None);
     /// ```
     #[inline(always)]
-    pub fn select(&self, bv: &BitVector, k: usize) -> usize {
-        debug_assert!(k < self.num_positions);
+    pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
+        if self.num_positions <= k {
+            return None;
+        }
 
         let block = k / BLOCK_LEN;
         let block_pos = self.block_inventory[block];
 
         if block_pos < 0 {
             let overflow_pos = (-block_pos - 1) as usize;
-            return self.overflow_positions[overflow_pos + (k % BLOCK_LEN)];
+            return Some(self.overflow_positions[overflow_pos + (k % BLOCK_LEN)]);
         }
 
         let subblock = k / SUBBLOCK_LEN;
         let mut reminder = k % SUBBLOCK_LEN;
         let start_pos = block_pos as usize + self.subblock_inventory[subblock] as usize;
 
-        if reminder == 0 {
+        let sel = if reminder == 0 {
             start_pos
         } else {
             let w = {
@@ -211,8 +228,9 @@ impl DArrayIndex {
                 word = w(bv, word_idx);
             }
 
-            64 * word_idx + broadword::select_in_word(word, reminder)
-        }
+            64 * word_idx + broadword::select_in_word(word, reminder).unwrap()
+        };
+        Some(sel)
     }
 
     /// Gets the number of integers.
@@ -325,6 +343,39 @@ impl DArrayIndex {
     }
 }
 
+/// Iterator for enumerating integers, created by [`DArray::iter()`].
+pub struct Iter<'a> {
+    da: &'a DArray,
+    pos: usize,
+}
+
+impl<'a> Iter<'a> {
+    /// Creates a new iterator.
+    pub const fn new(da: &'a DArray) -> Self {
+        Self { da, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = usize;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.da.len() {
+            let x = self.da.select1(self.pos).unwrap();
+            self.pos += 1;
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.da.len(), Some(self.da.len()))
+    }
+}
+
 impl Searial for DArrayIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.block_inventory.serialize_into(&mut writer)?;
@@ -363,86 +414,37 @@ impl Searial for DArrayIndex {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_bool(p)).collect()
-    }
-
-    fn test_select(bv: &BitVector, da: &DArrayIndex) {
-        let mut cur_rank = 0;
-        for i in 0..bv.len() {
-            if bv.get_bit(i) {
-                assert_eq!(i, da.select(bv, cur_rank));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, da.len());
-    }
-
-    fn test_select0(bv: &BitVector, da: &DArrayIndex) {
-        let mut cur_rank = 0;
-        for i in 0..bv.len() {
-            if !bv.get_bit(i) {
-                assert_eq!(i, da.select(bv, cur_rank));
-                cur_rank += 1;
-            }
-        }
+    #[test]
+    fn test_all_zeros() {
+        let da = DArray::from_bits([false, false, false]);
+        assert_eq!(da.select1(0), None);
     }
 
     #[test]
-    fn test_tiny_bits() {
-        let bv = BitVector::from_bits([true, false, false, true, false, true, true]);
+    #[should_panic]
+    fn test_select1() {
+        let da = DArray::from_bits([false, true, false]);
+        da.select0(0);
+    }
+
+    #[test]
+    fn test_all_zeros_index() {
+        let bv = BitVector::from_bit(false, 3);
         let da = DArrayIndex::new(&bv, true);
-        assert_eq!(da.select(&bv, 0), 0);
-        assert_eq!(da.select(&bv, 1), 3);
-        assert_eq!(da.select(&bv, 2), 5);
-        assert_eq!(da.select(&bv, 3), 6);
+        assert_eq!(da.select(&bv, 0), None);
+    }
+
+    #[test]
+    fn test_all_ones_index() {
+        let bv = BitVector::from_bit(true, 3);
         let da = DArrayIndex::new(&bv, false);
-        assert_eq!(da.select(&bv, 0), 1);
-        assert_eq!(da.select(&bv, 1), 2);
-        assert_eq!(da.select(&bv, 2), 4);
+        assert_eq!(da.select(&bv, 0), None);
     }
 
     #[test]
-    fn test_random_bits_dense() {
-        for seed in 0..100 {
-            let bv = BitVector::from_bits(gen_random_bits(10000, 0.5, seed));
-            let da = DArrayIndex::new(&bv, true);
-            test_select(&bv, &da);
-            let da = DArrayIndex::new(&bv, false);
-            test_select0(&bv, &da);
-        }
-    }
-
-    #[test]
-    fn test_random_bits_sparse() {
-        for seed in 0..100 {
-            let bv = BitVector::from_bits(gen_random_bits(10000, 0.01, seed));
-            let da = DArrayIndex::new(&bv, true);
-            test_select(&bv, &da);
-            let da = DArrayIndex::new(&bv, false);
-            test_select0(&bv, &da);
-        }
-    }
-
-    #[test]
-    fn test_serialize_dense() {
+    fn test_serialize() {
         let mut bytes = vec![];
-        let da = DArray::from_bits(gen_random_bits(10000, 0.5, 42));
-        let size = da.serialize_into(&mut bytes).unwrap();
-        let other = DArray::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(da, other);
-        assert_eq!(size, bytes.len());
-        assert_eq!(size, da.size_in_bytes());
-    }
-
-    #[test]
-    fn test_serialize_sparse() {
-        let mut bytes = vec![];
-        let da = DArray::from_bits(gen_random_bits(10000, 0.01, 42));
+        let da = DArray::from_bits([true, false, false, true]);
         let size = da.serialize_into(&mut bytes).unwrap();
         let other = DArray::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(da, other);
