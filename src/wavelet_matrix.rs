@@ -374,6 +374,8 @@ impl WaveletMatrix {
     /// Returns the all integers co-occurred more than `k` times in given `ranges`,
     /// or [`None`] if any range in `ranges` is out of bounds.
     ///
+    /// Note that `Some(vec![])`, not [`None`], will be returned if there is no occurrence.
+    ///
     /// # Arguments
     ///
     /// - `ranges`: Ranges to be searched.
@@ -391,19 +393,19 @@ impl WaveletMatrix {
     ///
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..5, 0..2], 1),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 1),
     ///     Some(vec!['a' as usize, 'b' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..5, 0..2], 2),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 2),
     ///     Some(vec!['a' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..5, 0..2], 3),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 3),
     ///     Some(vec!['a' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..5, 0..2], 3),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 4),
     ///     Some(vec![])
     /// );
     /// # Ok(())
@@ -429,6 +431,8 @@ impl WaveletMatrix {
         let mut zero_ranges = vec![];
         let mut one_ranges = vec![];
 
+        dbg!(depth);
+
         let layer = &self.layers[depth];
         for range in ranges {
             if layer.len() < range.end {
@@ -448,6 +452,8 @@ impl WaveletMatrix {
             let one_start_pos = layer.num_zeros() + start_pos - zero_start_pos;
             let one_end_pos = layer.num_zeros() + end_pos - zero_end_pos;
 
+            dbg!(zero_start_pos, zero_end_pos, one_start_pos, one_end_pos);
+
             if zero_end_pos - zero_start_pos > 0 {
                 zero_ranges.push(zero_start_pos..zero_end_pos)
             }
@@ -456,7 +462,11 @@ impl WaveletMatrix {
             }
         }
 
+        dbg!(&zero_ranges);
+        dbg!(&one_ranges);
+
         let mut ret = vec![];
+        // TODO(kampersanda): Fix >= into >.
         if zero_ranges.len() >= k {
             ret.extend_from_slice(&self.intersect_helper(
                 &zero_ranges,
@@ -554,10 +564,8 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_build() {
-        /*
-        This test example is from G. Navarro's "Compact Data Structures" P130
-        */
+    fn test_navarro_book() {
+        // This test example is from G. Navarro's "Compact Data Structures" P130
         let text = "tobeornottobethatisthequestion";
         let len = text.chars().count();
 
