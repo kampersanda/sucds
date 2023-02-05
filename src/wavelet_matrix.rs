@@ -527,14 +527,13 @@ impl WaveletMatrix {
         self.len() == 0
     }
 
-    /// Returns the maximum value + 1 in the sequence.
+    /// Returns the maximum value + 1 in the sequence, i.e., $`\sigma`$.
     #[inline(always)]
     pub const fn alph_size(&self) -> usize {
         self.alph_size
     }
 
-    /// Returns $`\lceil \log_2{\sigma} \rceil`$, where $`\sigma`$ is `self.alph_size()`,
-    /// which is the number of layers in the matrix.
+    /// Returns $`\lceil \log_2{\sigma} \rceil`$, which is the number of layers in the matrix.
     #[inline(always)]
     pub fn alph_width(&self) -> usize {
         self.layers.len()
