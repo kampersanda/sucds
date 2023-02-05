@@ -61,8 +61,8 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn new(width: usize) -> Result<Self> {
-        if !(0..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64."));
+        if !(1..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
         Ok(Self {
             chunks: BitVector::default(),
@@ -100,8 +100,8 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
-        if !(0..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64."));
+        if !(1..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
         Ok(Self {
             chunks: BitVector::with_capacity(capa * width),
@@ -140,8 +140,8 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
-        if !(0..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64."));
+        if !(1..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
         if val >> width != 0 {
             return Err(anyhow!(
@@ -462,29 +462,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_new_oob() {
+    fn test_new_oob_0() {
+        let e = CompactVector::new(0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64, but got 0.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_new_oob_65() {
         let e = CompactVector::new(65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64.".to_string())
+            Some("width must be in 1..=64, but got 65.".to_string())
         );
     }
 
     #[test]
-    fn test_with_capacity_oob() {
+    fn test_with_capacity_oob_0() {
+        let e = CompactVector::with_capacity(0, 0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64, but got 0.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_with_capacity_oob_65() {
         let e = CompactVector::with_capacity(0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64.".to_string())
+            Some("width must be in 1..=64, but got 65.".to_string())
         );
     }
 
     #[test]
-    fn test_from_int_oob() {
+    fn test_from_int_oob_0() {
+        let e = CompactVector::from_int(0, 0, 0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64, but got 0.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_from_int_oob_65() {
         let e = CompactVector::from_int(0, 0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64.".to_string())
+            Some("width must be in 1..=64, but got 65.".to_string())
         );
     }
 

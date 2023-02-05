@@ -594,6 +594,15 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_empty_seq() {
+        let e = WaveletMatrix::new(CompactVector::new(1).unwrap());
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("seq must not be empty.".to_string())
+        );
+    }
+
+    #[test]
     fn test_navarro_book() {
         // This test example is from G. Navarro's "Compact Data Structures" P130
         let text = "tobeornottobethatisthequestion";
@@ -605,6 +614,7 @@ mod test {
 
         assert_eq!(wm.len(), len);
         assert_eq!(wm.alph_size(), ('u' as usize) + 1);
+        assert_eq!(wm.alph_width(), 7);
 
         assert_eq!(wm.access(20), Some('h' as usize));
         assert_eq!(wm.rank(22, 'o' as usize), Some(4));
