@@ -38,14 +38,6 @@ pub struct CompactVector {
 }
 
 impl CompactVector {
-    fn verify_width(width: usize) -> Result<()> {
-        if 0 < width && width <= 64 {
-            Ok(())
-        } else {
-            Err(anyhow!("width must be in 1..=64."))
-        }
-    }
-
     /// Creates a new empty vector storing integers within `width` bits each.
     ///
     /// # Arguments
@@ -69,7 +61,9 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn new(width: usize) -> Result<Self> {
-        Self::verify_width(width)?;
+        if !(0..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64."));
+        }
         Ok(Self {
             chunks: BitVector::default(),
             len: 0,
@@ -106,7 +100,9 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
-        Self::verify_width(width)?;
+        if !(0..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64."));
+        }
         Ok(Self {
             chunks: BitVector::with_capacity(capa * width),
             len: 0,
@@ -125,7 +121,10 @@ impl CompactVector {
     ///
     /// # Errors
     ///
-    /// An error is returned if `width` is not in `1..=64`.
+    /// An error is returned if
+    ///
+    ///  - `width` is not in `1..=64`, or
+    ///  - `val` cannot be represent in `width` bits.
     ///
     /// # Examples
     ///
@@ -141,9 +140,19 @@ impl CompactVector {
     /// # }
     /// ```
     pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
-        let mut cv = Self::with_capacity(len, width)?;
+        if !(0..=64).contains(&width) {
+            return Err(anyhow!("width must be in 1..=64."));
+        }
+        if val >> width != 0 {
+            return Err(anyhow!(
+                "val must fit in width={width} bits, but got {val}."
+            ));
+        }
+        // NOTE(kampersanda): It should be safe.
+        let mut cv = Self::with_capacity(len, width).unwrap();
         for _ in 0..len {
-            cv.push_int(val)?;
+            // NOTE(kampersanda): It should be safe.
+            cv.push_int(val).unwrap();
         }
         Ok(cv)
     }
@@ -222,7 +231,23 @@ impl CompactVector {
     /// ```
     #[inline(always)]
     pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
-        self.chunks.set_bits(pos * self.width, val, self.width)
+        if self.len() <= pos {
+            return Err(anyhow!(
+                "pos must be no greater than self.len()={}, but got {pos}.",
+                self.len()
+            ));
+        }
+        if val >> self.width() != 0 {
+            return Err(anyhow!(
+                "val must fit in self.width()={} bits, but got {val}.",
+                self.width()
+            ));
+        }
+        // NOTE(kampersanda): set_bits should be safe.
+        Ok(self
+            .chunks
+            .set_bits(pos * self.width, val, self.width)
+            .unwrap())
     }
 
     /// Pushes integer `val` at the end.
@@ -250,7 +275,14 @@ impl CompactVector {
     /// ```
     #[inline(always)]
     pub fn push_int(&mut self, val: usize) -> Result<()> {
-        self.chunks.push_bits(val, self.width)?;
+        if val >> self.width() != 0 {
+            return Err(anyhow!(
+                "val must fit in self.width()={} bits, but got {val}.",
+                self.width()
+            ));
+        }
+        // NOTE(kampersanda): set_bits should be safe.
+        self.chunks.push_bits(val, self.width).unwrap();
         self.len += 1;
         Ok(())
     }
@@ -429,37 +461,95 @@ impl Searial for CompactVector {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_range(0..10000)).collect()
-    }
-
-    fn test_basic(ints: &[usize], list: &CompactVector) {
-        for (i, &x) in ints.iter().enumerate() {
-            assert_eq!(x, list.get_int(i).unwrap());
-        }
-        for (i, x) in list.iter().enumerate() {
-            assert_eq!(ints[i], x);
-        }
-        assert_eq!(ints.len(), list.len());
+    #[test]
+    fn test_new_oob() {
+        let e = CompactVector::new(65);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_ints() {
-        for seed in 0..100 {
-            let ints = gen_random_ints(10000, seed);
-            let list = CompactVector::from_slice(&ints).unwrap();
-            test_basic(&ints, &list);
-        }
+    fn test_with_capacity_oob() {
+        let e = CompactVector::with_capacity(0, 65);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_from_int_oob() {
+        let e = CompactVector::from_int(0, 0, 65);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("width must be in 1..=64.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_from_int_unfit() {
+        let e = CompactVector::from_int(4, 0, 2);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must fit in width=2 bits, but got 4.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_from_slice_uncastable() {
+        let e = CompactVector::from_slice(&[u128::MAX]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("vals must consist only of values castable into usize.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_int_oob() {
+        let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
+        let e = cv.set_int(1, 1);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("pos must be no greater than self.len()=1, but got 1.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_int_unfit() {
+        let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
+        let e = cv.set_int(0, 4);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_push_int_unfit() {
+        let mut cv = CompactVector::new(2).unwrap();
+        let e = cv.push_int(4);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_extend_unfit() {
+        let mut cv = CompactVector::new(2).unwrap();
+        let e = cv.extend([4]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+        );
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let cv = CompactVector::from_slice(&gen_random_ints(10000, 42)).unwrap();
+        let cv = CompactVector::from_slice(&[7, 334, 1, 2]).unwrap();
         let size = cv.serialize_into(&mut bytes).unwrap();
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);
