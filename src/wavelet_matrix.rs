@@ -390,19 +390,19 @@ impl WaveletMatrix {
     ///
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..6, 0..2], 1),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 0),
     ///     Some(vec!['a' as usize, 'b' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..6, 0..2], 2),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 1),
     ///     Some(vec!['a' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..6, 0..2], 3),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 2),
     ///     Some(vec!['a' as usize])
     /// );
     /// assert_eq!(
-    ///     wm.intersect(&[1..4, 4..6, 0..2], 4),
+    ///     wm.intersect(&[1..4, 4..6, 0..2], 3),
     ///     Some(vec![])
     /// );
     /// # Ok(())
@@ -428,8 +428,6 @@ impl WaveletMatrix {
         let mut zero_ranges = vec![];
         let mut one_ranges = vec![];
 
-        dbg!(depth);
-
         let layer = &self.layers[depth];
         for range in ranges {
             if layer.len() < range.end {
@@ -449,8 +447,6 @@ impl WaveletMatrix {
             let one_start_pos = layer.num_zeros() + start_pos - zero_start_pos;
             let one_end_pos = layer.num_zeros() + end_pos - zero_end_pos;
 
-            dbg!(zero_start_pos, zero_end_pos, one_start_pos, one_end_pos);
-
             if zero_end_pos - zero_start_pos > 0 {
                 zero_ranges.push(zero_start_pos..zero_end_pos)
             }
@@ -459,12 +455,8 @@ impl WaveletMatrix {
             }
         }
 
-        dbg!(&zero_ranges);
-        dbg!(&one_ranges);
-
         let mut ret = vec![];
-        // TODO(kampersanda): Fix >= into >.
-        if zero_ranges.len() >= k {
+        if zero_ranges.len() > k {
             ret.extend_from_slice(&self.intersect_helper(
                 &zero_ranges,
                 k,
@@ -472,7 +464,7 @@ impl WaveletMatrix {
                 prefix << 1,
             )?);
         }
-        if one_ranges.len() >= k {
+        if one_ranges.len() > k {
             ret.extend_from_slice(&self.intersect_helper(
                 &one_ranges,
                 k,
@@ -626,7 +618,7 @@ mod test {
         assert_eq!(wm.quantile(0..3, 0), Some('b' as usize)); // zero-th in "tob" should be "b"
 
         let ranges = vec![0..3, 3..6];
-        assert_eq!(wm.intersect(&ranges, 2), Some(vec!['o' as usize]));
+        assert_eq!(wm.intersect(&ranges, 1), Some(vec!['o' as usize]));
     }
 
     #[test]
