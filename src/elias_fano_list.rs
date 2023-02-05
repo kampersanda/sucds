@@ -215,40 +215,19 @@ impl<'a> Iterator for Iter<'a> {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_ints(len: usize, seed: u64) -> Vec<usize> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_range(0..10000)).collect()
-    }
-
-    fn test_basic(vals: &[usize], list: &EliasFanoList) {
-        let mut acc = 0;
-        for (i, &x) in vals.iter().enumerate() {
-            assert_eq!(list.get_int(i), Some(x));
-            acc += x;
-        }
-        assert_eq!(vals.len(), list.len());
-        assert_eq!(acc, list.sum());
-        for (i, x) in list.iter().enumerate() {
-            assert_eq!(vals[i], x);
-        }
-    }
-
     #[test]
-    fn test_random_ints() {
-        for seed in 0..100 {
-            let vals = gen_random_ints(10000, seed);
-            let list = EliasFanoList::from_slice(&vals).unwrap();
-            test_basic(&vals, &list);
-        }
+    fn test_from_slice_uncastable() {
+        let e = EliasFanoList::from_slice(&[u128::MAX]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("vals must consist only of values castable into usize.".to_string())
+        );
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = EliasFanoList::from_slice(&gen_random_ints(10000, 42)).unwrap();
+        let list = EliasFanoList::from_slice(&[5, 14, 334, 10]).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
         let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);

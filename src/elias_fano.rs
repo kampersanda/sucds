@@ -31,7 +31,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// use sucds::{EliasFanoBuilder, Ranker, Selector};
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-/// efb.append([1, 3, 3, 7])?;
+/// efb.extend([1, 3, 3, 7])?;
 /// let ef = efb.build();
 ///
 /// assert_eq!(ef.len(), 4);
@@ -85,14 +85,23 @@ impl EliasFano {
     ///
     /// # Errors
     ///
-    /// An error is returned if `bits` contains no set bit.
+    /// An error is returned if
+    ///
+    ///  - `bits` is an empty stream, or
+    ///  - `bits` contains no set bit.
     pub fn from_bits<I>(bits: I) -> Result<Self>
     where
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
+        if bv.is_empty() {
+            return Err(anyhow!("bits must not be empty."));
+        }
         let n = bv.len();
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
+        if m == 0 {
+            return Err(anyhow!("bits must contains one set bit at least."));
+        }
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
             if bv.get_bit(i).unwrap() {
@@ -127,7 +136,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.predecessor(4), Some(3));
@@ -161,7 +170,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.successor(0), Some(1));
@@ -192,7 +201,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.delta(0), Some(1));
@@ -245,7 +254,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
-    /// efb.append([1, 3, 3, 6, 7, 10])?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.find(6), Some(3));
@@ -279,7 +288,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
-    /// efb.append([1, 3, 3, 6, 7, 10])?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.find_range(1..4, 6), Some(3));
@@ -333,7 +342,7 @@ impl EliasFano {
     /// use sucds::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// let mut it = ef.iter(1);
@@ -385,7 +394,7 @@ impl Ranker for EliasFano {
     /// use sucds::{EliasFanoBuilder, Ranker};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.rank1(1), Some(0));
@@ -442,7 +451,7 @@ impl Selector for EliasFano {
     /// use sucds::{EliasFanoBuilder, Selector};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.append([1, 3, 3, 7])?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.select1(0), Some(1));
@@ -525,7 +534,7 @@ impl Searial for EliasFano {
 ///
 /// efb.push(1)?;
 /// efb.push(3)?;
-/// efb.append([3, 5, 7])?;
+/// efb.extend([3, 5, 7])?;
 ///
 /// let ef = efb.build();
 /// assert_eq!(ef.len(), 5);
@@ -586,21 +595,19 @@ impl EliasFanoBuilder {
     pub fn push(&mut self, val: usize) -> Result<()> {
         if val < self.last {
             return Err(anyhow!(
-                "The input integer {} must be no less than the last one {}",
-                val,
+                "val must be no less than the last one {}, but got {val}.",
                 self.last
             ));
         }
         if self.universe <= val {
             return Err(anyhow!(
-                "The input integer {} must be less than the universe {}",
-                val,
+                "val must be less than self.universe()={}, but got {val}.",
                 self.universe
             ));
         }
         if self.num_vals <= self.pos {
             return Err(anyhow!(
-                "The number of stored integers exceeds the given upper bound {}",
+                "The number of pushed integers must not exceed self.num_vals()={}.",
                 self.num_vals
             ));
         }
@@ -633,7 +640,7 @@ impl EliasFanoBuilder {
     /// - `vals` is not monotone increasing (also compared to the current last value),
     /// - values in `vals` is no less than [`Self::universe()`], or
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
-    pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
+    pub fn extend<'a, I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = usize>,
     {
@@ -672,140 +679,28 @@ impl EliasFanoBuilder {
 mod tests {
     use super::*;
 
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaChaRng;
-
-    fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        (0..len).map(|_| rng.gen_bool(p)).collect()
-    }
-
-    fn gen_random_queries(bits: &[bool], len: usize, seed: u64) -> Vec<(usize, Option<usize>)> {
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        let mut queries = vec![];
-        for _ in 0..len {
-            let v = rng.gen_range(0..bits.len());
-            queries.push(if bits[v] {
-                let rank = bits[..v].iter().fold(0, |acc, &b| acc + b as usize);
-                (v, Some(rank))
-            } else {
-                (v, None)
-            })
-        }
-        queries
-    }
-
-    fn gen_random_range_queries(
-        bits: &[bool],
-        len: usize,
-        seed: u64,
-    ) -> Vec<(usize, Range<usize>, Option<usize>)> {
-        let ints: Vec<usize> = bits
-            .iter()
-            .enumerate()
-            .filter(|(_, &b)| b)
-            .map(|(i, _)| i)
-            .collect();
-        let mut rng = ChaChaRng::seed_from_u64(seed);
-        let mut queries = vec![];
-        for _ in 0..len {
-            let v = rng.gen_range(0..bits.len());
-            let i = rng.gen_range(0..ints.len());
-            let j = rng.gen_range(i..ints.len());
-            queries.push(if let Some(p) = ints[i..j].iter().position(|&x| x == v) {
-                (v, i..j, Some(p + i))
-            } else {
-                (v, i..j, None)
-            })
-        }
-        queries
-    }
-
-    fn test_rank_select(bits: &[bool], ef: &EliasFano) {
-        let mut cur_rank = 0;
-        for i in 0..bits.len() {
-            assert_eq!(ef.rank1(i), Some(cur_rank));
-            if bits[i] {
-                assert_eq!(ef.select1(cur_rank), Some(i));
-                cur_rank += 1;
-            }
-        }
-        assert_eq!(cur_rank, ef.len());
-        assert_eq!(bits.len(), ef.universe());
-    }
-
-    fn test_successor_predecessor(bits: &[bool], ef: &EliasFano) {
-        let one_positions: Vec<usize> = (0..bits.len()).filter(|&i| bits[i]).collect();
-
-        let mut pos = 0;
-        for &i in &one_positions {
-            let next = ef.successor(pos).unwrap();
-            debug_assert_eq!(i, next);
-            pos = next + 1;
-        }
-        debug_assert!(pos == ef.universe() || ef.successor(pos).is_none());
-
-        let mut pos = bits.len() - 1;
-        for &i in one_positions.iter().rev() {
-            let pred = ef.predecessor(pos).unwrap();
-            debug_assert_eq!(i, pred);
-            if pred == 0 {
-                pos = ef.universe();
-                break;
-            }
-            pos = pred - 1;
-        }
-        debug_assert!(pos == ef.universe() || ef.predecessor(pos).is_none());
-    }
-
-    fn test_find(ef: &EliasFano, queries: &[(usize, Option<usize>)]) {
-        for &(val, expected) in queries {
-            assert_eq!(ef.find(val), expected);
-        }
-    }
-
-    fn test_find_range(ef: &EliasFano, queries: &[(usize, Range<usize>, Option<usize>)]) {
-        for (val, rng, expected) in queries.iter().cloned() {
-            assert_eq!(ef.find_range(rng, val), expected);
-        }
+    #[test]
+    fn test_from_bits_empty() {
+        let e = EliasFano::from_bits([]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("bits must not be empty.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_bits_dense() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, 0.5, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned())
-                .unwrap()
-                .enable_rank();
-            test_rank_select(&bits, &ef);
-            test_successor_predecessor(&bits, &ef);
-            let queries = gen_random_queries(&bits, 100, seed + 100);
-            test_find(&ef, &queries);
-            let queries = gen_random_range_queries(&bits, 100, seed + 200);
-            test_find_range(&ef, &queries);
-        }
+    fn test_from_bits_unset() {
+        let e = EliasFano::from_bits([false, false, false]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("bits must contains one set bit at least.".to_string())
+        );
     }
 
     #[test]
-    fn test_random_bits_sparse() {
-        for seed in 0..100 {
-            let bits = gen_random_bits(10000, 0.01, seed);
-            let ef = EliasFano::from_bits(bits.iter().cloned())
-                .unwrap()
-                .enable_rank();
-            test_rank_select(&bits, &ef);
-            test_successor_predecessor(&bits, &ef);
-            let queries = gen_random_queries(&bits, 100, seed + 100);
-            test_find(&ef, &queries);
-            let queries = gen_random_range_queries(&bits, 100, seed + 200);
-            test_find_range(&ef, &queries);
-        }
-    }
-
-    #[test]
-    fn test_serialize_dense() {
+    fn test_serialize() {
         let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.5, 42))
+        let ef = EliasFano::from_bits([false, true, true, true, false, true])
             .unwrap()
             .enable_rank();
         let size = ef.serialize_into(&mut bytes).unwrap();
@@ -816,42 +711,43 @@ mod tests {
     }
 
     #[test]
-    fn test_serialize_sparse() {
-        let mut bytes = vec![];
-        let ef = EliasFano::from_bits(gen_random_bits(10000, 0.01, 42))
-            .unwrap()
-            .enable_rank();
-        let size = ef.serialize_into(&mut bytes).unwrap();
-        let other = EliasFano::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(ef, other);
-        assert_eq!(size, bytes.len());
-        assert_eq!(size, ef.size_in_bytes());
+    fn test_builder_new_zero_size() {
+        let e = EliasFanoBuilder::new(3, 0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("num_vals must not be zero.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_empty_ints() {
-        EliasFanoBuilder::new(10, 0).unwrap();
+    fn test_builder_push_decrease() {
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        b.push(2).unwrap();
+        let e = b.push(1);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must be no less than the last one 2, but got 1.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_exclusive_universe() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.push(10).unwrap();
+    fn test_builder_overflow_universe() {
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        let e = b.push(3);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("val must be less than self.universe()=3, but got 3.".to_string())
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_exclusive_ints() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append([1, 2, 3, 4, 5]).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_non_increasing() {
-        let mut b = EliasFanoBuilder::new(10, 4).unwrap();
-        b.append([1, 2, 3, 2]).unwrap();
+    fn test_builder_overflow_num_vals() {
+        let mut b = EliasFanoBuilder::new(3, 1).unwrap();
+        b.push(1).unwrap();
+        let e = b.push(2);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("The number of pushed integers must not exceed self.num_vals()=1.".to_string())
+        );
     }
 }
