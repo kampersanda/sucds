@@ -1,14 +1,11 @@
 //! Compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
-pub mod iter;
-
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::compact_vector::iter::Iter;
 use crate::{util, BitVector, IntGetter, Searial};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
@@ -358,6 +355,39 @@ impl IntGetter for CompactVector {
     /// # }
     fn get_int(&self, pos: usize) -> Option<usize> {
         self.chunks.get_bits(pos * self.width, self.width)
+    }
+}
+
+/// Iterator for enumerating integers, created by [`CompactVector::iter()`].
+pub struct Iter<'a> {
+    cv: &'a CompactVector,
+    pos: usize,
+}
+
+impl<'a> Iter<'a> {
+    /// Creates a new iterator.
+    pub const fn new(cv: &'a CompactVector) -> Self {
+        Self { cv, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = usize;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.cv.len() {
+            let x = self.cv.get_int(self.pos).unwrap();
+            self.pos += 1;
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.cv.len(), Some(self.cv.len()))
     }
 }
 
