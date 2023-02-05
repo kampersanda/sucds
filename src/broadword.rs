@@ -78,7 +78,7 @@ pub const fn popcount(x: usize) -> usize {
 /// assert_eq!(select_in_word(0b1000011, 3), None);
 /// ```
 #[inline(always)]
-pub fn select_in_word(x: usize, k: usize) -> Option<usize> {
+pub const fn select_in_word(x: usize, k: usize) -> Option<usize> {
     if popcount(x) <= k {
         return None;
     }

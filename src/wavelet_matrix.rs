@@ -94,7 +94,7 @@ impl WaveletMatrix {
             layers.push(RsBitVector::new(bv).select1_hints().select0_hints());
         }
 
-        Ok(WaveletMatrix { layers, alph_size })
+        Ok(Self { layers, alph_size })
     }
 
     fn filter(

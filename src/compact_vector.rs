@@ -191,9 +191,10 @@ impl CompactVector {
         }
         let mut max_int = 0;
         for x in vals {
-            max_int = max_int.max(x.to_usize().ok_or(anyhow!(
-                "vals must consist only of values castable into usize."
-            ))?);
+            max_int =
+                max_int.max(x.to_usize().ok_or_else(|| {
+                    anyhow!("vals must consist only of values castable into usize.")
+                })?);
         }
         let mut cv = Self::with_capacity(vals.len(), util::needed_bits(max_int))?;
         for x in vals {
@@ -244,10 +245,10 @@ impl CompactVector {
             ));
         }
         // NOTE(kampersanda): set_bits should be safe.
-        Ok(self
-            .chunks
+        self.chunks
             .set_bits(pos * self.width, val, self.width)
-            .unwrap())
+            .unwrap();
+        Ok(())
     }
 
     /// Pushes integer `val` at the end.
@@ -309,7 +310,7 @@ impl CompactVector {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn extend<'a, I>(&mut self, vals: I) -> Result<()>
+    pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = usize>,
     {

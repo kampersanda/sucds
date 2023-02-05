@@ -640,7 +640,7 @@ impl EliasFanoBuilder {
     /// - `vals` is not monotone increasing (also compared to the current last value),
     /// - values in `vals` is no less than [`Self::universe()`], or
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
-    pub fn extend<'a, I>(&mut self, vals: I) -> Result<()>
+    pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = usize>,
     {
@@ -664,7 +664,7 @@ impl EliasFanoBuilder {
 
     /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
     #[inline(always)]
-    pub fn universe(&self) -> usize {
+    pub const fn universe(&self) -> usize {
         self.universe
     }
 

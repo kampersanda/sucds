@@ -110,13 +110,13 @@ impl RsBitVector {
 
     /// Gets the number of bits.
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.bv.len()
     }
 
     /// Checks if the vector is empty.
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

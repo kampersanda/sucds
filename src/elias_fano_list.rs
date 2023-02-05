@@ -85,9 +85,9 @@ impl EliasFanoList {
         }
         let mut universe = 0;
         for x in vals {
-            universe += x.to_usize().ok_or(anyhow!(
-                "vals must consist only of values castable into usize."
-            ))?;
+            universe += x
+                .to_usize()
+                .ok_or_else(|| anyhow!("vals must consist only of values castable into usize."))?;
         }
         let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
         let mut cur = 0;
