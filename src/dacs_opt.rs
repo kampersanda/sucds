@@ -454,6 +454,15 @@ mod tests {
     }
 
     #[test]
+    fn test_from_slice_uncastable() {
+        let e = DacsOpt::from_slice(&[u128::MAX], None);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("vals must consist only of values castable into usize.".to_string())
+        );
+    }
+
+    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
         let list = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
