@@ -272,12 +272,12 @@ impl CompactVector {
     /// use sucds::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
-    /// cv.append([2, 1, 3])?;
+    /// cv.extend([2, 1, 3])?;
     /// assert_eq!(cv.len(), 3);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn append<'a, I>(&mut self, vals: I) -> Result<()>
+    pub fn extend<'a, I>(&mut self, vals: I) -> Result<()>
     where
         I: IntoIterator<Item = usize>,
     {

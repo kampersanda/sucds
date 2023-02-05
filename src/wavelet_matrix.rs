@@ -30,7 +30,7 @@ use crate::{BitGetter, BitVector, CompactVector, Ranker, RsBitVector, Searial, S
 ///
 /// // It accepts an integer representable in 8 bits.
 /// let mut seq = CompactVector::new(8)?;
-/// seq.append(text.chars().map(|c| c as usize))?;
+/// seq.extend(text.chars().map(|c| c as usize))?;
 /// let wm = WaveletMatrix::new(seq)?;
 ///
 /// assert_eq!(wm.len(), len);
@@ -132,7 +132,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// assert_eq!(wm.access(2), Some('n' as usize));
@@ -180,7 +180,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
@@ -213,7 +213,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// assert_eq!(wm.rank_range(1..4, 'a' as usize), Some(2));
@@ -267,7 +267,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// assert_eq!(wm.select(1, 'a' as usize), Some(3));
@@ -326,7 +326,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// assert_eq!(wm.quantile(1..4, 0), Some('a' as usize)); // The 0th in "ana" should be "a"
@@ -385,7 +385,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// // Intersections among "ana", "na", and "ba".
@@ -497,7 +497,7 @@ impl WaveletMatrix {
     /// use sucds::{CompactVector, WaveletMatrix};
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.append("ban".chars().map(|c| c as usize))?;
+    /// seq.extend("ban".chars().map(|c| c as usize))?;
     /// let wm = WaveletMatrix::new(seq)?;
     ///
     /// let mut it = wm.iter();
@@ -600,7 +600,7 @@ mod test {
         let len = text.chars().count();
 
         let mut seq = CompactVector::new(8).unwrap();
-        seq.append(text.chars().map(|c| c as usize)).unwrap();
+        seq.extend(text.chars().map(|c| c as usize)).unwrap();
         let wm = WaveletMatrix::new(seq).unwrap();
 
         assert_eq!(wm.len(), len);
@@ -623,7 +623,7 @@ mod test {
     fn test_serialize() {
         let text = "tobeornottobethatisthequestion";
         let mut seq = CompactVector::new(8).unwrap();
-        seq.append(text.chars().map(|c| c as usize)).unwrap();
+        seq.extend(text.chars().map(|c| c as usize)).unwrap();
         let wm = WaveletMatrix::new(seq).unwrap();
 
         let mut bytes = vec![];
