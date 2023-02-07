@@ -8,7 +8,7 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 ## Documentation
 
-See https://docs.rs/sucds/ for supported data structures.
+https://docs.rs/sucds/
 
 ## Limitation
 
