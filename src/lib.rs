@@ -1,28 +1,75 @@
-//! # `sucds`: Succinct data structures in Rust
+//! # Succinct data structures in Rust
 //!
-//! `sucds` contains some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
+//! Sucds is a collection of [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure),
+//! powerful tools to store a variety of data structures in compressed space and
+//! quickly perform operations on the compressed data.
 //!
 //! ## Data structures
 //!
-//! So far, the following data structures are implemented. Most of them are yet another Rust ports of implementations of [C++ Succinct library by Ottaviano](https://github.com/ot/succinct).
-//! For a detailed description of each data structure, please see the [respective documentation](https://docs.rs/sucds/latest/sucds/).
+//! The current version supports the following data structures.
 //!
-//! - [`BitVector`]
-//!   - Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
-//! - [`CompactVector`]
-//!   - Compact vector in which each integer is represented in a fixed number of bits.
-//! - [`RsBitVector`]
-//!   - Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
-//! - [`DArray`]
-//!   - Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
-//! - [`EliasFano`]
-//!   - Compressed monotone sequence with Elias-Fano encoding.
-//! - [`EliasFanoList`]
-//!   - Compressed integer list with prefix-summed Elias-Fano encoding.
-//! - [`DacsOpt`] and [`DacsByte`]
-//!   - Compressed integer list with directly addressable codes.
-//! - [`WaveletMatrix`]
-//!   - Space-efficient data structure providing myriad operations over integer sequences.
+//! [Navarro's textbook](https://users.dcc.uchile.cl/~gnavarro/CDSbook/).
+//!
+//!
+//! ### Integer arrays
+//!
+//! Integer arrays consisting of small values can be stored in compressed space
+//! using *compressed integer arrays*.
+//! This crate provides the following variants:
+//!
+//! - [`CompactVector`]: Compact vector in which each integer is represented in a fixed number of bits.
+//! - [`EliasFanoList`]: Compressed integer list with prefix-summed Elias-Fano encoding.
+//! - [`DacsOpt`]: Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
+//! - [`DacsByte`]: Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
+//!
+//! #### Summary
+//!
+//! | Implementation | [Access](IntGetter) | Update | Space (bits) |
+//! | --- | :-: | :-: | :-: |
+//! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \log_2 u \rceil`$ |
+//! | [`EliasFanoList`] | $`O(1)`$ | -- | $`n \lceil \log_2 \frac{N}{n} \rceil + 2n + o(n)`$ |
+//! | [`DacsOpt`] | $`O(\ell_i / b)`$ | -- |   |
+//! | [`DacsByte`] | $`O(\ell_i / b)`$ | -- |   |
+//!
+//! ### Bit vectors
+//!
+//! Bit vectors and operations on them are fundamental to succinct data structures.
+//!
+//! [`BitVector`] implements a bit vector in a plain format that supports some operations
+//! such as update, predecessor/successor queries, and unary decoding.
+//!
+//! #### Rank/select queries
+//!
+//! *Rank/select queries* over bit vectors are core.
+//! Traits [`Ranker`] and [`Selector`] implement the operations.
+//!
+//!  - [`RsBitVector`]: Vigna's rank/select data structure built on [`BitVector`],
+//!    supporting constant-time rank and logarithmic-time select queries
+//!  - [`DArray`]: Constant-time select data structure by Okanohara and Sadakane
+//!
+//! #### Very sparse bit vectors
+//!
+//! [`EliasFano`] is a compressed representation for monotone-increasing sequences, or multisets of integers.
+//! Especially for sparse sequences, the representation can be very compact.
+//! Another attraction of Elias-Fano is a set of powerful search queries on the compressed representation,
+//! such as random access, binary searches, or rank/predecessor/successor queries.
+//!
+//! #### Summary
+//!
+//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Predecessor | Update | Space (bits) |
+//! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
+//! | [`BitVector`] | $`O(1)`$  | -- | -- | $`O(n)`$ | $`O(1)`$ | $`n`$ |
+//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\log n)`$ | $`O(\log n)`$ | -- | $`n + o(n)`$ |
+//! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`n + o(n)`$ |
+//! | [`EliasFano`] | $`O(1)`$ | $`O(\log \frac{u}{n})`$ | $`O(1)`$ | $`O(\log \frac{u}{n})`$ | -- | $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! ### Sequences
+//!
+//! [`WaveletMatrix`]
+//!
+//! ## Serialization/deserialization
+//!
+//! All the data structures
 //!
 //! ## Limitation
 //!

@@ -17,8 +17,11 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///
 /// This implements an Elias-Fano representation for monotone increasing sequences.
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
-/// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space.
-/// That is, a sparse sequence can be stored in a very compressed space.
+/// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space,
+/// indicating that a sparse sequence can be stored in a very compressed space.
+/// Another attraction of Elias-Fano is several search queries,
+/// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor), and [successor](EliasFano::successor),
+/// over the compressed representation.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
 /// The implementation of binary search is based on that in
@@ -42,6 +45,8 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// assert_eq!(ef.select1(1), Some(3));
 /// assert_eq!(ef.select1(2), Some(3));
 /// assert_eq!(ef.select1(3), Some(7));
+///
+/// assert_eq!(ef.binsearch(7), Some(3));
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
@@ -257,15 +262,15 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
-    /// assert_eq!(ef.find(6), Some(3));
-    /// assert_eq!(ef.find(10), Some(5));
-    /// assert_eq!(ef.find(9), None);
+    /// assert_eq!(ef.binsearch(6), Some(3));
+    /// assert_eq!(ef.binsearch(10), Some(5));
+    /// assert_eq!(ef.binsearch(9), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
-    pub fn find(&self, val: usize) -> Option<usize> {
-        self.find_range(0..self.len(), val)
+    pub fn binsearch(&self, val: usize) -> Option<usize> {
+        self.binsearch_range(0..self.len(), val)
     }
 
     /// Finds the position `k` such that `select(k) == val` and `k in range`.
@@ -291,14 +296,14 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
-    /// assert_eq!(ef.find_range(1..4, 6), Some(3));
-    /// assert_eq!(ef.find_range(5..6, 10), Some(5));
-    /// assert_eq!(ef.find_range(1..3, 6), None);
+    /// assert_eq!(ef.binsearch_range(1..4, 6), Some(3));
+    /// assert_eq!(ef.binsearch_range(5..6, 10), Some(5));
+    /// assert_eq!(ef.binsearch_range(1..3, 6), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
-    pub fn find_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+    pub fn binsearch_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
         if range.is_empty() {
             return None;
         }
