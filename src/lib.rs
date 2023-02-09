@@ -22,12 +22,17 @@
 //! - [`DacsOpt`]: Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 //! - [`DacsByte`]: Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 //!
+//! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be
+//!
+//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented for [`IntGetter`]).
+//! - $`\textrm{Update}(i)`$ modifies $`a_i`$.
+//!
 //! #### Summary
 //!
 //! | Implementation | [Access](IntGetter) | Update | Space (bits) |
 //! | --- | :-: | :-: | :-: |
-//! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \log_2 u \rceil`$ |
-//! | [`EliasFanoList`] | $`O(1)`$ | -- | $`n \lceil \log_2 \frac{N}{n} \rceil + 2n + o(n)`$ |
+//! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
+//! | [`EliasFanoList`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
 //! | [`DacsOpt`] | $`O(\ell_i / b)`$ | -- |   |
 //! | [`DacsByte`] | $`O(\ell_i / b)`$ | -- |   |
 //!
@@ -37,6 +42,18 @@
 //!
 //! [`BitVector`] implements a bit vector in a plain format that supports some operations
 //! such as update, predecessor/successor queries, and unary decoding.
+//!
+//! Let $`S \subseteq \{ 0,1,\dots,n-1 \}`$ be a set of positions
+//! at which bits are set in a bit vector of length $`n`$.
+//!
+//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented for [`BitGetter`]).
+//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \mid x \in S, x < i \}`$,
+//!   i.e., the number of integers in $`S`$ that are less than `i` (implemented for [`Ranker`]).
+//! - $`\textrm{Select}(k)`$ returns the position of the `k`-th smallest integer in $`S`$ (implemented for [`Selector`]).
+//! - $`\textrm{Predecessor}(i)`$ returns
+//! - $`\textrm{Successor}(i)`$ returns
+//! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
+//!
 //!
 //! #### Rank/select queries
 //!
@@ -56,12 +73,14 @@
 //!
 //! #### Summary
 //!
-//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Predecessor | Update | Space (bits) |
+//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Pred/Succ | Update | Space (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | -- | -- | $`O(n)`$ | $`O(1)`$ | $`n`$ |
-//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\log n)`$ | $`O(\log n)`$ | -- | $`n + o(n)`$ |
+//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg n)`$ | $`O(\lg n)`$ | -- | $`n + o(n)`$ |
 //! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`n + o(n)`$ |
-//! | [`EliasFano`] | $`O(1)`$ | $`O(\log \frac{u}{n})`$ | $`O(1)`$ | $`O(\log \frac{u}{n})`$ | -- | $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ |
+//! | [`EliasFano`] | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! ### Monotone-increasing sequences
 //!
 //! ### Sequences
 //!
@@ -109,16 +128,16 @@ pub use wavelet_matrix::WaveletMatrix;
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
 
-/// An interface for accessing elements on bit arrays.
-pub trait BitGetter {
-    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
-    fn get_bit(&self, pos: usize) -> Option<bool>;
-}
-
 /// An interface for accessing elements on integer arrays.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
+}
+
+/// An interface for accessing elements on bit arrays.
+pub trait BitGetter {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
 /// An interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
