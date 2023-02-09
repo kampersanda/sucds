@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, BitGetter, Ranker, Searial, Selector};
+use crate::{broadword, BitGetter, Predecessor, Ranker, Searial, Selector, Successor};
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -373,156 +373,6 @@ impl BitVector {
         Ok(())
     }
 
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set.
-    /// If not found, [`None`] is returned.
-    ///
-    /// # Arguments
-    ///
-    ///  - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([false, true, false, true]);
-    /// assert_eq!(bv.predecessor1(3), Some(3));
-    /// assert_eq!(bv.predecessor1(2), Some(1));
-    /// assert_eq!(bv.predecessor1(1), Some(1));
-    /// assert_eq!(bv.predecessor1(0), None);
-    /// ```
-    #[inline(always)]
-    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let mut block = pos / WORD_LEN;
-        let shift = WORD_LEN - pos % WORD_LEN - 1;
-        let mut word = (self.words[block] << shift) >> shift;
-        loop {
-            if let Some(ret) = broadword::msb(word) {
-                return Some(block * WORD_LEN + ret);
-            } else if block == 0 {
-                return None;
-            }
-            block -= 1;
-            word = self.words[block];
-        }
-    }
-
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set.
-    /// If not found, [`None`] is returned.
-    ///
-    /// # Arguments
-    ///
-    ///  - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([true, false, true, false]);
-    /// assert_eq!(bv.successor1(0), Some(0));
-    /// assert_eq!(bv.successor1(1), Some(2));
-    /// assert_eq!(bv.successor1(2), Some(2));
-    /// assert_eq!(bv.successor1(3), None);
-    /// ```
-    #[inline(always)]
-    pub fn successor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let mut block = pos / WORD_LEN;
-        let shift = pos % WORD_LEN;
-        let mut word = (self.words[block] >> shift) << shift;
-        loop {
-            if let Some(ret) = broadword::lsb(word) {
-                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
-            }
-            block += 1;
-            if block == self.words.len() {
-                return None;
-            }
-            word = self.words[block];
-        }
-    }
-
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set.
-    /// If not found, [`None`] is returned.
-    ///
-    /// # Arguments
-    ///
-    ///  - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([true, false, true, false]);
-    /// assert_eq!(bv.predecessor0(3), Some(3));
-    /// assert_eq!(bv.predecessor0(2), Some(1));
-    /// assert_eq!(bv.predecessor0(1), Some(1));
-    /// assert_eq!(bv.predecessor0(0), None);
-    /// ```
-    #[inline(always)]
-    pub fn predecessor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let mut block = pos / WORD_LEN;
-        let shift = WORD_LEN - pos % WORD_LEN - 1;
-        let mut word = (!self.words[block] << shift) >> shift;
-        loop {
-            if let Some(ret) = broadword::msb(word) {
-                return Some(block * WORD_LEN + ret);
-            } else if block == 0 {
-                return None;
-            }
-            block -= 1;
-            word = !self.words[block];
-        }
-    }
-
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set.
-    /// If not found, [`None`] is returned.
-    ///
-    /// # Arguments
-    ///
-    ///  - `pos`: Bit position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::BitVector;
-    ///
-    /// let bv = BitVector::from_bits([false, true, false, true]);
-    /// assert_eq!(bv.successor0(0), Some(0));
-    /// assert_eq!(bv.successor0(1), Some(2));
-    /// assert_eq!(bv.successor0(2), Some(2));
-    /// assert_eq!(bv.successor0(3), None);
-    /// ```
-    #[inline(always)]
-    pub fn successor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let mut block = pos / WORD_LEN;
-        let shift = pos % WORD_LEN;
-        let mut word = (!self.words[block] >> shift) << shift;
-        loop {
-            if let Some(ret) = broadword::lsb(word) {
-                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
-            }
-            block += 1;
-            if block == self.words.len() {
-                return None;
-            }
-            word = !self.words[block];
-        }
-    }
-
     /// Creates an iterator for enumerating bits.
     ///
     /// # Examples
@@ -763,6 +613,172 @@ impl Selector for BitVector {
         // NOTE(kampersanda): sel can be no less than self.len() because overflowed bits are
         // initialized by zero and can be considered by select0.
         (sel < self.len()).then(|| sel)
+    }
+}
+
+impl Predecessor for BitVector {
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
+    /// [`None`] if not found or out of bounds.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Predecessor};
+    ///
+    /// let bv = BitVector::from_bits([false, true, false, true]);
+    /// assert_eq!(bv.predecessor1(3), Some(3));
+    /// assert_eq!(bv.predecessor1(2), Some(1));
+    /// assert_eq!(bv.predecessor1(1), Some(1));
+    /// assert_eq!(bv.predecessor1(0), None);
+    /// ```
+    fn predecessor1(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut block = pos / WORD_LEN;
+        let shift = WORD_LEN - pos % WORD_LEN - 1;
+        let mut word = (self.words[block] << shift) >> shift;
+        loop {
+            if let Some(ret) = broadword::msb(word) {
+                return Some(block * WORD_LEN + ret);
+            } else if block == 0 {
+                return None;
+            }
+            block -= 1;
+            word = self.words[block];
+        }
+    }
+
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set, or
+    /// [`None`] if not found or out of bounds.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Predecessor};
+    ///
+    /// let bv = BitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.predecessor0(3), Some(3));
+    /// assert_eq!(bv.predecessor0(2), Some(1));
+    /// assert_eq!(bv.predecessor0(1), Some(1));
+    /// assert_eq!(bv.predecessor0(0), None);
+    /// ```
+    fn predecessor0(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut block = pos / WORD_LEN;
+        let shift = WORD_LEN - pos % WORD_LEN - 1;
+        let mut word = (!self.words[block] << shift) >> shift;
+        loop {
+            if let Some(ret) = broadword::msb(word) {
+                return Some(block * WORD_LEN + ret);
+            } else if block == 0 {
+                return None;
+            }
+            block -= 1;
+            word = !self.words[block];
+        }
+    }
+}
+
+impl Successor for BitVector {
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
+    /// [`None`] if not found or out of bounds.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Successor};
+    ///
+    /// let bv = BitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.successor1(0), Some(0));
+    /// assert_eq!(bv.successor1(1), Some(2));
+    /// assert_eq!(bv.successor1(2), Some(2));
+    /// assert_eq!(bv.successor1(3), None);
+    /// ```
+    fn successor1(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut block = pos / WORD_LEN;
+        let shift = pos % WORD_LEN;
+        let mut word = (self.words[block] >> shift) << shift;
+        loop {
+            if let Some(ret) = broadword::lsb(word) {
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
+            }
+            block += 1;
+            if block == self.words.len() {
+                return None;
+            }
+            word = self.words[block];
+        }
+    }
+
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set, or
+    /// [`None`] if not found or out of bounds.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Successor};
+    ///
+    /// let bv = BitVector::from_bits([false, true, false, true]);
+    /// assert_eq!(bv.successor0(0), Some(0));
+    /// assert_eq!(bv.successor0(1), Some(2));
+    /// assert_eq!(bv.successor0(2), Some(2));
+    /// assert_eq!(bv.successor0(3), None);
+    /// ```
+    fn successor0(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let mut block = pos / WORD_LEN;
+        let shift = pos % WORD_LEN;
+        let mut word = (!self.words[block] >> shift) << shift;
+        loop {
+            if let Some(ret) = broadword::lsb(word) {
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
+            }
+            block += 1;
+            if block == self.words.len() {
+                return None;
+            }
+            word = !self.words[block];
+        }
     }
 }
 
