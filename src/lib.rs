@@ -82,7 +82,9 @@ pub trait Ranker {
 
     /// Returns the cardinality of $`\{ x \mid x \not\in S, 0 \leq x < i \}`$, i.e.,
     /// the number of integers not in $`S`$ that are less than `i`.
-    fn rank0(&self, i: usize) -> Option<usize>;
+    fn rank0(&self, i: usize) -> Option<usize> {
+        Some(i - self.rank1(i)?)
+    }
 }
 
 /// An interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.

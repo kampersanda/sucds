@@ -292,29 +292,6 @@ impl Ranker for RsBitVector {
         }
         Some(r)
     }
-
-    /// Returns the number of zeros from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{Ranker, RsBitVector};
-    ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
-    /// assert_eq!(bv.rank0(1), Some(0));
-    /// assert_eq!(bv.rank0(2), Some(1));
-    /// assert_eq!(bv.rank0(3), Some(2));
-    /// assert_eq!(bv.rank0(4), Some(2));
-    /// assert_eq!(bv.rank0(5), None);
-    /// ```
-    fn rank0(&self, pos: usize) -> Option<usize> {
-        Some(pos - self.rank1(pos)?)
-    }
 }
 
 impl Selector for RsBitVector {

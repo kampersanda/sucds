@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, BitGetter, Searial};
+use crate::{broadword, BitGetter, Ranker, Searial, Selector};
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -653,6 +653,116 @@ impl BitGetter for BitVector {
         } else {
             None
         }
+    }
+}
+
+impl Ranker for BitVector {
+    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
+    /// [`None`] if out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Ranker};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.rank1(1), Some(1));
+    /// assert_eq!(bv.rank1(2), Some(1));
+    /// assert_eq!(bv.rank1(3), Some(1));
+    /// assert_eq!(bv.rank1(4), Some(2));
+    /// assert_eq!(bv.rank1(5), None);
+    /// ```
+    fn rank1(&self, pos: usize) -> Option<usize> {
+        if self.len() < pos {
+            return None;
+        }
+        let mut r = 0;
+        let (wpos, left) = (pos / WORD_LEN, pos % WORD_LEN);
+        for &w in &self.words[..wpos] {
+            r += broadword::popcount(w);
+        }
+        if left != 0 {
+            r += broadword::popcount(self.words[wpos] << (WORD_LEN - left));
+        }
+        Some(r)
+    }
+}
+
+impl Selector for BitVector {
+    /// Searches the position of the `k`-th bit set.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Selector};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.select1(0), Some(0));
+    /// assert_eq!(bv.select1(1), Some(3));
+    /// assert_eq!(bv.select1(2), None);
+    /// ```
+    fn select1(&self, k: usize) -> Option<usize> {
+        let mut wpos = 0;
+        let mut cur_rank = 0;
+        while wpos < self.words.len() {
+            let cnt = broadword::popcount(self.words[wpos]);
+            if k < cur_rank + cnt {
+                break;
+            }
+            wpos += 1;
+            cur_rank += cnt;
+        }
+        if wpos == self.words.len() {
+            return None;
+        }
+        let sel =
+            wpos * WORD_LEN + broadword::select_in_word(self.words[wpos], k - cur_rank).unwrap();
+        Some(sel)
+    }
+
+    /// Searches the position of the `k`-th bit unset.
+    ///
+    /// # Complexity
+    ///
+    /// - Linear
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{BitVector, Selector};
+    ///
+    /// let bv = BitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.select0(0), Some(1));
+    /// assert_eq!(bv.select0(1), Some(2));
+    /// assert_eq!(bv.select0(2), None);
+    /// ```
+    fn select0(&self, k: usize) -> Option<usize> {
+        let mut wpos = 0;
+        let mut cur_rank = 0;
+        while wpos < self.words.len() {
+            let cnt = broadword::popcount(!self.words[wpos]);
+            if k < cur_rank + cnt {
+                break;
+            }
+            wpos += 1;
+            cur_rank += cnt;
+        }
+        if wpos == self.words.len() {
+            return None;
+        }
+        let sel =
+            wpos * WORD_LEN + broadword::select_in_word(!self.words[wpos], k - cur_rank).unwrap();
+        // NOTE(kampersanda): sel can be no less than self.len() because overflowed bits are
+        // initialized by zero and can be considered by select0.
+        (sel < self.len()).then(|| sel)
     }
 }
 
