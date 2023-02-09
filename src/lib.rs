@@ -96,3 +96,27 @@ pub trait Selector {
     /// where $`S^{-1} = \{ 0,1,\dots,n-1 \} \setminus S`$.
     fn select0(&self, k: usize) -> Option<usize>;
 }
+
+/// An interface for predecessor queries on a sequence of $`n`$ integers $`S = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`x_i \leq x_{i+1}`$.
+pub trait Predecessor {
+    /// Returns the largest element $`x_k`$ such that $`x_k \leq x`$, or
+    /// [`None`] if there is no such an element.
+    fn predecessor1(&self, x: usize) -> Option<usize>;
+
+    /// Returns the largest integer $`x'`$ such that $`0 \leq x' \leq x`$ and $`x' \not\in S`$, or
+    /// [`None`] if there is no such an element.
+    fn predecessor0(&self, x: usize) -> Option<usize>;
+}
+
+/// An interface for successor queries on a sequence of $`n`$ integers $`S = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`x_i \leq x_{i+1}`$.
+pub trait Successor {
+    /// Returns the smallest element $`x_k`$ such that $`x \leq x_k`$, or
+    /// [`None`] if there is no such an element.
+    fn successor1(&self, x: usize) -> Option<usize>;
+
+    /// Returns the smallest integer $`x'`$ such that $`x \leq x' \leq x_{n-1}`$ and $`x' \not\in S`$, or
+    /// [`None`] if there is no such an element.
+    fn successor0(&self, x: usize) -> Option<usize>;
+}
