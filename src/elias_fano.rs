@@ -118,7 +118,7 @@ impl EliasFano {
     }
 
     /// Builds an index to enable operations [`EliasFano::rank1()`],
-    /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
+    /// [`EliasFano::predecessor1()`], and [`EliasFano::successor1()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
@@ -421,7 +421,8 @@ impl Selector for EliasFano {
 }
 
 impl Predecessor for EliasFano {
-    /// Gets the largest integer `pred` such that `pred <= pos`.
+    /// Gets the largest element `pred` such that `pred <= pos`, or
+    /// [`None`] if not found or out of bounds.
     ///
     /// # Arguments
     ///
@@ -465,7 +466,8 @@ impl Predecessor for EliasFano {
 }
 
 impl Successor for EliasFano {
-    /// Gets the smallest integer `succ` such that `succ >= pos`.
+    /// Gets the smallest element `succ` such that `succ >= pos`, or
+    /// [`None`] if not found or out of bounds.
     ///
     /// # Arguments
     ///
