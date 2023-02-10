@@ -18,7 +18,7 @@
 //! This crate provides the following variants:
 //!
 //! - [`CompactVector`]: Compact vector in which each integer is represented in a fixed number of bits.
-//! - [`EliasFanoList`]: Compressed integer list with prefix-summed Elias-Fano encoding.
+//! - [`PrefixSummedEliasFano`]: Compressed integer list with prefix-summed Elias-Fano encoding.
 //! - [`DacsOpt`]: Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 //! - [`DacsByte`]: Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 //!
@@ -32,7 +32,7 @@
 //! | Implementation | [Access](IntGetter) | Update | Space (bits) |
 //! | --- | :-: | :-: | :-: |
 //! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
-//! | [`EliasFanoList`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
+//! | [`PrefixSummedEliasFano`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
 //! | [`DacsOpt`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
 //! | [`DacsByte`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
 //!
