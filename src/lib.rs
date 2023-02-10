@@ -97,26 +97,26 @@ pub trait Selector {
     fn select0(&self, k: usize) -> Option<usize>;
 }
 
-/// An interface for predecessor queries on a sequence of $`n`$ integers $`S = (x_0, x_1, \dots, x_{n-1})`$
-/// such that $`x_i \leq x_{i+1}`$.
+/// An interface for predecessor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
 pub trait Predecessor {
-    /// Returns the largest element $`x_k`$ such that $`x_k \leq x`$, or
-    /// [`None`] if there is no such an element.
+    /// Returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$, or
+    /// [`None`] if not found or $`u \leq x`$.
     fn predecessor1(&self, x: usize) -> Option<usize>;
 
-    /// Returns the largest integer $`x'`$ such that $`0 \leq x' \leq x`$ and $`x' \not\in S`$, or
-    /// [`None`] if there is no such an element.
+    /// Returns the largest integer $`x' \not\in X`$ such that $`x' \leq x`$, or
+    /// [`None`] if not found or $`u \leq x`$.
     fn predecessor0(&self, x: usize) -> Option<usize>;
 }
 
-/// An interface for successor queries on a sequence of $`n`$ integers $`S = (x_0, x_1, \dots, x_{n-1})`$
-/// such that $`x_i \leq x_{i+1}`$.
+/// An interface for successor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
 pub trait Successor {
-    /// Returns the smallest element $`x_k`$ such that $`x \leq x_k`$, or
-    /// [`None`] if there is no such an element.
+    /// Returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$, or
+    /// [`None`] if not found or $`u \leq x`$.
     fn successor1(&self, x: usize) -> Option<usize>;
 
-    /// Returns the smallest integer $`x'`$ such that $`x \leq x' \leq x_{n-1}`$ and $`x' \not\in S`$, or
-    /// [`None`] if there is no such an element.
+    /// Returns the smallest element $`x_k \not\in X`$ such that $`x \leq x'`$, or
+    /// [`None`] if not found or $`u \leq x`$.
     fn successor0(&self, x: usize) -> Option<usize>;
 }
