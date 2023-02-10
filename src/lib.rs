@@ -33,8 +33,8 @@
 //! | --- | :-: | :-: | :-: |
 //! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
 //! | [`EliasFanoList`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
-//! | [`DacsOpt`] | $`O(\ell_i / b)`$ | -- |   |
-//! | [`DacsByte`] | $`O(\ell_i / b)`$ | -- |   |
+//! | [`DacsOpt`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
+//! | [`DacsByte`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
 //!
 //! ### Bit vectors
 //!
@@ -73,9 +73,9 @@
 //!
 //! #### Summary
 //!
-//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Pred/Succ | Update | Space (bits) |
+//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Update | Space (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
-//! | [`BitVector`] | $`O(1)`$  | -- | -- | $`O(n)`$ | $`O(1)`$ | $`n`$ |
+//! | [`BitVector`] | $`O(1)`$  | $`O(n)`$ | $`O(n)`$ | $`O(n)`$ | $`O(1)`$ | $`n`$ |
 //! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg n)`$ | $`O(\lg n)`$ | -- | $`n + o(n)`$ |
 //! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`n + o(n)`$ |
 //! | [`EliasFano`] | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |

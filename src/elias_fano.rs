@@ -23,7 +23,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space,
 /// indicating that a sparse sequence can be stored in a very compressed space.
 /// Another attraction of Elias-Fano is several search queries,
-/// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor), and [successor](EliasFano::successor),
+/// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor1), and [successor](EliasFano::successor1),
 /// over the compressed representation.
 ///
 /// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
