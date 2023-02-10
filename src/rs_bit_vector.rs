@@ -5,7 +5,10 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{bit_vector::Iter, broadword, BitGetter, BitVector, Ranker, Searial, Selector};
+use crate::{
+    bit_vector::Iter, broadword, BitGetter, BitVector, Predecessor, Ranker, Searial, Selector,
+    Successor,
+};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -259,8 +262,8 @@ impl BitGetter for RsBitVector {
 }
 
 impl Ranker for RsBitVector {
-    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -293,8 +296,8 @@ impl Ranker for RsBitVector {
         Some(r)
     }
 
-    /// Returns the number of zeros from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -318,7 +321,8 @@ impl Ranker for RsBitVector {
 }
 
 impl Selector for RsBitVector {
-    /// Searches the position of the `k`-th bit set.
+    /// Searches the position of the `k`-th bit set, or
+    /// [`None`] if `self.num_ones() <= k`.
     ///
     /// # Complexity
     ///
@@ -380,7 +384,8 @@ impl Selector for RsBitVector {
         Some(sel)
     }
 
-    /// Searches the position of the `k`-th bit unset.
+    /// Searches the position of the `k`-th bit unset, or
+    /// [`None`] if `self.num_zeros() <= k`.
     ///
     /// # Complexity
     ///
@@ -440,6 +445,130 @@ impl Selector for RsBitVector {
         let sel = word_offset * 64
             + broadword::select_in_word(!self.bv.words()[word_offset], k - cur_rank).unwrap();
         Some(sel)
+    }
+}
+
+impl Predecessor for RsBitVector {
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Predecessor};
+    ///
+    /// let bv = RsBitVector::from_bits([false, true, false, true]);
+    /// assert_eq!(bv.predecessor1(3), Some(3));
+    /// assert_eq!(bv.predecessor1(2), Some(1));
+    /// assert_eq!(bv.predecessor1(1), Some(1));
+    /// assert_eq!(bv.predecessor1(0), None);
+    /// ```
+    fn predecessor1(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank1(pos + 1).unwrap();
+        (k != 0).then(|| self.select1(k - 1).unwrap())
+    }
+
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Predecessor};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.predecessor0(3), Some(3));
+    /// assert_eq!(bv.predecessor0(2), Some(1));
+    /// assert_eq!(bv.predecessor0(1), Some(1));
+    /// assert_eq!(bv.predecessor0(0), None);
+    /// ```
+    fn predecessor0(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank0(pos + 1).unwrap();
+        (k != 0).then(|| self.select0(k - 1).unwrap())
+    }
+}
+
+impl Successor for RsBitVector {
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Successor};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, true, false]);
+    /// assert_eq!(bv.successor1(0), Some(0));
+    /// assert_eq!(bv.successor1(1), Some(2));
+    /// assert_eq!(bv.successor1(2), Some(2));
+    /// assert_eq!(bv.successor1(3), None);
+    /// ```
+    fn successor1(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank1(pos).unwrap();
+        (k < self.num_ones()).then(|| self.select1(k).unwrap())
+    }
+
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Logarithmic
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{RsBitVector, Successor};
+    ///
+    /// let bv = RsBitVector::from_bits([false, true, false, true]);
+    /// assert_eq!(bv.successor0(0), Some(0));
+    /// assert_eq!(bv.successor0(1), Some(2));
+    /// assert_eq!(bv.successor0(2), Some(2));
+    /// assert_eq!(bv.successor0(3), None);
+    /// ```
+    fn successor0(&self, pos: usize) -> Option<usize> {
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank0(pos).unwrap();
+        (k < self.num_zeros()).then(|| self.select0(k).unwrap())
     }
 }
 
