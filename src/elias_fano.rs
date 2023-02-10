@@ -346,7 +346,8 @@ impl Ranker for EliasFano {
     fn rank1(&self, pos: usize) -> Option<usize> {
         if self.universe() < pos {
             return None;
-        } else if self.universe() == pos {
+        }
+        if self.universe() == pos {
             return Some(self.len());
         }
 
