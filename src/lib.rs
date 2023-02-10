@@ -83,9 +83,7 @@ pub trait Ranker {
 
     /// Returns the number of integers $`x' \not\in X`$ such that $`0 \leq x' < x`$,
     /// or [`None`] if $`u < x`$.
-    fn rank0(&self, x: usize) -> Option<usize> {
-        Some(x - self.rank1(x)?)
-    }
+    fn rank0(&self, x: usize) -> Option<usize>;
 }
 
 /// Interface for select queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
