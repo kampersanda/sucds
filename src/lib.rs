@@ -62,19 +62,19 @@ pub use wavelet_matrix::WaveletMatrix;
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
 
-/// An interface for accessing elements on bit arrays.
+/// Interface for accessing elements on bit arrays.
 pub trait BitGetter {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
-/// An interface for accessing elements on integer arrays.
+/// Interface for accessing elements on integer arrays.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
 }
 
-/// An interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+/// Interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
 pub trait Ranker {
     /// Returns the cardinality of $`\{ x \mid x \in S, x < i \}`$, i.e.,
     /// the number of integers in $`S`$ that are less than `i`.
@@ -87,7 +87,7 @@ pub trait Ranker {
     }
 }
 
-/// An interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+/// Interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
 pub trait Selector {
     /// Returns the position of the `k`-th smallest integer in $`S`$.
     fn select1(&self, k: usize) -> Option<usize>;
@@ -97,7 +97,7 @@ pub trait Selector {
     fn select0(&self, k: usize) -> Option<usize>;
 }
 
-/// An interface for predecessor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for predecessor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
 pub trait Predecessor {
     /// Returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$, or
@@ -109,7 +109,7 @@ pub trait Predecessor {
     fn predecessor0(&self, x: usize) -> Option<usize>;
 }
 
-/// An interface for successor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for successor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
 pub trait Successor {
     /// Returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$, or
