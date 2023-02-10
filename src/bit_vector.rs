@@ -507,8 +507,8 @@ impl BitGetter for BitVector {
 }
 
 impl Ranker for BitVector {
-    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -541,8 +541,8 @@ impl Ranker for BitVector {
         Some(r)
     }
 
-    /// Returns the number of zeros from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -566,7 +566,8 @@ impl Ranker for BitVector {
 }
 
 impl Selector for BitVector {
-    /// Searches the position of the `k`-th bit set.
+    /// Searches the position of the `k`-th bit set, or
+    /// [`None`] if `k` is no less than the number of ones.
     ///
     /// # Complexity
     ///
@@ -601,7 +602,8 @@ impl Selector for BitVector {
         Some(sel)
     }
 
-    /// Searches the position of the `k`-th bit unset.
+    /// Searches the position of the `k`-th bit unset, or
+    /// [`None`] if `k` is no less than the number of zeros.
     ///
     /// # Complexity
     ///
@@ -641,7 +643,7 @@ impl Selector for BitVector {
 
 impl Predecessor for BitVector {
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or out of bounds.
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///
@@ -680,8 +682,8 @@ impl Predecessor for BitVector {
         }
     }
 
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is not set, or
-    /// [`None`] if not found or out of bounds.
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///
@@ -723,7 +725,7 @@ impl Predecessor for BitVector {
 
 impl Successor for BitVector {
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or out of bounds.
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///
@@ -763,8 +765,8 @@ impl Successor for BitVector {
         }
     }
 
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is not set, or
-    /// [`None`] if not found or out of bounds.
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///

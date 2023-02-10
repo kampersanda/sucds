@@ -259,8 +259,8 @@ impl BitGetter for RsBitVector {
 }
 
 impl Ranker for RsBitVector {
-    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -293,8 +293,8 @@ impl Ranker for RsBitVector {
         Some(r)
     }
 
-    /// Returns the number of zeros from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -318,7 +318,8 @@ impl Ranker for RsBitVector {
 }
 
 impl Selector for RsBitVector {
-    /// Searches the position of the `k`-th bit set.
+    /// Searches the position of the `k`-th bit set, or
+    /// [`None`] if `self.num_ones() <= k`.
     ///
     /// # Complexity
     ///
@@ -380,7 +381,8 @@ impl Selector for RsBitVector {
         Some(sel)
     }
 
-    /// Searches the position of the `k`-th bit unset.
+    /// Searches the position of the `k`-th bit unset, or
+    /// [`None`] if `self.num_zeros() <= k`.
     ///
     /// # Complexity
     ///

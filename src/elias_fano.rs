@@ -315,7 +315,8 @@ impl EliasFano {
 }
 
 impl Ranker for EliasFano {
-    /// Returns the number of integers less than `pos` (and never [`None`]).
+    /// Returns the number of integers less than `pos`, or
+    /// [`None`] if `self.universe() < pos`.
     ///
     /// # Complexity
     ///
@@ -335,20 +336,21 @@ impl Ranker for EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
-    /// assert_eq!(ef.rank1(1), Some(0));
-    /// assert_eq!(ef.rank1(2), Some(1));
     /// assert_eq!(ef.rank1(3), Some(1));
     /// assert_eq!(ef.rank1(4), Some(3));
+    /// assert_eq!(ef.rank1(8), Some(4));
+    /// assert_eq!(ef.rank1(9), None);
     /// # Ok(())
     /// # }
     /// ```
     fn rank1(&self, pos: usize) -> Option<usize> {
-        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
-
-        if pos > self.universe() {
+        if self.universe() < pos {
+            return None;
+        } else if self.universe() == pos {
             return Some(self.len());
         }
 
+        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
         let h_rank = pos >> self.low_len;
         let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
         let mut rank = h_pos - h_rank;
@@ -376,7 +378,8 @@ impl Ranker for EliasFano {
 }
 
 impl Selector for EliasFano {
-    /// Returns the position of the `k`-th smallest integer.
+    /// Returns the position of the `k`-th smallest integer, or
+    /// [`None`] if `self.len() <= k`.
     ///
     /// # Complexity
     ///
@@ -422,7 +425,7 @@ impl Selector for EliasFano {
 
 impl Predecessor for EliasFano {
     /// Gets the largest element `pred` such that `pred <= pos`, or
-    /// [`None`] if not found or out of bounds.
+    /// [`None`] if `self.universe() <= pos`.
     ///
     /// # Arguments
     ///
@@ -467,7 +470,7 @@ impl Predecessor for EliasFano {
 
 impl Successor for EliasFano {
     /// Gets the smallest element `succ` such that `succ >= pos`, or
-    /// [`None`] if not found or out of bounds.
+    /// [`None`] if `self.universe() <= pos`.
     ///
     /// # Arguments
     ///
