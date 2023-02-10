@@ -9,7 +9,10 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
-use crate::{broadword, darray::DArrayIndex, BitGetter, BitVector, Ranker, Searial, Selector};
+use crate::{
+    broadword, darray::DArrayIndex, BitGetter, BitVector, Predecessor, Ranker, Searial, Selector,
+    Successor,
+};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -28,7 +31,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{EliasFanoBuilder, Ranker, Selector};
+/// use sucds::{EliasFanoBuilder, Predecessor, Ranker, Selector, Successor};
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
 /// efb.extend([1, 3, 3, 7])?;
@@ -50,10 +53,13 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// assert_eq!(ef.rank1(3), Some(1));
 /// assert_eq!(ef.rank1(4), Some(3));
 ///
-/// assert_eq!(ef.predecessor(4), Some(3));
-/// assert_eq!(ef.predecessor(3), Some(3));
-/// assert_eq!(ef.successor(3), Some(3));
-/// assert_eq!(ef.successor(4), Some(7));
+/// // Need Predecessor
+/// assert_eq!(ef.predecessor1(4), Some(3));
+/// assert_eq!(ef.predecessor1(3), Some(3));
+///
+/// // Need Successor
+/// assert_eq!(ef.successor1(3), Some(3));
+/// assert_eq!(ef.successor1(4), Some(7));
 /// # Ok(())
 /// # }
 /// ```
@@ -112,79 +118,11 @@ impl EliasFano {
     }
 
     /// Builds an index to enable operations [`EliasFano::rank1()`],
-    /// [`EliasFano::predecessor()`], and [`EliasFano::successor()`].
+    /// [`EliasFano::predecessor1()`], and [`EliasFano::successor1()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
         self
-    }
-
-    /// Gets the largest integer `pred` such that `pred <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Predecessor query.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build().enable_rank();
-    ///
-    /// assert_eq!(ef.predecessor(4), Some(3));
-    /// assert_eq!(ef.predecessor(3), Some(3));
-    /// assert_eq!(ef.predecessor(2), Some(1));
-    /// assert_eq!(ef.predecessor(0), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[inline(always)]
-    pub fn predecessor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank1(pos + 1).unwrap())
-            .filter(|&i| i > 0)
-            .map(|i| self.select1(i - 1).unwrap())
-    }
-
-    /// Gets the smallest integer `succ` such that `succ >= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Successor query.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build().enable_rank();
-    ///
-    /// assert_eq!(ef.successor(0), Some(1));
-    /// assert_eq!(ef.successor(2), Some(3));
-    /// assert_eq!(ef.successor(3), Some(3));
-    /// assert_eq!(ef.successor(8), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[inline(always)]
-    pub fn successor(&self, pos: usize) -> Option<usize> {
-        Some(self.rank1(pos).unwrap())
-            .filter(|&i| i < self.len())
-            .map(|i| self.select1(i).unwrap())
     }
 
     /// Gets the difference between the `k-1`-th and `k`-th integers
@@ -377,7 +315,8 @@ impl EliasFano {
 }
 
 impl Ranker for EliasFano {
-    /// Returns the number of integers less than `pos` (and never [`None`]).
+    /// Returns the number of integers less than `pos`, or
+    /// [`None`] if `self.universe() < pos`.
     ///
     /// # Complexity
     ///
@@ -397,20 +336,22 @@ impl Ranker for EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
-    /// assert_eq!(ef.rank1(1), Some(0));
-    /// assert_eq!(ef.rank1(2), Some(1));
     /// assert_eq!(ef.rank1(3), Some(1));
     /// assert_eq!(ef.rank1(4), Some(3));
+    /// assert_eq!(ef.rank1(8), Some(4));
+    /// assert_eq!(ef.rank1(9), None);
     /// # Ok(())
     /// # }
     /// ```
     fn rank1(&self, pos: usize) -> Option<usize> {
-        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
-
-        if pos > self.universe() {
+        if self.universe() < pos {
+            return None;
+        }
+        if self.universe() == pos {
             return Some(self.len());
         }
 
+        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
         let h_rank = pos >> self.low_len;
         let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
         let mut rank = h_pos - h_rank;
@@ -438,7 +379,8 @@ impl Ranker for EliasFano {
 }
 
 impl Selector for EliasFano {
-    /// Returns the position of the `k`-th smallest integer.
+    /// Returns the position of the `k`-th smallest integer, or
+    /// [`None`] if `self.len() <= k`.
     ///
     /// # Complexity
     ///
@@ -478,6 +420,96 @@ impl Selector for EliasFano {
 
     /// Panics always because this operation is not supported.
     fn select0(&self, _k: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
+    }
+}
+
+impl Predecessor for EliasFano {
+    /// Gets the largest element `pred` such that `pred <= pos`, or
+    /// [`None`] if `self.universe() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Predecessor query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{EliasFanoBuilder, Predecessor};
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.predecessor1(4), Some(3));
+    /// assert_eq!(ef.predecessor1(3), Some(3));
+    /// assert_eq!(ef.predecessor1(2), Some(1));
+    /// assert_eq!(ef.predecessor1(0), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn predecessor1(&self, pos: usize) -> Option<usize> {
+        if self.universe() <= pos {
+            None
+        } else {
+            Some(self.rank1(pos + 1).unwrap())
+                .filter(|&i| i > 0)
+                .map(|i| self.select1(i - 1).unwrap())
+        }
+    }
+
+    /// Panics always because this operation is not supported.
+    fn predecessor0(&self, _pos: usize) -> Option<usize> {
+        panic!("This operation is not supported.");
+    }
+}
+
+impl Successor for EliasFano {
+    /// Gets the smallest element `succ` such that `succ >= pos`, or
+    /// [`None`] if `self.universe() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Successor query.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::{EliasFanoBuilder, Successor};
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.successor1(0), Some(1));
+    /// assert_eq!(ef.successor1(2), Some(3));
+    /// assert_eq!(ef.successor1(3), Some(3));
+    /// assert_eq!(ef.successor1(8), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn successor1(&self, pos: usize) -> Option<usize> {
+        if self.universe() <= pos {
+            None
+        } else {
+            Some(self.rank1(pos).unwrap())
+                .filter(|&i| i < self.len())
+                .map(|i| self.select1(i).unwrap())
+        }
+    }
+
+    /// Panics always because this operation is not supported.
+    fn successor0(&self, _pos: usize) -> Option<usize> {
         panic!("This operation is not supported.");
     }
 }

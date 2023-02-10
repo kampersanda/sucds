@@ -259,8 +259,8 @@ impl BitGetter for RsBitVector {
 }
 
 impl Ranker for RsBitVector {
-    /// Returns the number of ones from the zeroth bit to the `pos-1`-th bit, or
-    /// [`None`] if out of bounds.
+    /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -292,10 +292,34 @@ impl Ranker for RsBitVector {
         }
         Some(r)
     }
+
+    /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
+    /// [`None`] if `self.len() < pos`.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{Ranker, RsBitVector};
+    ///
+    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// assert_eq!(bv.rank0(1), Some(0));
+    /// assert_eq!(bv.rank0(2), Some(1));
+    /// assert_eq!(bv.rank0(3), Some(2));
+    /// assert_eq!(bv.rank0(4), Some(2));
+    /// assert_eq!(bv.rank0(5), None);
+    /// ```
+    fn rank0(&self, pos: usize) -> Option<usize> {
+        Some(pos - self.rank1(pos)?)
+    }
 }
 
 impl Selector for RsBitVector {
-    /// Searches the position of the `k`-th bit set.
+    /// Searches the position of the `k`-th bit set, or
+    /// [`None`] if `self.num_ones() <= k`.
     ///
     /// # Complexity
     ///
@@ -357,7 +381,8 @@ impl Selector for RsBitVector {
         Some(sel)
     }
 
-    /// Searches the position of the `k`-th bit unset.
+    /// Searches the position of the `k`-th bit unset, or
+    /// [`None`] if `self.num_zeros() <= k`.
     ///
     /// # Complexity
     ///

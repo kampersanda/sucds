@@ -22,6 +22,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 /// let da = DArray::from_bits([true, false, false, true]);
 ///
+/// // Need Selector
 /// assert_eq!(da.select1(0), Some(0));
 /// assert_eq!(da.select1(1), Some(3));
 /// ```
@@ -37,11 +38,11 @@ pub struct DArray {
 }
 
 impl DArray {
-    /// Creates a new [`DArray`] from input bitset `bits`.
+    /// Creates a new instance from bit positions set in `bits`.
     ///
     /// # Arguments
     ///
-    /// - `bits`: List of bits.
+    /// - `bits`: Bit stream.
     pub fn from_bits<I>(bits: I) -> Self
     where
         I: IntoIterator<Item = bool>,
@@ -85,7 +86,8 @@ impl DArray {
 }
 
 impl Selector for DArray {
-    /// Returns the position of the `k`-th smallest integer.
+    /// Returns the `k`-th smallest integer, or
+    /// [`None`] if `self.len() <= k`.
     ///
     /// # Complexity
     ///
@@ -187,7 +189,7 @@ impl DArrayIndex {
     /// ```
     #[inline(always)]
     pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
-        if self.num_positions <= k {
+        if self.len() <= k {
             return None;
         }
 

@@ -23,10 +23,10 @@ use crate::{util, BitVector, IntGetter, Searial};
 /// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
-/// assert_eq!(cv.get_int(0), Some(7)); // Need IntGetter
+/// assert_eq!(cv.get_int(0), Some(7));  // Need IntGetter
 ///
 /// cv.set_int(0, 5)?;
-/// assert_eq!(cv.get_int(0), Some(5));
+/// assert_eq!(cv.get_int(0), Some(5));  // Need IntGetter
 /// # Ok(())
 /// # }
 /// ```
