@@ -74,49 +74,51 @@ pub trait IntGetter {
     fn get_int(&self, pos: usize) -> Option<usize>;
 }
 
-/// Interface for rank operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+/// Interface for rank queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Ranker {
-    /// Returns the cardinality of $`\{ x \mid x \in S, x < i \}`$, i.e.,
-    /// the number of integers in $`S`$ that are less than `i`.
-    fn rank1(&self, i: usize) -> Option<usize>;
+    /// Returns the number of elements $`x_k \in X`$ such that $`x_k < x`$,
+    /// or [`None`] if $`u < x`$.
+    fn rank1(&self, x: usize) -> Option<usize>;
 
-    /// Returns the cardinality of $`\{ x \mid x \not\in S, 0 \leq x < i \}`$, i.e.,
-    /// the number of integers not in $`S`$ that are less than `i`.
-    fn rank0(&self, i: usize) -> Option<usize> {
-        Some(i - self.rank1(i)?)
+    /// Returns the number of integers $`x' \not\in X`$ such that $`0 \leq x' < x`$,
+    /// or [`None`] if $`u < x`$.
+    fn rank0(&self, x: usize) -> Option<usize> {
+        Some(x - self.rank1(x)?)
     }
 }
 
-/// Interface for select operations on an ordered set of integers $`S \subseteq \{ 0,1,\dots,n-1 \}`$.
+/// Interface for select queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Selector {
-    /// Returns the position of the `k`-th smallest integer in $`S`$.
+    /// Returns $`x_k`$, or [`None`] if $`n \leq k`$.
     fn select1(&self, k: usize) -> Option<usize>;
 
-    /// Returns the position of the `k`-th smallest integer in $`S^{-1}`$,
-    /// where $`S^{-1} = \{ 0,1,\dots,n-1 \} \setminus S`$.
+    /// Returns the $`k`$-th smallest integer $`x`$ such that $`x \not\in X`$ and $`0 \leq x < u`$, or
+    /// [`None`] if out of bounds.
     fn select0(&self, k: usize) -> Option<usize>;
 }
 
 /// Interface for predecessor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
-/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Predecessor {
     /// Returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$, or
     /// [`None`] if not found or $`u \leq x`$.
     fn predecessor1(&self, x: usize) -> Option<usize>;
 
-    /// Returns the largest integer $`x' \not\in X`$ such that $`x' \leq x`$, or
+    /// Returns the largest integer $`x' \not\in X`$ such that $`0 \leq x' \leq x`$, or
     /// [`None`] if not found or $`u \leq x`$.
     fn predecessor0(&self, x: usize) -> Option<usize>;
 }
 
 /// Interface for successor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
-/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for an upper bound $`u`$.
+/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Successor {
     /// Returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$, or
     /// [`None`] if not found or $`u \leq x`$.
     fn successor1(&self, x: usize) -> Option<usize>;
 
-    /// Returns the smallest element $`x_k \not\in X`$ such that $`x \leq x'`$, or
+    /// Returns the smallest integer $`x_k \not\in X`$ such that $`x \leq x' < u`$, or
     /// [`None`] if not found or $`u \leq x`$.
     fn successor0(&self, x: usize) -> Option<usize>;
 }
