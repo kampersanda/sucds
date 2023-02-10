@@ -20,9 +20,9 @@ use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{EliasFanoList, IntGetter};
+/// use sucds::{PrefixSummedEliasFano, IntGetter};
 ///
-/// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
+/// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
 /// // Need IntGetter
 /// assert_eq!(list.get_int(0), Some(5));
@@ -45,11 +45,11 @@ use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct EliasFanoList {
+pub struct PrefixSummedEliasFano {
     ef: EliasFano,
 }
 
-impl EliasFanoList {
+impl PrefixSummedEliasFano {
     /// Creates a new list from a slice of integers.
     ///
     /// # Arguments
@@ -67,9 +67,9 @@ impl EliasFanoList {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoList;
+    /// use sucds::PrefixSummedEliasFano;
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
+    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
     ///
     /// assert_eq!(list.len(), 4);
     /// assert_eq!(list.sum(), 363);
@@ -104,9 +104,9 @@ impl EliasFanoList {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoList;
+    /// use sucds::PrefixSummedEliasFano;
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 334, 10])?;
+    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
     /// let mut it = list.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -137,7 +137,7 @@ impl EliasFanoList {
     }
 }
 
-impl IntGetter for EliasFanoList {
+impl IntGetter for PrefixSummedEliasFano {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -148,9 +148,9 @@ impl IntGetter for EliasFanoList {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoList, IntGetter};
+    /// use sucds::{PrefixSummedEliasFano, IntGetter};
     ///
-    /// let list = EliasFanoList::from_slice(&[5, 14, 334])?;
+    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
     /// assert_eq!(list.get_int(0), Some(5));
     /// assert_eq!(list.get_int(1), Some(14));
     /// assert_eq!(list.get_int(2), Some(334));
@@ -163,7 +163,7 @@ impl IntGetter for EliasFanoList {
     }
 }
 
-impl Searial for EliasFanoList {
+impl Searial for PrefixSummedEliasFano {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         self.ef.serialize_into(writer)
     }
@@ -178,15 +178,15 @@ impl Searial for EliasFanoList {
     }
 }
 
-/// Iterator for enumerating integers, created by [`EliasFanoList::iter()`].
+/// Iterator for enumerating integers, created by [`PrefixSummedEliasFano::iter()`].
 pub struct Iter<'a> {
-    efl: &'a EliasFanoList,
+    efl: &'a PrefixSummedEliasFano,
     pos: usize,
 }
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub const fn new(efl: &'a EliasFanoList) -> Self {
+    pub const fn new(efl: &'a PrefixSummedEliasFano) -> Self {
         Self { efl, pos: 0 }
     }
 }
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_from_slice_uncastable() {
-        let e = EliasFanoList::from_slice(&[u128::MAX]);
+        let e = PrefixSummedEliasFano::from_slice(&[u128::MAX]);
         assert_eq!(
             e.err().map(|x| x.to_string()),
             Some("vals must consist only of values castable into usize.".to_string())
@@ -227,9 +227,9 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = EliasFanoList::from_slice(&[5, 14, 334, 10]).unwrap();
+        let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]).unwrap();
         let size = list.serialize_into(&mut bytes).unwrap();
-        let other = EliasFanoList::deserialize_from(&bytes[..]).unwrap();
+        let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(list, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, list.size_in_bytes());
