@@ -17,7 +17,7 @@
 //!   - Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
 //! - [`EliasFano`]
 //!   - Compressed monotone sequence with Elias-Fano encoding.
-//! - [`EliasFanoList`]
+//! - [`PrefixSummedEliasFano`]
 //!   - Compressed integer list with prefix-summed Elias-Fano encoding.
 //! - [`DacsOpt`] and [`DacsByte`]
 //!   - Compressed integer list with directly addressable codes.
@@ -40,8 +40,8 @@ pub mod dacs_byte;
 pub mod dacs_opt;
 pub mod darray;
 pub mod elias_fano;
-pub mod elias_fano_list;
 mod intrinsics;
+pub mod prefix_summed_elias_fano;
 pub mod rs_bit_vector;
 pub mod serial;
 pub mod util;
@@ -54,7 +54,7 @@ pub use dacs_opt::DacsOpt;
 pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
-pub use elias_fano_list::EliasFanoList;
+pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 pub use rs_bit_vector::RsBitVector;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
