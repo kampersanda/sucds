@@ -29,7 +29,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
 ///
 /// bv.set_bit(0, false)?;
-/// assert_eq!(bv.get_bit(0), Some(false));
+/// assert_eq!(bv.get_bit(0), Some(false));  // Need BitGetter
 /// # Ok(())
 /// # }
 /// ```

@@ -22,6 +22,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 ///
 /// let da = DArray::from_bits([true, false, false, true]);
 ///
+/// // Need Selector
 /// assert_eq!(da.select1(0), Some(0));
 /// assert_eq!(da.select1(1), Some(3));
 /// ```
