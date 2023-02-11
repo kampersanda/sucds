@@ -208,6 +208,7 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn binsearch(&self, val: usize) -> Option<usize> {
+        // TODO(kampersanda): Implement BitGetter.
         self.binsearch_range(0..self.len(), val)
     }
 
@@ -242,6 +243,7 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn binsearch_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+        // TODO(kampersanda): Bound check.
         if range.is_empty() {
             return None;
         }
