@@ -63,7 +63,7 @@
 //! $`b`$ be the length in bits for each codeword with DACs, and
 //! $`\textrm{DAC}(A)`$ be the length in bits of the encoded sequence from $`A`$ with DACs.
 //! The complexities are as shown in the table.
-//! (For simplicity, we assume all codewords have the same bit length.)
+//! (For simplicity, we assume all codewords have the same bit length $`b`$.)
 //!
 //! A notable property is the access time depends on $`\ell(a_i)`$ for the target value $`a_i`$.
 //! If values accessed are small, DACs will perform faster than [`PrefixSummedEliasFano`].
