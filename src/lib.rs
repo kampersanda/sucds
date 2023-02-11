@@ -90,7 +90,8 @@
 //! (For simplicity, we assume all codewords have the same bit length $`b`$.)
 //!
 //! A notable property is the access time depends on $`\ell(a_i)`$ for the target value $`a_i`$.
-//! If values accessed are small, DACs will perform faster than [`PrefixSummedEliasFano`].
+//! If values accessed are small, DACs can perform faster than [`PrefixSummedEliasFano`]
+//! due to the simplicity of the data structure.
 //!
 //! ### Bit vectors
 //!
