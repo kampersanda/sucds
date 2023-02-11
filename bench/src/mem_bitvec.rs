@@ -19,7 +19,7 @@ fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
 
 fn show_memories(p: f64) {
     let bits = gen_random_bits(NUM_BITS, p, SEED_BITS);
-    println!("[p = {}]", p);
+    println!("[p = {p}]");
 
     let bytes = {
         let idx = sucds::RsBitVector::from_bits(bits.iter().cloned());
