@@ -23,6 +23,10 @@ harness = false
 name = "timing_selector"
 harness = false
 
+[[bench]]
+name = "timing_predecessor"
+harness = false
+
 [[bin]]
 name = "memory"
 path = "src/memory.rs"
