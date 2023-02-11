@@ -95,7 +95,7 @@
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
 //! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`u + o(u)`$ |
-//! | [`EliasFano`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//! | [`EliasFano`] | -- | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! #### Plain bit vectors without index
 //!
@@ -124,10 +124,24 @@
 //!
 //! ### Monotone-increasing integer sequences
 //!
-//! *Monotone-increasing integer sequences* are generalization of bit vectors, which are a multiset variant of $`S`$.
+//! *Monotone-increasing integer sequences* are a generalization of bit vectors, which are a multiset variant of $`S`$.
 //! More simply, it is a sorted array of integers.
 //!
+//! Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
+//! such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
+//! Our sequences support the following queries:
+//!
+//! - $`\textrm{Rank}(x)`$ returns the number of elements $`x_k \in X`$ such that $`x_k < x`$ (implemented by [`Ranker`]).
+//! - $`\textrm{Select}(k)`$ returns $`x_k`$ (implemented by [`Selector`]).
+//! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$ (implemented by [`Predecessor`]).
+//! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$ (implemented by [`Successor`]).
+//!
+//! [`EliasFano`] is applicable to monotone-increasing integer sequences in the same complexities as bit vectors.
+//!
 //! ### Character sequences
+//!
+//! *Character sequences* are another generalization of bit vectors,
+//! whose elements are drawn from an alphabet $`\{ 0,1,\dots,\sigma - 1 \}`$.
 //!
 //! [`WaveletMatrix`]
 //!
