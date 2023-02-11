@@ -19,7 +19,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 /// This builds rank/select indices on [`BitVector`] taking
 ///
 /// - 25% overhead of space for the rank index, and
-/// - 3% overhead of space for the select index.
+/// - 3% overhead of space for the select index (together with the rank's overhead).
 ///
 /// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 ///
