@@ -4,11 +4,30 @@
 //! powerful tools to store a variety of data structures in compressed space and
 //! quickly perform operations on the compressed data.
 //!
+//! ## Design policy
+//!
+//! Thus far, many succinct data structures and implementation techniques have been proposed
+//! for a wide range of applications.
+//! To handle them in a single crate, we set up several design policies:
+//!
+//! - **Keep interface:**
+//!   Sucds follows a unified interface because succinct data structures are often combined and replaced.
+//!
+//! - **Keep identity:**
+//!   Sucds does not aim to provide every succinct data structure, only those that are not competitive with others.
+//!
+//! - **Keep safety:**
+//!   Very low-level programming is often required to enhance succinct data structures in performance.
+//!   If they require unsafe instructions, Sucds does not employ them for safety.
+//!
 //! ## Data structures
 //!
-//! The current version supports the following data structures.
+//! We introduce the data structures provided in this crate, categorized as follows:
 //!
-//! [Navarro's textbook](https://users.dcc.uchile.cl/~gnavarro/CDSbook/).
+//! 1. [Integer arrays](#integer-arrays)
+//! 1. [Bit vectors](#bit-vectors)
+//! 1. [Monotone-increasing integer sequences](#monotone-increasing-integer-sequences)
+//! 1. [Character sequences](#character-sequences)
 //!
 //! ### Integer arrays
 //!
@@ -170,7 +189,7 @@
 //!
 //! ## Serialization/deserialization
 //!
-//! All the data structures
+//! All the data structures can be serialized or deserialized through the [`Searial`] trait.
 //!
 //! ## Limitation
 //!
