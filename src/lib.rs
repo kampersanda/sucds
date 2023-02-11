@@ -60,8 +60,8 @@
 //! [`DacsByte`] is a faster variant, and [`DacsOpt`] is a smaller variant.
 //!
 //! Let $`\ell(a)`$ be the length in bits of the binary representation of an integer $`a`$,
-//! $`b`$ be the length in bits for each codeword by DACs, and
-//! $`\textrm{DAC}(A)`$ be the length in bits of the sequence encoded from $`A`$ by DACs.
+//! $`b`$ be the length in bits for each codeword with DACs, and
+//! $`\textrm{DAC}(A)`$ be the length in bits of the encoded sequence from $`A`$ with DACs.
 //! The complexities are as shown in the table.
 //! (For simplicity, we assume all codewords have the same bit length.)
 //!
@@ -77,7 +77,7 @@
 //! Our bit vectors support the following queries:
 //!
 //! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
-//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \mid x \in S, x < i \}`$ (implemented by [`Ranker`]).
+//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Ranker`]).
 //! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
 //! - $`\textrm{Predecessor}(i)`$ returns the largest position $`x \in S`$ such that $`x \leq i`$ (implemented by [`Predecessor`]).
 //! - $`\textrm{Successor}(i)`$ returns the smallest position $`x \in S`$ such that $`i \leq x`$ (implemented by [`Successor`]).
@@ -95,31 +95,37 @@
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
 //! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`u + o(u)`$ |
-//! | [`EliasFano`] | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//! | [`EliasFano`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! #### Plain bit vectors without index
 //!
-//! [`BitVector`] implements a bit vector in a plain format that supports some operations
-//! such as update, predecessor/successor queries, and unary decoding.
+//! [`BitVector`] is a plain format without index and the only mutable data structure.
+//!
+//! All search queries are performed by linear scan in $`O(u)`$ time,
+//! although they are quickly computed in word units using bit-parallelism techniques.
 //!
 //! #### Plain bit vectors with index
 //!
-//! *Rank/select queries* over bit vectors are core.
-//! Traits [`Ranker`] and [`Selector`] implement the operations.
+//! [`RsBitVector`] and [`DArray`] are index structures for faster queries built on [`BitVector`].
 //!
-//!  - [`RsBitVector`]: Vigna's rank/select data structure built on [`BitVector`],
-//!    supporting constant-time rank and logarithmic-time select queries
-//!  - [`DArray`]: Constant-time select data structure by Okanohara and Sadakane
+//! [`RsBitVector`] is an implementation of Vigna's Rank9 and hinted selection techniques, supporting
+//! constant-time Rank and logarithmic-time Select queries.
+//!
+//! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
+//! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$),
+//! this will be the most candidate.
+//! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`EliasFano`] described below.
 //!
 //! #### Very sparse bit vectors
 //!
-//! [`EliasFano`] is a compressed representation for monotone-increasing sequences, or multisets of integers.
-//! Especially for sparse sequences, the representation can be very compact.
-//! Another attraction of Elias-Fano is a set of powerful search queries on the compressed representation,
-//! such as random access, binary searches, or rank/predecessor/successor queries.
+//! [`EliasFano`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
+//! in compressed space, while supporting quick queries.
+//! This data structure is also known as *SArray* by [Okanohara and Sadakane](https://arxiv.org/abs/cs/0610001).
 //!
+//! ### Monotone-increasing integer sequences
 //!
-//! ### Monotone-increasing sequences
+//! *Monotone-increasing integer sequences* are generalization of bit vectors, which are a multiset variant of $`S`$.
+//! More simply, it is a sorted array of integers.
 //!
 //! ### Character sequences
 //!
