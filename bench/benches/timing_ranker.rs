@@ -30,7 +30,7 @@ fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> 
 }
 
 fn criterion_rank_50(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_rank_50");
+    let mut group = c.benchmark_group("timing_ranker_50");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -43,7 +43,7 @@ fn criterion_rank_50(c: &mut Criterion) {
 }
 
 fn criterion_rank_10(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_rank_10");
+    let mut group = c.benchmark_group("timing_ranker_10");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -56,7 +56,7 @@ fn criterion_rank_10(c: &mut Criterion) {
 }
 
 fn criterion_rank_1(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_rank_1");
+    let mut group = c.benchmark_group("timing_ranker_1");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);

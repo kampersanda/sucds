@@ -34,7 +34,7 @@ fn count_ones(bits: &[bool]) -> usize {
 }
 
 fn criterion_select_50(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_select_50");
+    let mut group = c.benchmark_group("timing_selector_50");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -47,7 +47,7 @@ fn criterion_select_50(c: &mut Criterion) {
 }
 
 fn criterion_select_10(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_select_10");
+    let mut group = c.benchmark_group("timing_selector_10");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -60,7 +60,7 @@ fn criterion_select_10(c: &mut Criterion) {
 }
 
 fn criterion_select_1(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_select_1");
+    let mut group = c.benchmark_group("timing_selector_1");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
