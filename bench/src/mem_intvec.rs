@@ -15,8 +15,21 @@ fn main() {
     show_memories("proteins", &extract_ints_from_psef(PROTEINS_PSEF_BYTES));
 }
 
+fn show_data_stats(vals: &[u32]) {
+    let nvals = vals.len();
+    let max = vals.iter().cloned().max().unwrap();
+    let mean = vals.iter().cloned().fold(0, |acc, x| acc + x) as f64 / nvals as f64;
+
+    let mut sorted = vals.to_vec();
+    sorted.sort_unstable();
+    let median = sorted[nvals / 2];
+
+    println!("Basic: n_vals={nvals}, max_val={max}, mean_val={mean:.3}, median_val={median}");
+}
+
 fn show_memories(title: &str, vals: &[u32]) {
     println!("[{title}]");
+    show_data_stats(vals);
 
     let bytes = {
         let idx = sucds::CompactVector::from_slice(vals).unwrap();
