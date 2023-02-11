@@ -32,6 +32,8 @@
 //! 1. [Monotone-increasing integer sequences](#monotone-increasing-integer-sequences)
 //! 1. [Character sequences](#character-sequences)
 //!
+//! In the description, we write $`\log_2`$ with $`\lg`$.
+//!
 //! ### Integer arrays
 //!
 //! Integer arrays consisting of many small values can be stored in compressed space
