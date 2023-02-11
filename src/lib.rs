@@ -144,7 +144,7 @@
 //!
 //! [`EliasFano`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
 //! in compressed space, while supporting quick queries.
-//! This data structure is also known as *SArray* by [Okanohara and Sadakane](https://arxiv.org/abs/cs/0610001).
+//! This data structure is also known as [*SArray*](https://arxiv.org/abs/cs/0610001).
 //!
 //! ### Monotone-increasing integer sequences
 //!
