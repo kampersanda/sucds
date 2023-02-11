@@ -29,6 +29,10 @@ harness = false
 name = "timing_predecessor"
 harness = false
 
+[[bench]]
+name = "timing_int_getter"
+harness = false
+
 [[bin]]
 name = "gen_lcps"
 path = "src/gen_lcps.rs"
