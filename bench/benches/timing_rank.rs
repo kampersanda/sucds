@@ -13,10 +13,10 @@ const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
 const MEASURE_TIME: Duration = Duration::from_secs(10);
 
-const SEED_BITS: u64 = 113;
+const SEED_BITS: u64 = 334;
 const SEED_QUERIES: u64 = 114514;
 
-const NUM_BITS: usize = 1 << 20;
+const NUM_BITS: &[usize] = &[1 << 10, 1 << 15, 1 << 20];
 const NUM_QUERIES: usize = 1000;
 
 fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
@@ -36,10 +36,10 @@ fn criterion_rank_50(c: &mut Criterion) {
     group.measurement_time(MEASURE_TIME);
     group.sampling_mode(SamplingMode::Flat);
 
-    let bits = gen_random_bits(NUM_BITS, 0.5, SEED_BITS);
-    let queries = gen_random_ints(NUM_QUERIES, 0, bits.len(), SEED_QUERIES);
+    let max_nbits = *NUM_BITS.last().unwrap();
+    let bits = gen_random_bits(max_nbits, 0.5, SEED_BITS);
 
-    perform_rank(&mut group, &bits, &queries);
+    perform_rank(&mut group, &bits);
 }
 
 fn criterion_rank_10(c: &mut Criterion) {
@@ -49,10 +49,10 @@ fn criterion_rank_10(c: &mut Criterion) {
     group.measurement_time(MEASURE_TIME);
     group.sampling_mode(SamplingMode::Flat);
 
-    let bits = gen_random_bits(NUM_BITS, 0.1, SEED_BITS);
-    let queries = gen_random_ints(NUM_QUERIES, 0, bits.len(), SEED_QUERIES);
+    let max_nbits = *NUM_BITS.last().unwrap();
+    let bits = gen_random_bits(max_nbits, 0.1, SEED_BITS);
 
-    perform_rank(&mut group, &bits, &queries);
+    perform_rank(&mut group, &bits);
 }
 
 fn criterion_rank_1(c: &mut Criterion) {
@@ -62,40 +62,46 @@ fn criterion_rank_1(c: &mut Criterion) {
     group.measurement_time(MEASURE_TIME);
     group.sampling_mode(SamplingMode::Flat);
 
-    let bits = gen_random_bits(NUM_BITS, 0.01, SEED_BITS);
-    let queries = gen_random_ints(NUM_QUERIES, 0, bits.len(), SEED_QUERIES);
+    let max_nbits = *NUM_BITS.last().unwrap();
+    let bits = gen_random_bits(max_nbits, 0.01, SEED_BITS);
 
-    perform_rank(&mut group, &bits, &queries);
+    perform_rank(&mut group, &bits);
 }
 
-fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
-    group.bench_function("sucds/RsBitVector", |b| {
-        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned());
-        b.iter(|| {
-            let mut sum = 0;
-            for &q in queries {
-                sum += idx.rank1(q).unwrap();
-            }
-            if sum == 0 {
-                panic!();
-            }
-        });
-    });
+fn run_queries<R: Ranker>(ranker: &R, queries: &[usize]) {
+    let mut sum = 0;
+    for &q in queries {
+        sum += ranker.rank1(q).unwrap();
+    }
+    if sum == 0 {
+        panic!("Should not come.");
+    }
+}
 
-    group.bench_function("sucds/EliasFano", |b| {
-        let idx = sucds::EliasFano::from_bits(bits.iter().cloned())
-            .unwrap()
-            .enable_rank();
-        b.iter(|| {
-            let mut sum = 0;
-            for &q in queries {
-                sum += idx.rank1(q).unwrap();
-            }
-            if sum == 0 {
-                panic!();
-            }
+fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool]) {
+    for &nbits in NUM_BITS {
+        let bits = &bits[..nbits];
+        let queries = gen_random_ints(NUM_QUERIES, 0, bits.len(), SEED_QUERIES);
+
+        let nbits_str = format!("n_{nbits}");
+
+        group.bench_function(format!("{nbits_str}/sucds/BitVector"), |b| {
+            let ranker = sucds::BitVector::from_bits(bits.iter().cloned());
+            b.iter(|| run_queries(&ranker, &queries));
         });
-    });
+
+        group.bench_function(format!("{nbits_str}/sucds/RsBitVector"), |b| {
+            let ranker = sucds::RsBitVector::from_bits(bits.iter().cloned());
+            b.iter(|| run_queries(&ranker, &queries));
+        });
+
+        group.bench_function(format!("{nbits_str}/sucds/EliasFano"), |b| {
+            let ranker = sucds::EliasFano::from_bits(bits.iter().cloned())
+                .unwrap()
+                .enable_rank();
+            b.iter(|| run_queries(&ranker, &queries));
+        });
+    }
 }
 
 criterion_group!(
