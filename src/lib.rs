@@ -6,19 +6,22 @@
 //!
 //! ## Design policy
 //!
-//! Thus far, many succinct data structures and implementation techniques have been proposed
+//! Thus far, many succinct data structures and their implementation techniques have been developed
 //! for a wide range of applications.
 //! To handle them in a single crate, we set up several design policies:
 //!
 //! - **Keep interface:**
-//!   Sucds follows a unified interface because succinct data structures are often combined and replaced.
+//!   Sucds will follow a unified interface because succinct data structures are often combined and replaced.
 //!
 //! - **Keep identity:**
 //!   Sucds does not aim to provide every succinct data structure, only those that are not competitive with others.
 //!
 //! - **Keep safety:**
 //!   Very low-level programming is often required to enhance succinct data structures in performance.
-//!   If they require unsafe instructions, Sucds does not employ them for safety.
+//!   If they require unsafe instructions, Sucds will not employ them for safety.
+//!
+//! - **Keep Rust:**
+//!   Sucds will stick to Pure Rust.
 //!
 //! ## Data structures
 //!
