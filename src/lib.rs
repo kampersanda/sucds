@@ -10,52 +10,99 @@
 //!
 //! [Navarro's textbook](https://users.dcc.uchile.cl/~gnavarro/CDSbook/).
 //!
-//!
 //! ### Integer arrays
 //!
-//! Integer arrays consisting of small values can be stored in compressed space
+//! Integer arrays consisting of many small values can be stored in compressed space
 //! using *compressed integer arrays*.
-//! This crate provides the following variants:
 //!
-//! - [`CompactVector`]: Compact vector in which each integer is represented in a fixed number of bits.
-//! - [`PrefixSummedEliasFano`]: Compressed integer list with prefix-summed Elias-Fano encoding.
-//! - [`DacsOpt`]: Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
-//! - [`DacsByte`]: Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
+//! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be an array of $`n`$ unsigned integers.
+//! Our integer arrays support the following queries:
 //!
-//! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be
+//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`IntGetter`]).
+//! - $`\textrm{Update}(i, x)`$ modifies $`a_i \gets x`$.
 //!
-//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented for [`IntGetter`]).
-//! - $`\textrm{Update}(i)`$ modifies $`a_i`$.
+//! Note that they are not limited depending on the data structures.
 //!
 //! #### Summary
 //!
-//! | Implementation | [Access](IntGetter) | Update | Space (bits) |
+//! The implementations provided in this crate are summarized below:
+//!
+//! | Implementation | [Access](IntGetter) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: |
 //! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
 //! | [`PrefixSummedEliasFano`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
-//! | [`DacsOpt`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
-//! | [`DacsByte`] | $`O(\lceil \ell_i / b \rceil)`$ | -- |   |
+//! | [`DacsOpt`]  | $`O(\ell(a_i) / b)`$ | -- | $`\textrm{DAC}_\textrm{Opt}(A) + o(\textrm{DAC}_\textrm{Opt}(A)/b)`$ |
+//! | [`DacsByte`] | $`O(\ell(a_i) / b)`$ | -- | $`\textrm{DAC}_\textrm{Byte}(A) + o(\textrm{DAC}_\textrm{Byte}(A)/b)`$ |
+//!
+//! The parameters are introduced below.
+//!
+//! #### Plain format without index
+//!
+//! [`CompactVector`] is a simple data structure in which each integer is represented in a fixed number of bits.
+//! Assuming $`u`$ is the maximum value in $`A`$ plus 1,
+//! each integer is stored in $`\lceil \lg u \rceil`$ bits of space.
+//!
+//! This is the only mutable data structure and will be the fastest due to its simplicity.
+//! However, the compression performance is poor, especially when $`A`$ contains at least one large value.
+//!
+//! #### Compressed format with Elias-Fano encoding
+//!
+//! [`PrefixSummedEliasFano`] is a compressed data structure that stores the prefix-summed sequence from $`A`$
+//! with the Elias-Fano encoding.
+//! Assuming $`N`$ is the sum of values in $`A`$ plus 1 (i.e., $`N = 1 + \sum {a_i}`$),
+//! the total memory is $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ in bits,
+//! while supporting constant-time random access.
+//!
+//! #### Compressed format with Directly Addressable Codes
+//!
+//! [`DacsByte`] and [`DacsOpt`] are compressed data structures using Directly Addressable Codes (DACs),
+//! which are randomly-accessible variants of the VByte encoding scheme.
+//! [`DacsByte`] is a faster variant, and [`DacsOpt`] is a smaller variant.
+//!
+//! Let $`\ell(a)`$ be the length in bits of the binary representation of an integer $`a`$,
+//! $`b`$ be the length in bits for each codeword by DACs, and
+//! $`\textrm{DAC}(A)`$ be the length in bits of the sequence encoded from $`A`$ by DACs.
+//! The complexities are as shown in the table.
+//! (For simplicity, we assume all codewords have the same bit length.)
+//!
+//! A notable property is the access time depends on $`\ell(a_i)`$ for the target value $`a_i`$.
+//! If values accessed are small, DACs will perform faster than [`PrefixSummedEliasFano`].
 //!
 //! ### Bit vectors
 //!
 //! Bit vectors and operations on them are fundamental to succinct data structures.
 //!
+//! Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
+//! at which bits are set in a bit vector of length $`u`$.
+//! Our bit vectors support the following queries:
+//!
+//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
+//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \mid x \in S, x < i \}`$ (implemented by [`Ranker`]).
+//! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
+//! - $`\textrm{Predecessor}(i)`$ returns the largest position $`x \in S`$ such that $`x \leq i`$ (implemented by [`Predecessor`]).
+//! - $`\textrm{Successor}(i)`$ returns the smallest position $`x \in S`$ such that $`i \leq x`$ (implemented by [`Successor`]).
+//! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
+//!
+//! Note that they are not limited depending on the data structures.
+//!
+//! #### Summary
+//!
+//! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
+//! The implementations provided in this crate are summarized below:
+//!
+//! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Update | Memory (bits) |
+//! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
+//! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
+//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
+//! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`u + o(u)`$ |
+//! | [`EliasFano`] | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! #### Plain bit vectors without index
+//!
 //! [`BitVector`] implements a bit vector in a plain format that supports some operations
 //! such as update, predecessor/successor queries, and unary decoding.
 //!
-//! Let $`S \subseteq \{ 0,1,\dots,n-1 \}`$ be a set of positions
-//! at which bits are set in a bit vector of length $`n`$.
-//!
-//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented for [`BitGetter`]).
-//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \mid x \in S, x < i \}`$,
-//!   i.e., the number of integers in $`S`$ that are less than `i` (implemented for [`Ranker`]).
-//! - $`\textrm{Select}(k)`$ returns the position of the `k`-th smallest integer in $`S`$ (implemented for [`Selector`]).
-//! - $`\textrm{Predecessor}(i)`$ returns
-//! - $`\textrm{Successor}(i)`$ returns
-//! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
-//!
-//!
-//! #### Rank/select queries
+//! #### Plain bit vectors with index
 //!
 //! *Rank/select queries* over bit vectors are core.
 //! Traits [`Ranker`] and [`Selector`] implement the operations.
@@ -71,18 +118,10 @@
 //! Another attraction of Elias-Fano is a set of powerful search queries on the compressed representation,
 //! such as random access, binary searches, or rank/predecessor/successor queries.
 //!
-//! #### Summary
-//!
-//! | Implementation | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Update | Space (bits) |
-//! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
-//! | [`BitVector`] | $`O(1)`$  | $`O(n)`$ | $`O(n)`$ | $`O(n)`$ | $`O(1)`$ | $`n`$ |
-//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg n)`$ | $`O(\lg n)`$ | -- | $`n + o(n)`$ |
-//! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`n + o(n)`$ |
-//! | [`EliasFano`] | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! ### Monotone-increasing sequences
 //!
-//! ### Sequences
+//! ### Character sequences
 //!
 //! [`WaveletMatrix`]
 //!
@@ -140,7 +179,9 @@ pub trait IntGetter {
     fn get_int(&self, pos: usize) -> Option<usize>;
 }
 
-/// Interface for rank queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for rank queries on monotone-increasing integer sequences.
+///
+/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Ranker {
     /// Returns the number of elements $`x_k \in X`$ such that $`x_k < x`$,
@@ -152,7 +193,9 @@ pub trait Ranker {
     fn rank0(&self, x: usize) -> Option<usize>;
 }
 
-/// Interface for select queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for select queries on monotone-increasing integer sequences.
+///
+/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Selector {
     /// Returns $`x_k`$, or [`None`] if $`n \leq k`$.
@@ -163,7 +206,9 @@ pub trait Selector {
     fn select0(&self, k: usize) -> Option<usize>;
 }
 
-/// Interface for predecessor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for predecessor queries on monotone-increasing integer sequences.
+///
+/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Predecessor {
     /// Returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$, or
@@ -175,7 +220,9 @@ pub trait Predecessor {
     fn predecessor0(&self, x: usize) -> Option<usize>;
 }
 
-/// Interface for successor queries on a sequence of $`n`$ integers $`X = (x_0, x_1, \dots, x_{n-1})`$
+/// Interface for successor queries on monotone-increasing integer sequences.
+///
+/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
 /// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 pub trait Successor {
     /// Returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$, or
