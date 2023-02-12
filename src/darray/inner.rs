@@ -36,12 +36,16 @@ impl DArrayIndex {
     ///
     /// # Arguments
     ///
-    /// - `bv`: Reference to the bit vector used to build.
+    /// - `bv`: Bit vector used in construction.
     /// - `k`: Select query.
     ///
     /// # Complexity
     ///
     /// - Constant
+    ///
+    /// # Safety
+    ///
+    /// `bv` must be the one used in construction.
     ///
     /// # Examples
     ///
@@ -50,9 +54,12 @@ impl DArrayIndex {
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
-    /// assert_eq!(da.select(&bv, 0), Some(0));
-    /// assert_eq!(da.select(&bv, 1), Some(3));
-    /// assert_eq!(da.select(&bv, 2), None);
+    ///
+    /// unsafe {
+    ///     assert_eq!(da.select(&bv, 0), Some(0));
+    ///     assert_eq!(da.select(&bv, 1), Some(3));
+    ///     assert_eq!(da.select(&bv, 2), None);
+    /// }
     /// ```
     ///
     /// You can perform selections over unset bits by specifying
@@ -63,12 +70,15 @@ impl DArrayIndex {
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, false);
-    /// assert_eq!(da.select(&bv, 0), Some(1));
-    /// assert_eq!(da.select(&bv, 1), Some(2));
-    /// assert_eq!(da.select(&bv, 2), None);
+    ///
+    /// unsafe {
+    ///     assert_eq!(da.select(&bv, 0), Some(1));
+    ///     assert_eq!(da.select(&bv, 1), Some(2));
+    ///     assert_eq!(da.select(&bv, 2), None);
+    /// }
     /// ```
     #[inline(always)]
-    pub fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
+    pub unsafe fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
         if self.len() <= k {
             return None;
         }
@@ -268,13 +278,17 @@ mod tests {
     fn test_all_zeros_index() {
         let bv = BitVector::from_bit(false, 3);
         let da = DArrayIndex::new(&bv, true);
-        assert_eq!(da.select(&bv, 0), None);
+        unsafe {
+            assert_eq!(da.select(&bv, 0), None);
+        }
     }
 
     #[test]
     fn test_all_ones_index() {
         let bv = BitVector::from_bit(true, 3);
         let da = DArrayIndex::new(&bv, false);
-        assert_eq!(da.select(&bv, 0), None);
+        unsafe {
+            assert_eq!(da.select(&bv, 0), None);
+        }
     }
 }

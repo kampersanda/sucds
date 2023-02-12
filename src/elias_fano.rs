@@ -155,7 +155,8 @@ impl EliasFano {
         if self.len() <= k {
             return None;
         }
-        let high_val = self.high_bits_d1.select(&self.high_bits, k).unwrap();
+        // SAFETY: self.high_bits is what was actually used to build.
+        let high_val = unsafe { self.high_bits_d1.select(&self.high_bits, k).unwrap() };
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
@@ -353,7 +354,8 @@ impl Ranker for EliasFano {
 
         let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
         let h_rank = pos >> self.low_len;
-        let mut h_pos = high_bits_d0.select(&self.high_bits, h_rank).unwrap();
+        // SAFETY: self.high_bits is what was actually used to build.
+        let mut h_pos = unsafe { high_bits_d0.select(&self.high_bits, h_rank).unwrap() };
         let mut rank = h_pos - h_rank;
         let l_pos = pos & ((1 << self.low_len) - 1);
 
@@ -409,7 +411,9 @@ impl Selector for EliasFano {
             None
         } else {
             Some(
-                ((self.high_bits_d1.select(&self.high_bits, k).unwrap() - k) << self.low_len)
+                // SAFETY: self.high_bits is what was actually used to build.
+                ((unsafe { self.high_bits_d1.select(&self.high_bits, k).unwrap() } - k)
+                    << self.low_len)
                     | self
                         .low_bits
                         .get_bits(k * self.low_len, self.low_len)

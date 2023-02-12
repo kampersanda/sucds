@@ -104,7 +104,7 @@ impl Selector for DArray {
     /// assert_eq!(da.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        self.da.select(&self.bv, k)
+        unsafe { self.da.select(&self.bv, k) }
     }
 
     /// Panics always because this operation is not supported.
