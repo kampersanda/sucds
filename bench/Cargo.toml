@@ -6,23 +6,39 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# sucds = { path = ".." }
 sucds = { path = "..", features = ["intrinsics"] } # Recommend to set RUSTFLAGS="-C target-cpu=native"
+clap = { version = "3.2.23", features = ["derive"] }
 rand = "0.8.4"
 rand_chacha = "0.3.1"
-bincode = "1.3.3"
+suffix = "1.3.0"
 
 [dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bench]]
-name = "timing_rank"
+name = "timing_ranker"
 harness = false
 
 [[bench]]
-name = "timing_select"
+name = "timing_selector"
+harness = false
+
+[[bench]]
+name = "timing_predecessor"
+harness = false
+
+[[bench]]
+name = "timing_int_getter"
 harness = false
 
 [[bin]]
-name = "memory"
-path = "src/memory.rs"
+name = "gen_lcps"
+path = "src/gen_lcps.rs"
+
+[[bin]]
+name = "mem_bitvec"
+path = "src/mem_bitvec.rs"
+
+[[bin]]
+name = "mem_intvec"
+path = "src/mem_intvec.rs"
