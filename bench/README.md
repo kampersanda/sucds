@@ -3,8 +3,8 @@
 ## Benchmark for bit vectors
 
 This crate provides benchmarks for bit vectors using random bits
-with different scales ($n = 2^{10}, 2^{15}, 2^{20}$)
-and different densities ($p = 50\%, 10\%, 1\%$).
+with different scales (n = 2^10, 2^15, and 2^20)
+and different densities (p = 50\%, 10\%, and 1\%).
 
 You can measure time performances with the following commands.
 
