@@ -31,7 +31,8 @@ impl<'a> Iter<'a> {
         };
 
         let high_iter = if k < ef.len() {
-            let pos = ef.high_bits_d1.select(&ef.high_bits, k).unwrap();
+            // SAFETY: self.high_bits is what was actually used to build.
+            let pos = unsafe { ef.high_bits_d1.select(&ef.high_bits, k).unwrap() };
             Some(ef.high_bits.unary_iter(pos))
         } else {
             None
