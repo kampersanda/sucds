@@ -160,9 +160,18 @@ impl RsBitVectorIndex {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `bv.len() < pos`.
     ///
+    /// # Arguments
+    ///
+    /// - `bv`: Bit vector used in construction.
+    /// - `pos`: Bit position.
+    ///
     /// # Complexity
     ///
     /// - Constant
+    ///
+    /// # Safety
+    ///
+    /// `bv` must be the one used in construction.
     ///
     /// # Examples
     ///
@@ -198,9 +207,18 @@ impl RsBitVectorIndex {
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `bv.len() < pos`.
     ///
+    /// # Arguments
+    ///
+    /// - `bv`: Bit vector used in construction.
+    /// - `pos`: Bit position.
+    ///
     /// # Complexity
     ///
     /// - Constant
+    ///
+    /// # Safety
+    ///
+    /// `bv` must be the one used in construction.
     ///
     /// # Examples
     ///
@@ -225,9 +243,18 @@ impl RsBitVectorIndex {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
+    /// # Arguments
+    ///
+    /// - `bv`: Bit vector used in construction.
+    /// - `k`: Select query.
+    ///
     /// # Complexity
     ///
     /// - Logarithmic
+    ///
+    /// # Safety
+    ///
+    /// `bv` must be the one used in construction.
     ///
     /// # Examples
     ///
@@ -292,9 +319,18 @@ impl RsBitVectorIndex {
     /// Searches the position of the `k`-th bit unset, or
     /// [`None`] if `self.num_zeros() <= k`.
     ///
+    /// # Arguments
+    ///
+    /// - `bv`: Bit vector used in construction.
+    /// - `k`: Select query.
+    ///
     /// # Complexity
     ///
     /// - Logarithmic
+    ///
+    /// # Safety
+    ///
+    /// `bv` must be the one used in construction.
     ///
     /// # Examples
     ///
