@@ -82,6 +82,16 @@ impl DArray {
     pub const fn is_empty(&self) -> bool {
         self.da.is_empty()
     }
+
+    /// Gets the reference of the internal bit vector.
+    pub const fn bit_vector(&self) -> &BitVector {
+        &self.bv
+    }
+
+    /// Gets the reference of the internal select index.
+    pub const fn da_index(&self) -> &DArrayIndex {
+        &self.da
+    }
 }
 
 impl Selector for DArray {
