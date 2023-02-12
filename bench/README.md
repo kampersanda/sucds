@@ -14,7 +14,7 @@ cargo bench timing_selector
 cargo bench timing_predecessor
 ```
 
-You also can measure memory efficiency with the following command.
+You can also measure memory efficiency with the following command.
 
 ```console
 cargo run --release --bin mem_bitvec
@@ -43,7 +43,7 @@ You can measure time performances with the following command.
 cargo bench timing_int_getter
 ```
 
-You also can measure memory efficiency with the following command.
+You can also measure memory efficiency with the following command.
 
 ```console
 cargo run --release --bin mem_intvec
