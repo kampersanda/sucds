@@ -49,6 +49,14 @@ You also can measure memory efficiency with the following command.
 cargo run --release --bin mem_intvec
 ```
 
+## Native optimizations
+
+We recommend setting the `native` option to maximize the performance of CPU intrinsics.
+
+```console
+RUSTFLAGS="-C target-cpu=native" cargo bench
+```
+
 ## License
 
 The softwere under `lcps` are generated from [Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl/texts.html) and follow [LGPL License](https://www.gnu.org/licenses/lgpl-3.0.html).
