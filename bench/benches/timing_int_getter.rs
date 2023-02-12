@@ -31,7 +31,7 @@ fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> 
 }
 
 fn criterion_int_get_dblp(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_dblp");
+    let mut group = c.benchmark_group("timing_int_getter_dblp_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -42,7 +42,7 @@ fn criterion_int_get_dblp(c: &mut Criterion) {
 }
 
 fn criterion_int_get_dna(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_dna");
+    let mut group = c.benchmark_group("timing_int_getter_dna_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -53,7 +53,7 @@ fn criterion_int_get_dna(c: &mut Criterion) {
 }
 
 fn criterion_int_get_proteins(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_proteins");
+    let mut group = c.benchmark_group("timing_int_getter_proteins_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -76,25 +76,22 @@ fn run_queries<G: IntGetter>(getter: &G, queries: &[usize]) {
 fn perform_int_get(group: &mut BenchmarkGroup<WallTime>, vals: &[u32]) {
     let queries = gen_random_ints(NUM_QUERIES, 0, vals.len(), SEED_QUERIES);
 
-    let nvals = vals.len();
-    let nvals_str = format!("n_{nvals}");
-
-    group.bench_function(format!("{nvals_str}/sucds/CompactVector"), |b| {
+    group.bench_function("sucds/CompactVector", |b| {
         let getter = sucds::CompactVector::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
-    group.bench_function(format!("{nvals_str}/sucds/PrefixSummedEliasFano"), |b| {
+    group.bench_function("sucds/PrefixSummedEliasFano", |b| {
         let getter = sucds::PrefixSummedEliasFano::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
-    group.bench_function(format!("{nvals_str}/sucds/DacsByte"), |b| {
+    group.bench_function("sucds/DacsByte", |b| {
         let getter = sucds::DacsByte::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
-    group.bench_function(format!("{nvals_str}/sucds/DacsOpt"), |b| {
+    group.bench_function("sucds/DacsOpt", |b| {
         let getter = sucds::DacsOpt::from_slice(vals, None).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
