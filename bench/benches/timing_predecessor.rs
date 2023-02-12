@@ -15,8 +15,6 @@ const MEASURE_TIME: Duration = Duration::from_secs(10);
 
 const SEED_BITS: u64 = 334;
 const SEED_QUERIES: u64 = 114514;
-
-const NUM_BITS: &[usize] = &[1 << 10, 1 << 15, 1 << 20];
 const NUM_QUERIES: usize = 1000;
 
 fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
@@ -28,46 +26,7 @@ fn gen_random_bits(len: usize, p: f64, seed: u64) -> Vec<bool> {
 
 fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> {
     let mut rng = ChaChaRng::seed_from_u64(seed);
-    (0..len).map(|_| rng.gen_range(min..max)).collect()
-}
-
-fn criterion_predecessor_50(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_predecessor_50");
-    group.sample_size(SAMPLE_SIZE);
-    group.warm_up_time(WARM_UP_TIME);
-    group.measurement_time(MEASURE_TIME);
-    group.sampling_mode(SamplingMode::Flat);
-
-    let max_nbits = *NUM_BITS.last().unwrap();
-    let bits = gen_random_bits(max_nbits, 0.5, SEED_BITS);
-
-    perform_predecessor(&mut group, &bits);
-}
-
-fn criterion_predecessor_10(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_predecessor_10");
-    group.sample_size(SAMPLE_SIZE);
-    group.warm_up_time(WARM_UP_TIME);
-    group.measurement_time(MEASURE_TIME);
-    group.sampling_mode(SamplingMode::Flat);
-
-    let max_nbits = *NUM_BITS.last().unwrap();
-    let bits = gen_random_bits(max_nbits, 0.1, SEED_BITS);
-
-    perform_predecessor(&mut group, &bits);
-}
-
-fn criterion_predecessor_1(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_predecessor_1");
-    group.sample_size(SAMPLE_SIZE);
-    group.warm_up_time(WARM_UP_TIME);
-    group.measurement_time(MEASURE_TIME);
-    group.sampling_mode(SamplingMode::Flat);
-
-    let max_nbits = *NUM_BITS.last().unwrap();
-    let bits = gen_random_bits(max_nbits, 0.01, SEED_BITS);
-
-    perform_predecessor(&mut group, &bits);
+    (0..len).map(|_| rng.gen_range(min..=max)).collect()
 }
 
 fn run_queries<P: Predecessor>(pred: &P, queries: &[usize]) {
@@ -80,37 +39,57 @@ fn run_queries<P: Predecessor>(pred: &P, queries: &[usize]) {
     }
 }
 
-fn perform_predecessor(group: &mut BenchmarkGroup<WallTime>, bits: &[bool]) {
-    for &nbits in NUM_BITS {
-        let bits = &bits[..nbits];
-        let queries = gen_random_ints(NUM_QUERIES, 0, bits.len(), SEED_QUERIES);
+fn perform_predecessor(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
+    group.bench_function("sucds/BitVector", |b| {
+        let pred = sucds::BitVector::from_bits(bits.iter().cloned());
+        b.iter(|| run_queries(&pred, &queries));
+    });
 
-        let nbits_str = format!("n_{nbits}");
+    group.bench_function("sucds/RsBitVector", |b| {
+        let pred = sucds::RsBitVector::from_bits(bits.iter().cloned());
+        b.iter(|| run_queries(&pred, &queries));
+    });
 
-        group.bench_function(format!("{nbits_str}/sucds/BitVector"), |b| {
-            let pred = sucds::BitVector::from_bits(bits.iter().cloned());
-            b.iter(|| run_queries(&pred, &queries));
-        });
-
-        group.bench_function(format!("{nbits_str}/sucds/RsBitVector"), |b| {
-            let pred = sucds::RsBitVector::from_bits(bits.iter().cloned());
-            b.iter(|| run_queries(&pred, &queries));
-        });
-
-        group.bench_function(format!("{nbits_str}/sucds/EliasFano"), |b| {
-            let pred = sucds::EliasFano::from_bits(bits.iter().cloned())
-                .unwrap()
-                .enable_rank();
-            b.iter(|| run_queries(&pred, &queries));
-        });
-    }
+    group.bench_function("sucds/EliasFano", |b| {
+        let pred = sucds::EliasFano::from_bits(bits.iter().cloned())
+            .unwrap()
+            .enable_rank();
+        b.iter(|| run_queries(&pred, &queries));
+    });
 }
+
+macro_rules! criterion_common {
+    ($name:ident, $dens:expr, $size:expr) => {
+        fn $name(c: &mut Criterion) {
+            let mut group = c.benchmark_group(format!("timing_predecessor/p{}/n{}", $dens, $size));
+            group.sample_size(SAMPLE_SIZE);
+            group.warm_up_time(WARM_UP_TIME);
+            group.measurement_time(MEASURE_TIME);
+            group.sampling_mode(SamplingMode::Flat);
+
+            let bits = gen_random_bits($size, $dens as f64 / 100.0, SEED_BITS);
+            let queries = gen_random_ints(NUM_QUERIES, 0, bits.len() - 1, SEED_QUERIES);
+
+            perform_predecessor(&mut group, &bits, &queries);
+        }
+    };
+}
+
+criterion_common!(criterion_predecessor_p50_n1000, 50, 1000);
+criterion_common!(criterion_predecessor_p10_n1000, 10, 1000);
+criterion_common!(criterion_predecessor_p1_n1000, 1, 1000);
+criterion_common!(criterion_predecessor_p50_n1000000, 50, 1000000);
+criterion_common!(criterion_predecessor_p10_n1000000, 10, 1000000);
+criterion_common!(criterion_predecessor_p1_n1000000, 1, 1000000);
 
 criterion_group!(
     benches,
-    criterion_predecessor_50,
-    criterion_predecessor_10,
-    criterion_predecessor_1
+    criterion_predecessor_p50_n1000,
+    criterion_predecessor_p10_n1000,
+    criterion_predecessor_p1_n1000,
+    criterion_predecessor_p50_n1000000,
+    criterion_predecessor_p10_n1000000,
+    criterion_predecessor_p1_n1000000,
 );
 
 criterion_main!(benches);
