@@ -11,7 +11,7 @@
 //! To handle them in a single crate, we set up several design policies:
 //!
 //! - **Keep interface:**
-//!   Sucds will follow a unified interface because succinct data structures are often combined and replaced.
+//!   Sucds will follow a common interface to allow combining and replacing data structures.
 //!
 //! - **Keep identity:**
 //!   Sucds does not aim to provide every succinct data structure, only those that are not competitive with others.
