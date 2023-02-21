@@ -17,8 +17,7 @@
 //!   Sucds does not aim to provide every succinct data structure, only those that are not competitive with others.
 //!
 //! - **Keep safety:**
-//!   Very low-level programming is often required to enhance succinct data structures in performance.
-//!   If they require unsafe instructions, Sucds will not employ them for safety.
+//!   Sucds will not employ unsafe instructions used for very low-level programming.
 //!
 //! - **Keep Rust:**
 //!   Sucds will stick to Pure Rust.
