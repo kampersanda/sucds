@@ -14,11 +14,10 @@ use inner::RsBitVectorIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 ///
-/// [`RsBitVector`] builds rank/select indexes on a bit vector.
-/// For a bit vector of $`n`$ bits,
+/// This builds rank/select indices on [`BitVector`] taking
 ///
-///  - the rank index takes $`0.25n`$ bits, and
-///  - the select index takes $`0.03n`$ bits in addition to the space of the rank index.
+/// - 25% overhead of space for the rank index, and
+/// - 3% overhead of space for the select index (together with the rank's overhead).
 ///
 /// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 ///
