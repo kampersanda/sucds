@@ -10,7 +10,7 @@ use anyhow::Result;
 use crate::{
     bit_vector::Iter, BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor,
 };
-use inner::RsBitVectorIndex;
+use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
 ///
@@ -24,9 +24,9 @@ use inner::RsBitVectorIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{RsBitVector, BitGetter, Ranker, Selector};
+/// use sucds::{Rank9Sel, BitGetter, Ranker, Selector};
 ///
-/// let bv = RsBitVector::from_bits([true, false, false, true])
+/// let bv = Rank9Sel::from_bits([true, false, false, true])
 ///     .select1_hints()  // To accelerate select1
 ///     .select0_hints(); // To accelerate select0
 ///
@@ -48,15 +48,15 @@ use inner::RsBitVectorIndex;
 ///
 ///  - S. Vigna, "Broadword implementation of rank/select queries," In WEA, 2008.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct RsBitVector {
+pub struct Rank9Sel {
     bv: BitVector,
-    rs: RsBitVectorIndex,
+    rs: Rank9SelIndex,
 }
 
-impl RsBitVector {
+impl Rank9Sel {
     /// Creates a new vector from input bit vector `bv`.
     pub fn new(bv: BitVector) -> Self {
-        let rs = RsBitVectorIndex::new(&bv);
+        let rs = Rank9SelIndex::new(&bv);
         Self { bv, rs }
     }
 
@@ -91,9 +91,9 @@ impl RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::RsBitVector;
+    /// use sucds::Rank9Sel;
     ///
-    /// let bv = RsBitVector::from_bits([false, true, false]);
+    /// let bv = Rank9Sel::from_bits([false, true, false]);
     /// let mut it = bv.iter();
     /// assert_eq!(it.next(), Some(false));
     /// assert_eq!(it.next(), Some(true));
@@ -110,7 +110,7 @@ impl RsBitVector {
     }
 
     /// Gets the reference of the internal index.
-    pub const fn rs_index(&self) -> &RsBitVectorIndex {
+    pub const fn rs_index(&self) -> &Rank9SelIndex {
         &self.rs
     }
 
@@ -139,15 +139,15 @@ impl RsBitVector {
     }
 }
 
-impl BitGetter for RsBitVector {
+impl BitGetter for Rank9Sel {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, BitGetter};
+    /// use sucds::{Rank9Sel, BitGetter};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false]);
+    /// let bv = Rank9Sel::from_bits([true, false, false]);
     ///
     /// assert_eq!(bv.get_bit(0), Some(true));
     /// assert_eq!(bv.get_bit(1), Some(false));
@@ -159,7 +159,7 @@ impl BitGetter for RsBitVector {
     }
 }
 
-impl Ranker for RsBitVector {
+impl Ranker for Rank9Sel {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.len() < pos`.
     ///
@@ -170,9 +170,9 @@ impl Ranker for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, RsBitVector};
+    /// use sucds::{Ranker, Rank9Sel};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
     /// assert_eq!(bv.rank1(1), Some(1));
     /// assert_eq!(bv.rank1(2), Some(1));
@@ -194,9 +194,9 @@ impl Ranker for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, RsBitVector};
+    /// use sucds::{Ranker, Rank9Sel};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]);
+    /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
     /// assert_eq!(bv.rank0(1), Some(0));
     /// assert_eq!(bv.rank0(2), Some(1));
@@ -209,7 +209,7 @@ impl Ranker for RsBitVector {
     }
 }
 
-impl Selector for RsBitVector {
+impl Selector for Rank9Sel {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -220,9 +220,9 @@ impl Selector for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Selector};
+    /// use sucds::{Rank9Sel, Selector};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select1_hints();
+    /// let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
     ///
     /// assert_eq!(bv.select1(0), Some(0));
     /// assert_eq!(bv.select1(1), Some(3));
@@ -242,9 +242,9 @@ impl Selector for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Selector};
+    /// use sucds::{Rank9Sel, Selector};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, false, true]).select0_hints();
+    /// let bv = Rank9Sel::from_bits([true, false, false, true]).select0_hints();
     ///
     /// assert_eq!(bv.select0(0), Some(1));
     /// assert_eq!(bv.select0(1), Some(2));
@@ -255,7 +255,7 @@ impl Selector for RsBitVector {
     }
 }
 
-impl Predecessor for RsBitVector {
+impl Predecessor for Rank9Sel {
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
     /// [`None`] if not found or `self.len() <= pos`.
     ///
@@ -270,9 +270,9 @@ impl Predecessor for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Predecessor};
+    /// use sucds::{Rank9Sel, Predecessor};
     ///
-    /// let bv = RsBitVector::from_bits([false, true, false, true]).select1_hints();
+    /// let bv = Rank9Sel::from_bits([false, true, false, true]).select1_hints();
     ///
     /// assert_eq!(bv.predecessor1(3), Some(3));
     /// assert_eq!(bv.predecessor1(2), Some(1));
@@ -301,9 +301,9 @@ impl Predecessor for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Predecessor};
+    /// use sucds::{Rank9Sel, Predecessor};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, true, false]).select0_hints();
+    /// let bv = Rank9Sel::from_bits([true, false, true, false]).select0_hints();
     ///
     /// assert_eq!(bv.predecessor0(3), Some(3));
     /// assert_eq!(bv.predecessor0(2), Some(1));
@@ -319,7 +319,7 @@ impl Predecessor for RsBitVector {
     }
 }
 
-impl Successor for RsBitVector {
+impl Successor for Rank9Sel {
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
     /// [`None`] if not found or `self.len() <= pos`.
     ///
@@ -334,9 +334,9 @@ impl Successor for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Successor};
+    /// use sucds::{Rank9Sel, Successor};
     ///
-    /// let bv = RsBitVector::from_bits([true, false, true, false]).select1_hints();
+    /// let bv = Rank9Sel::from_bits([true, false, true, false]).select1_hints();
     ///
     /// assert_eq!(bv.successor1(0), Some(0));
     /// assert_eq!(bv.successor1(1), Some(2));
@@ -365,9 +365,9 @@ impl Successor for RsBitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{RsBitVector, Successor};
+    /// use sucds::{Rank9Sel, Successor};
     ///
-    /// let bv = RsBitVector::from_bits([false, true, false, true]).select0_hints();
+    /// let bv = Rank9Sel::from_bits([false, true, false, true]).select0_hints();
     ///
     /// assert_eq!(bv.successor0(0), Some(0));
     /// assert_eq!(bv.successor0(1), Some(2));
@@ -383,7 +383,7 @@ impl Successor for RsBitVector {
     }
 }
 
-impl Searial for RsBitVector {
+impl Searial for Rank9Sel {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.bv.serialize_into(&mut writer)?;
@@ -393,7 +393,7 @@ impl Searial for RsBitVector {
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
-        let rs = RsBitVectorIndex::deserialize_from(&mut reader)?;
+        let rs = Rank9SelIndex::deserialize_from(&mut reader)?;
         Ok(Self { bv, rs })
     }
 
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_rank1_all_zeros() {
-        let bv = RsBitVector::from_bits([false, false, false]);
+        let bv = Rank9Sel::from_bits([false, false, false]);
         assert_eq!(bv.rank1(0), Some(0));
         assert_eq!(bv.rank1(1), Some(0));
         assert_eq!(bv.rank1(2), Some(0));
@@ -418,13 +418,13 @@ mod tests {
 
     #[test]
     fn test_select1_all_zeros() {
-        let bv = RsBitVector::from_bits([false, false, false]).select1_hints();
+        let bv = Rank9Sel::from_bits([false, false, false]).select1_hints();
         assert_eq!(bv.select1(0), None);
     }
 
     #[test]
     fn test_rank0_all_ones() {
-        let bv = RsBitVector::from_bits([true, true, true]);
+        let bv = Rank9Sel::from_bits([true, true, true]);
         assert_eq!(bv.rank0(0), Some(0));
         assert_eq!(bv.rank0(1), Some(0));
         assert_eq!(bv.rank0(2), Some(0));
@@ -434,13 +434,13 @@ mod tests {
 
     #[test]
     fn test_select0_all_ones() {
-        let bv = RsBitVector::from_bits([true, true, true]).select0_hints();
+        let bv = Rank9Sel::from_bits([true, true, true]).select0_hints();
         assert_eq!(bv.select0(0), None);
     }
 
     #[test]
     fn test_select0_no_hint() {
-        let bv = RsBitVector::from_bits([true, false, false, true]);
+        let bv = Rank9Sel::from_bits([true, false, false, true]);
         assert_eq!(bv.select0(0), Some(1));
         assert_eq!(bv.select0(1), Some(2));
         assert_eq!(bv.select0(2), None);
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_select1_no_hint() {
-        let bv = RsBitVector::from_bits([true, false, false, true]);
+        let bv = Rank9Sel::from_bits([true, false, false, true]);
         assert_eq!(bv.select1(0), Some(0));
         assert_eq!(bv.select1(1), Some(3));
         assert_eq!(bv.select1(2), None);
@@ -457,11 +457,11 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let bv = RsBitVector::from_bits([false, true, true, false, true])
+        let bv = Rank9Sel::from_bits([false, true, true, false, true])
             .select1_hints()
             .select0_hints();
         let size = bv.serialize_into(&mut bytes).unwrap();
-        let other = RsBitVector::deserialize_from(&bytes[..]).unwrap();
+        let other = Rank9Sel::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(bv, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, bv.size_in_bytes());

@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector, Searial};
+use crate::{BitGetter, BitVector, CompactVector, IntGetter, Rank9Sel, Ranker, Searial};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -43,7 +43,7 @@ use crate::{BitGetter, BitVector, CompactVector, IntGetter, Ranker, RsBitVector,
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DacsOpt {
     data: Vec<CompactVector>,
-    flags: Vec<RsBitVector>,
+    flags: Vec<Rank9Sel>,
 }
 
 impl DacsOpt {
@@ -214,7 +214,7 @@ impl DacsOpt {
             }
         }
 
-        let flags = flags.into_iter().map(RsBitVector::new).collect();
+        let flags = flags.into_iter().map(Rank9Sel::new).collect();
         Ok(Self { data, flags })
     }
 
@@ -359,7 +359,7 @@ impl Searial for DacsOpt {
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
-        let flags = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
+        let flags = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
         Ok(Self { data, flags })
     }
 
@@ -416,7 +416,7 @@ mod tests {
 
         assert_eq!(
             list.flags,
-            vec![RsBitVector::from_bits([false, false, true, false])]
+            vec![Rank9Sel::from_bits([false, false, true, false])]
         );
 
         assert!(!list.is_empty());
