@@ -214,7 +214,7 @@ pub mod darray;
 pub mod elias_fano;
 mod intrinsics;
 pub mod prefix_summed_elias_fano;
-pub mod rs_bit_vector;
+pub mod rank9sel;
 pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;
@@ -227,7 +227,7 @@ pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
-pub use rs_bit_vector::Rank9Sel;
+pub use rank9sel::Rank9Sel;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 
