@@ -117,7 +117,7 @@
 //! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
-//! | [`RsBitVector`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
+//! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
 //! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`u + o(u)`$ |
 //! | [`EliasFano`] | -- | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
@@ -130,9 +130,9 @@
 //!
 //! #### Plain bit vectors with index
 //!
-//! [`RsBitVector`] and [`DArray`] are index structures for faster queries built on [`BitVector`].
+//! [`Rank9Sel`] and [`DArray`] are index structures for faster queries built on [`BitVector`].
 //!
-//! [`RsBitVector`] is an implementation of Vigna's Rank9 and hinted selection techniques, supporting
+//! [`Rank9Sel`] is an implementation of Vigna's Rank9 and hinted selection techniques, supporting
 //! constant-time Rank and logarithmic-time Select queries.
 //!
 //! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
@@ -227,7 +227,7 @@ pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
-pub use rs_bit_vector::RsBitVector;
+pub use rs_bit_vector::Rank9Sel;
 pub use serial::Searial;
 pub use wavelet_matrix::WaveletMatrix;
 

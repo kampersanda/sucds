@@ -8,7 +8,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, Ranker, RsBitVector, Searial, Selector};
+use crate::{BitGetter, BitVector, CompactVector, Rank9Sel, Ranker, Searial, Selector};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -49,7 +49,7 @@ use crate::{BitGetter, BitVector, CompactVector, Ranker, RsBitVector, Searial, S
 /// - F. Claude, and G. Navarro, "The Wavelet Matrix," In SPIRE 2012.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix {
-    layers: Vec<RsBitVector>,
+    layers: Vec<Rank9Sel>,
     alph_size: usize,
 }
 
@@ -91,7 +91,7 @@ impl WaveletMatrix {
             );
             zeros = next_zeros;
             ones = next_ones;
-            layers.push(RsBitVector::new(bv).select1_hints().select0_hints());
+            layers.push(Rank9Sel::new(bv).select1_hints().select0_hints());
         }
 
         Ok(Self { layers, alph_size })
@@ -578,7 +578,7 @@ impl Searial for WaveletMatrix {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = Vec::<RsBitVector>::deserialize_from(&mut reader)?;
+        let layers = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
         let alph_size = usize::deserialize_from(&mut reader)?;
         Ok(Self { layers, alph_size })
     }

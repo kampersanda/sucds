@@ -1,4 +1,4 @@
-//! Internal index structure of [`RsBitVector`](crate::RsBitVector).
+//! Internal index structure of [`Rank9Sel`](crate::Rank9Sel).
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -12,16 +12,16 @@ const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
-/// The index implementation of [`RsBitVector`](crate::RsBitVector) separated from the bit vector.
+/// The index implementation of [`Rank9Sel`](crate::Rank9Sel) separated from the bit vector.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct RsBitVectorIndex {
+pub struct Rank9SelIndex {
     len: usize,
     block_rank_pairs: Vec<usize>,
     select1_hints: Option<Vec<usize>>,
     select0_hints: Option<Vec<usize>>,
 }
 
-impl RsBitVectorIndex {
+impl Rank9SelIndex {
     /// Creates a new vector from input bit vector `bv`.
     pub fn new(bv: &BitVector) -> Self {
         Self::build_rank(bv)
@@ -176,10 +176,10 @@ impl RsBitVectorIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, rs_bit_vector::inner::RsBitVectorIndex};
+    /// use sucds::{BitVector, rs_bit_vector::inner::Rank9SelIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let idx = RsBitVectorIndex::new(&bv);
+    /// let idx = Rank9SelIndex::new(&bv);
     ///
     /// unsafe {
     ///     assert_eq!(idx.rank1(&bv, 1), Some(1));
@@ -223,10 +223,10 @@ impl RsBitVectorIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, rs_bit_vector::inner::RsBitVectorIndex};
+    /// use sucds::{BitVector, rs_bit_vector::inner::Rank9SelIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let idx = RsBitVectorIndex::new(&bv);
+    /// let idx = Rank9SelIndex::new(&bv);
     ///
     /// unsafe {
     ///     assert_eq!(idx.rank0(&bv, 1), Some(0));
@@ -259,10 +259,10 @@ impl RsBitVectorIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, rs_bit_vector::inner::RsBitVectorIndex};
+    /// use sucds::{BitVector, rs_bit_vector::inner::Rank9SelIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let idx = RsBitVectorIndex::new(&bv).select1_hints();
+    /// let idx = Rank9SelIndex::new(&bv).select1_hints();
     ///
     /// unsafe {
     ///     assert_eq!(idx.select1(&bv, 0), Some(0));
@@ -335,10 +335,10 @@ impl RsBitVectorIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, rs_bit_vector::inner::RsBitVectorIndex};
+    /// use sucds::{BitVector, rs_bit_vector::inner::Rank9SelIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
-    /// let idx = RsBitVectorIndex::new(&bv).select0_hints();
+    /// let idx = Rank9SelIndex::new(&bv).select0_hints();
     ///
     /// unsafe {
     ///     assert_eq!(idx.select0(&bv, 0), Some(1));
@@ -393,7 +393,7 @@ impl RsBitVectorIndex {
     }
 }
 
-impl Searial for RsBitVectorIndex {
+impl Searial for Rank9SelIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.len.serialize_into(&mut writer)?;

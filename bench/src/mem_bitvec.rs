@@ -22,18 +22,18 @@ fn show_memories(p: f64) {
     println!("[p = {p}]");
 
     let bytes = {
-        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned());
+        let idx = sucds::Rank9Sel::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
-    print_memory("RsBitVector", bytes);
+    print_memory("Rank9Sel", bytes);
 
     let bytes = {
-        let idx = sucds::RsBitVector::from_bits(bits.iter().cloned())
+        let idx = sucds::Rank9Sel::from_bits(bits.iter().cloned())
             .select1_hints()
             .select0_hints();
         idx.size_in_bytes()
     };
-    print_memory("RsBitVector (with select hints)", bytes);
+    print_memory("Rank9Sel (with select hints)", bytes);
 
     let bytes = {
         let idx = sucds::DArray::from_bits(bits.iter().cloned());

@@ -45,8 +45,8 @@ fn perform_predecessor(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], quer
         b.iter(|| run_queries(&pred, &queries));
     });
 
-    group.bench_function("sucds/RsBitVector", |b| {
-        let pred = sucds::RsBitVector::from_bits(bits.iter().cloned());
+    group.bench_function("sucds/Rank9Sel", |b| {
+        let pred = sucds::Rank9Sel::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&pred, &queries));
     });
 

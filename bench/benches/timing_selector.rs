@@ -47,8 +47,8 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
         b.iter(|| run_queries(&selector, &queries));
     });
 
-    group.bench_function("sucds/RsBitVector", |b| {
-        let selector = sucds::RsBitVector::from_bits(bits.iter().cloned()).select1_hints();
+    group.bench_function("sucds/Rank9Sel", |b| {
+        let selector = sucds::Rank9Sel::from_bits(bits.iter().cloned()).select1_hints();
         b.iter(|| run_queries(&selector, &queries));
     });
 
