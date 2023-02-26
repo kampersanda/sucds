@@ -97,6 +97,18 @@ impl DArray {
     pub const fn is_empty(&self) -> bool {
         self.bv.is_empty()
     }
+
+    /// Gets the number of bits set.
+    #[inline(always)]
+    pub fn num_ones(&self) -> usize {
+        self.da.num_ones()
+    }
+
+    /// Gets the number of bits unset.
+    #[inline(always)]
+    pub fn num_zeros(&self) -> usize {
+        self.len() - self.num_ones()
+    }
 }
 
 impl BitGetter for DArray {
@@ -280,12 +292,12 @@ impl Successor for DArray {
     /// assert_eq!(da.successor1(3), None);
     /// ```
     fn successor1(&self, pos: usize) -> Option<usize> {
-        let r9 = self.r9.as_ref().expect("enable_rank() must be set up.");
+        self.r9.as_ref().expect("enable_rank() must be set up.");
         if self.len() <= pos {
             return None;
         }
         let k = self.rank1(pos).unwrap();
-        (k < r9.num_ones()).then(|| self.select1(k).unwrap())
+        (k < self.num_ones()).then(|| self.select1(k).unwrap())
     }
 
     /// Panics always because this operation is not supported.

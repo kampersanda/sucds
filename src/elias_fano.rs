@@ -306,7 +306,7 @@ impl EliasFano {
     /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
-        self.high_bits_d1.len()
+        self.high_bits_d1.num_ones()
     }
 
     /// Checks if the sequence is empty.
