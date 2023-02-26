@@ -7,10 +7,8 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{
-    bit_vector::Iter, rank9sel::inner::Rank9SelIndex, BitGetter, BitVector, Predecessor, Ranker,
-    Searial, Selector, Successor,
-};
+use crate::rank9sel::inner::Rank9SelIndex;
+use crate::{BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor};
 use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
@@ -71,37 +69,6 @@ impl DArray {
         self
     }
 
-    /// Creates an iterator for enumerating integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::DArray;
-    ///
-    /// let da = DArray::from_bits([false, true, false]);
-    /// let mut it = da.iter();
-    ///
-    /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), Some(true));
-    /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), None);
-    /// ```
-    pub const fn iter(&self) -> Iter {
-        Iter::new(&self.bv)
-    }
-
-    /// Returns the number of integers.
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.bv.len()
-    }
-
-    /// Checks if the set is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.bv.is_empty()
-    }
-
     /// Returns the reference of the internal bit vector.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
@@ -115,6 +82,18 @@ impl DArray {
     /// Returns the reference of the internal rank index.
     pub const fn r9_index(&self) -> Option<&Rank9SelIndex> {
         self.r9.as_ref()
+    }
+
+    /// Gets the number of bits.
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.bv.len()
+    }
+
+    /// Checks if the vector is empty.
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.bv.is_empty()
     }
 }
 
