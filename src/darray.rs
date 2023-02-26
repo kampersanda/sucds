@@ -325,9 +325,51 @@ mod tests {
 
     #[test]
     #[should_panic]
+    fn test_rank1() {
+        let da = DArray::from_bits([false, true, false]);
+        da.rank1(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_rank0() {
+        let da = DArray::from_bits([false, true, false]);
+        da.rank0(1);
+    }
+
+    #[test]
+    #[should_panic]
     fn test_select1() {
         let da = DArray::from_bits([false, true, false]);
         da.select0(0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_predecessor1() {
+        let da = DArray::from_bits([false, true, false]);
+        da.predecessor1(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_predecessor0() {
+        let da = DArray::from_bits([false, true, false]);
+        da.predecessor0(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_successor1() {
+        let da = DArray::from_bits([false, true, false]);
+        da.successor1(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_successor0() {
+        let da = DArray::from_bits([false, true, false]);
+        da.successor0(1);
     }
 
     #[test]
