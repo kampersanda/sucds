@@ -95,6 +95,7 @@ impl Rank9Sel {
     ///
     /// let bv = Rank9Sel::from_bits([false, true, false]);
     /// let mut it = bv.iter();
+    ///
     /// assert_eq!(it.next(), Some(false));
     /// assert_eq!(it.next(), Some(true));
     /// assert_eq!(it.next(), Some(false));
