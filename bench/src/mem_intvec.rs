@@ -18,7 +18,7 @@ fn main() {
 fn show_data_stats(vals: &[u32]) {
     let nvals = vals.len();
     let max = vals.iter().cloned().max().unwrap();
-    let mean = vals.iter().cloned().fold(0, |acc, x| acc + x) as f64 / nvals as f64;
+    let mean = vals.iter().cloned().sum::<u32>() as f64 / nvals as f64;
 
     let mut sorted = vals.to_vec();
     sorted.sort_unstable();

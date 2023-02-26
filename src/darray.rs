@@ -100,13 +100,13 @@ impl DArray {
 
     /// Gets the number of bits set.
     #[inline(always)]
-    pub fn num_ones(&self) -> usize {
+    pub const fn num_ones(&self) -> usize {
         self.da.num_ones()
     }
 
     /// Gets the number of bits unset.
     #[inline(always)]
-    pub fn num_zeros(&self) -> usize {
+    pub const fn num_zeros(&self) -> usize {
         self.len() - self.num_ones()
     }
 }
