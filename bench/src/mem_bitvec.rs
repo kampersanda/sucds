@@ -42,6 +42,12 @@ fn show_memories(p: f64) {
     print_memory("DArray", bytes);
 
     let bytes = {
+        let idx = sucds::DArray::from_bits(bits.iter().cloned()).enable_rank();
+        idx.size_in_bytes()
+    };
+    print_memory("DArray (with rank index)", bytes);
+
+    let bytes = {
         let idx = sucds::EliasFano::from_bits(bits.iter().cloned()).unwrap();
         idx.size_in_bytes()
     };
