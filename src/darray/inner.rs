@@ -79,7 +79,7 @@ impl DArrayIndex {
     /// ```
     #[inline(always)]
     pub unsafe fn select(&self, bv: &BitVector, k: usize) -> Option<usize> {
-        if self.len() <= k {
+        if self.num_ones() <= k {
             return None;
         }
 
@@ -127,14 +127,8 @@ impl DArrayIndex {
 
     /// Gets the number of integers.
     #[inline(always)]
-    pub const fn len(&self) -> usize {
+    pub const fn num_ones(&self) -> usize {
         self.num_positions
-    }
-
-    /// Checks if the set is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     fn build(bv: &BitVector, over_one: bool) -> Self {

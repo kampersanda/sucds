@@ -7,9 +7,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{
-    bit_vector::Iter, BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor,
-};
+use crate::{BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor};
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
@@ -86,35 +84,19 @@ impl Rank9Sel {
         Self::new(BitVector::from_bits(bits))
     }
 
-    /// Creates an iterator for enumerating bits.
+    /// Returns the reference of the internal bit vector.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::Rank9Sel;
-    ///
-    /// let bv = Rank9Sel::from_bits([false, true, false]);
-    /// let mut it = bv.iter();
-    /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), Some(true));
-    /// assert_eq!(it.next(), Some(false));
-    /// assert_eq!(it.next(), None);
-    /// ```
-    pub const fn iter(&self) -> Iter {
-        Iter::new(&self.bv)
-    }
-
-    /// Gets the reference of the internal bit vector.
+    /// Use the iterators of [`BitVector`] to scan rank9sel entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
 
-    /// Gets the reference of the internal index.
+    /// Returns the reference of the internal rank/select index.
     pub const fn rs_index(&self) -> &Rank9SelIndex {
         &self.rs
     }
 
-    /// Gets the number of bits.
+    /// Returns the number of bits.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.bv.len()
@@ -126,13 +108,13 @@ impl Rank9Sel {
         self.len() == 0
     }
 
-    /// Gets the number of bits set.
+    /// Returns the number of bits set.
     #[inline(always)]
     pub fn num_ones(&self) -> usize {
         self.rs.num_ones()
     }
 
-    /// Gets the number of bits unset.
+    /// Returns the number of bits unset.
     #[inline(always)]
     pub fn num_zeros(&self) -> usize {
         self.rs.num_zeros()

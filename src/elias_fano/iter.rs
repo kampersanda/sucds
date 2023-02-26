@@ -19,7 +19,7 @@ impl<'a> Iter<'a> {
     /// Creates an iterator for enumerating integers from position `k`.
     pub fn new(ef: &'a EliasFano, k: usize) -> Self {
         debug_assert!(ef.low_len < 64);
-        debug_assert!(!ef.high_bits_d1.is_empty());
+        debug_assert_ne!(ef.high_bits_d1.num_ones(), 0);
 
         let low_buf = 0;
         let low_mask = (1 << ef.low_len) - 1;
@@ -55,7 +55,7 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.k == self.ef.high_bits_d1.len() {
+        if self.k == self.ef.high_bits_d1.num_ones() {
             self.high_iter = None;
         }
         if let Some(high_iter) = &mut self.high_iter {

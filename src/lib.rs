@@ -118,7 +118,7 @@
 //! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
-//! | [`DArray`] | -- | -- | $`O(1)`$ | -- | -- | $`u + o(u)`$ |
+//! | [`DArray`] | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | -- | $`u + o(u)`$ |
 //! | [`EliasFano`] | -- | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! #### Plain bit vectors without index
@@ -136,9 +136,10 @@
 //! constant-time Rank and logarithmic-time Select queries.
 //!
 //! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
-//! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$),
-//! this will be the most candidate.
+//! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$), this will be the most candidate.
 //! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`EliasFano`] described below.
+//! Rank/Predecessor/Successor queries are optionally enabled using the [`Rank9Sel`] index in constant time.
+//! [`DArray`] outperforms [`Rank9Sel`] in complexity, but the practical space overhead of [`DArray`] can be larger.
 //!
 //! #### Very sparse bit vectors
 //!

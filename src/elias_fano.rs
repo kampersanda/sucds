@@ -122,8 +122,8 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Builds an index to enable operations [`EliasFano::rank1()`],
-    /// [`EliasFano::predecessor1()`], and [`EliasFano::successor1()`].
+    /// Builds an index to enable operations [`Self::rank1()`],
+    /// [`Self::predecessor1()`], and [`Self::successor1()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
@@ -306,7 +306,7 @@ impl EliasFano {
     /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
-        self.high_bits_d1.len()
+        self.high_bits_d1.num_ones()
     }
 
     /// Checks if the sequence is empty.
