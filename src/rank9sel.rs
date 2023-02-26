@@ -85,6 +85,8 @@ impl Rank9Sel {
     }
 
     /// Returns the reference of the internal bit vector.
+    ///
+    /// Use the iterators of [`BitVector`] to scan rank9sel entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }

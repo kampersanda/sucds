@@ -70,6 +70,8 @@ impl DArray {
     }
 
     /// Returns the reference of the internal bit vector.
+    ///
+    /// Use the iterators of [`BitVector`] to scan darray entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
