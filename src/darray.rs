@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::rank9sel::inner::Rank9SelIndex;
-use crate::{BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor};
+use crate::{BitGetter, BitVector, Predecessor, Ranker, Selector, Serializable, Successor};
 use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
@@ -417,7 +417,7 @@ impl Successor for DArray {
     }
 }
 
-impl Searial for DArray {
+impl Serializable for DArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.bv.serialize_into(&mut writer)?;

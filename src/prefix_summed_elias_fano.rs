@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::{EliasFano, EliasFanoBuilder, IntGetter, Searial};
+use crate::{EliasFano, EliasFanoBuilder, IntGetter, Serializable};
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///
@@ -163,7 +163,7 @@ impl IntGetter for PrefixSummedEliasFano {
     }
 }
 
-impl Searial for PrefixSummedEliasFano {
+impl Serializable for PrefixSummedEliasFano {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         self.ef.serialize_into(writer)
     }

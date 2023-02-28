@@ -1,4 +1,4 @@
-use sucds::Searial;
+use sucds::Serializable;
 
 const DBLP_PSEF_BYTES: &[u8] = include_bytes!("../lcps/dblp.1MiB.psef");
 const DNA_PSEF_BYTES: &[u8] = include_bytes!("../lcps/dna.1MiB.psef");

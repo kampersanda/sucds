@@ -13,7 +13,7 @@ use anyhow::Result;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{BitVector, Searial};
+/// use sucds::{BitVector, Serializable};
 ///
 /// let bv = BitVector::from_bits([true, false, false, true]);
 ///
@@ -27,7 +27,7 @@ use anyhow::Result;
 /// # Ok(())
 /// # }
 /// ```
-pub trait Searial: Sized {
+pub trait Serializable: Sized {
     /// Serializes the data structure into the writer,
     /// returning the number of serialized bytes.
     ///
@@ -52,9 +52,9 @@ pub trait Searial: Sized {
     }
 }
 
-impl<S> Searial for Option<S>
+impl<S> Serializable for Option<S>
 where
-    S: Searial,
+    S: Serializable,
 {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -81,9 +81,9 @@ where
     }
 }
 
-impl<S> Searial for Vec<S>
+impl<S> Serializable for Vec<S>
 where
-    S: Searial,
+    S: Serializable,
 {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.len().serialize_into(&mut writer)?;

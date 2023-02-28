@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::{util, BitVector, IntGetter, Searial};
+use crate::{util, BitVector, IntGetter, Serializable};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///
@@ -438,7 +438,7 @@ impl std::fmt::Debug for CompactVector {
     }
 }
 
-impl Searial for CompactVector {
+impl Serializable for CompactVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.chunks.serialize_into(&mut writer)?;
         mem += self.len.serialize_into(&mut writer)?;

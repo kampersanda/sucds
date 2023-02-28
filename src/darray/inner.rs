@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitVector, Searial};
+use crate::{broadword, BitVector, Serializable};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -229,7 +229,7 @@ impl DArrayIndex {
     }
 }
 
-impl Searial for DArrayIndex {
+impl Serializable for DArrayIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.block_inventory.serialize_into(&mut writer)?;

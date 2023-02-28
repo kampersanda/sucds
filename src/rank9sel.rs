@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{BitGetter, BitVector, Predecessor, Ranker, Searial, Selector, Successor};
+use crate::{BitGetter, BitVector, Predecessor, Ranker, Selector, Serializable, Successor};
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
@@ -365,7 +365,7 @@ impl Successor for Rank9Sel {
     }
 }
 
-impl Searial for Rank9Sel {
+impl Serializable for Rank9Sel {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.bv.serialize_into(&mut writer)?;

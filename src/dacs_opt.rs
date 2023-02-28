@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, IntGetter, Rank9Sel, Ranker, Searial};
+use crate::{BitGetter, BitVector, CompactVector, IntGetter, Rank9Sel, Ranker, Serializable};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -349,7 +349,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl Searial for DacsOpt {
+impl Serializable for DacsOpt {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.data.serialize_into(&mut writer)?;
