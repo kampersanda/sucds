@@ -10,8 +10,7 @@ use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
 use crate::{
-    broadword, darray::inner::DArrayIndex, BitGetter, BitVector, Predecessor, Ranker, Searial,
-    Selector, Successor,
+    broadword, BitGetter, BitVector, DArray, Predecessor, Ranker, Searial, Selector, Successor,
 };
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
@@ -79,9 +78,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///    In ALENEX, 2007.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct EliasFano {
-    high_bits: BitVector,
-    high_bits_d1: DArrayIndex,
-    high_bits_d0: Option<DArrayIndex>,
+    high_bits: DArray,
     low_bits: BitVector,
     low_len: usize,
     universe: usize,
@@ -126,7 +123,7 @@ impl EliasFano {
     /// [`Self::predecessor1()`], and [`Self::successor1()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
-        self.high_bits_d0 = Some(DArrayIndex::new(&self.high_bits, false));
+        self.high_bits = self.high_bits.enable_select0();
         self
     }
 
@@ -160,14 +157,20 @@ impl EliasFano {
         if self.len() <= k {
             return None;
         }
-        // SAFETY: self.high_bits is what was actually used to build.
-        let high_val = unsafe { self.high_bits_d1.select(&self.high_bits, k).unwrap() };
+        let high_val = self.high_bits.select1(k).unwrap();
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
             .unwrap();
         let x = if k != 0 {
-            ((high_val - self.high_bits.predecessor1(high_val - 1).unwrap() - 1) << self.low_len)
+            ((high_val
+                - self
+                    .high_bits
+                    .bit_vector()
+                    .predecessor1(high_val - 1)
+                    .unwrap()
+                - 1)
+                << self.low_len)
                 + low_val
                 - self
                     .low_bits
@@ -306,7 +309,7 @@ impl EliasFano {
     /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
-        self.high_bits_d1.num_ones()
+        self.high_bits.num_ones()
     }
 
     /// Checks if the sequence is empty.
@@ -359,10 +362,8 @@ impl Ranker for EliasFano {
             return Some(self.len());
         }
 
-        let high_bits_d0 = self.high_bits_d0.as_ref().unwrap();
         let h_rank = pos >> self.low_len;
-        // SAFETY: self.high_bits is what was actually used to build.
-        let mut h_pos = unsafe { high_bits_d0.select(&self.high_bits, h_rank).unwrap() };
+        let mut h_pos = self.high_bits.select0(h_rank).unwrap();
         let mut rank = h_pos - h_rank;
         let l_pos = pos & ((1 << self.low_len) - 1);
 
@@ -418,9 +419,7 @@ impl Selector for EliasFano {
             None
         } else {
             Some(
-                // SAFETY: self.high_bits is what was actually used to build.
-                ((unsafe { self.high_bits_d1.select(&self.high_bits, k).unwrap() } - k)
-                    << self.low_len)
+                ((self.high_bits.select1(k).unwrap() - k) << self.low_len)
                     | self
                         .low_bits
                         .get_bits(k * self.low_len, self.low_len)
@@ -527,9 +526,8 @@ impl Successor for EliasFano {
 
 impl Searial for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = self.high_bits.serialize_into(&mut writer)?;
-        mem += self.high_bits_d1.serialize_into(&mut writer)?;
-        mem += self.high_bits_d0.serialize_into(&mut writer)?;
+        let mut mem = 0;
+        mem += self.high_bits.serialize_into(&mut writer)?;
         mem += self.low_bits.serialize_into(&mut writer)?;
         mem += self.low_len.serialize_into(&mut writer)?;
         mem += self.universe.serialize_into(&mut writer)?;
@@ -537,16 +535,12 @@ impl Searial for EliasFano {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let high_bits = BitVector::deserialize_from(&mut reader)?;
-        let high_bits_d1 = DArrayIndex::deserialize_from(&mut reader)?;
-        let high_bits_d0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
+        let high_bits = DArray::deserialize_from(&mut reader)?;
         let low_bits = BitVector::deserialize_from(&mut reader)?;
         let low_len = usize::deserialize_from(&mut reader)?;
         let universe = usize::deserialize_from(&mut reader)?;
         Ok(Self {
             high_bits,
-            high_bits_d1,
-            high_bits_d0,
             low_bits,
             low_len,
             universe,
@@ -555,8 +549,6 @@ impl Searial for EliasFano {
 
     fn size_in_bytes(&self) -> usize {
         self.high_bits.size_in_bytes()
-            + self.high_bits_d1.size_in_bytes()
-            + self.high_bits_d0.size_in_bytes()
             + self.low_bits.size_in_bytes()
             + usize::size_of().unwrap() * 2
     }
@@ -696,9 +688,7 @@ impl EliasFanoBuilder {
     /// Builds [`EliasFano`] from the pushed integers.
     pub fn build(self) -> EliasFano {
         EliasFano {
-            high_bits_d1: DArrayIndex::new(&self.high_bits, true),
-            high_bits: self.high_bits,
-            high_bits_d0: None,
+            high_bits: DArray::from_bits(self.high_bits.iter()),
             low_bits: self.low_bits,
             low_len: self.low_len,
             universe: self.universe,

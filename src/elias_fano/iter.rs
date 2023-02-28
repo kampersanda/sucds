@@ -2,7 +2,7 @@
 #![cfg(target_pointer_width = "64")]
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::EliasFano;
+use crate::{EliasFano, Selector};
 
 /// Iterator for enumerating integers stored in [`EliasFano`], created by [`EliasFano::iter`].
 pub struct Iter<'a> {
@@ -19,7 +19,7 @@ impl<'a> Iter<'a> {
     /// Creates an iterator for enumerating integers from position `k`.
     pub fn new(ef: &'a EliasFano, k: usize) -> Self {
         debug_assert!(ef.low_len < 64);
-        debug_assert_ne!(ef.high_bits_d1.num_ones(), 0);
+        debug_assert_ne!(ef.high_bits.num_ones(), 0);
 
         let low_buf = 0;
         let low_mask = (1 << ef.low_len) - 1;
@@ -31,9 +31,8 @@ impl<'a> Iter<'a> {
         };
 
         let high_iter = if k < ef.len() {
-            // SAFETY: self.high_bits is what was actually used to build.
-            let pos = unsafe { ef.high_bits_d1.select(&ef.high_bits, k).unwrap() };
-            Some(ef.high_bits.unary_iter(pos))
+            let pos = ef.high_bits.select1(k).unwrap();
+            Some(ef.high_bits.bit_vector().unary_iter(pos))
         } else {
             None
         };
@@ -55,7 +54,7 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.k == self.ef.high_bits_d1.num_ones() {
+        if self.k == self.ef.high_bits.num_ones() {
             self.high_iter = None;
         }
         if let Some(high_iter) = &mut self.high_iter {
