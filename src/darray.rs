@@ -20,7 +20,9 @@ use inner::DArrayIndex;
 /// ```
 /// use sucds::{DArray, BitGetter, Ranker, Selector};
 ///
-/// let da = DArray::from_bits([true, false, false, true]).enable_rank();
+/// let da = DArray::from_bits([true, false, false, true])
+///     .enable_rank()
+///     .enable_select0();
 ///
 /// assert_eq!(da.len(), 4);
 ///
@@ -32,8 +34,8 @@ use inner::DArrayIndex;
 /// assert_eq!(da.rank0(1), Some(0));
 ///
 /// // Need Selector
-/// assert_eq!(da.select1(0), Some(0));
 /// assert_eq!(da.select1(1), Some(3));
+/// assert_eq!(da.select0(0), Some(1)); // Need enable_select0()
 /// ```
 ///
 /// # References
@@ -43,7 +45,8 @@ use inner::DArrayIndex;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DArray {
     bv: BitVector,
-    da: DArrayIndex,
+    s1: DArrayIndex,
+    s0: Option<DArrayIndex>,
     r9: Option<Rank9SelIndex>,
 }
 
@@ -58,14 +61,26 @@ impl DArray {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        let da = DArrayIndex::new(&bv, true);
-        Self { bv, da, r9: None }
+        let s1 = DArrayIndex::new(&bv, true);
+        Self {
+            bv,
+            s1,
+            s0: None,
+            r9: None,
+        }
     }
 
     /// Builds an index to enable rank, predecessor, and successor queries.
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.r9 = Some(Rank9SelIndex::new(&self.bv));
+        self
+    }
+
+    /// Builds an index to enable select0, predecessor0, and successor0 queries.
+    #[must_use]
+    pub fn enable_select0(mut self) -> Self {
+        self.s0 = Some(DArrayIndex::new(&self.bv, false));
         self
     }
 
@@ -76,9 +91,14 @@ impl DArray {
         &self.bv
     }
 
-    /// Returns the reference of the internal select index.
-    pub const fn da_index(&self) -> &DArrayIndex {
-        &self.da
+    /// Returns the reference of the internal select1 index.
+    pub const fn s1_index(&self) -> &DArrayIndex {
+        &self.s1
+    }
+
+    /// Returns the reference of the internal select0 index.
+    pub const fn s0_index(&self) -> Option<&DArrayIndex> {
+        self.s0.as_ref()
     }
 
     /// Returns the reference of the internal rank index.
@@ -101,7 +121,7 @@ impl DArray {
     /// Gets the number of bits set.
     #[inline(always)]
     pub const fn num_ones(&self) -> usize {
-        self.da.num_ones()
+        self.s1.num_ones()
     }
 
     /// Gets the number of bits unset.
@@ -192,8 +212,8 @@ impl Ranker for DArray {
 }
 
 impl Selector for DArray {
-    /// Returns the `k`-th smallest integer, or
-    /// [`None`] if `self.len() <= k`.
+    /// Searches the position of the `k`-th bit set, or
+    /// [`None`] if `self.num_ones() <= k`.
     ///
     /// # Complexity
     ///
@@ -211,12 +231,34 @@ impl Selector for DArray {
     /// assert_eq!(da.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        unsafe { self.da.select(&self.bv, k) }
+        unsafe { self.s1.select(&self.bv, k) }
     }
 
-    /// Panics always because this operation is not supported.
-    fn select0(&self, _k: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
+    /// Searches the position of the `k`-th bit unset, or
+    /// [`None`] if `self.num_zeros() <= k`.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_select0()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{DArray, Selector};
+    ///
+    /// let da = DArray::from_bits([true, false, false, true]).enable_select0();
+    ///
+    /// assert_eq!(da.select0(0), Some(1));
+    /// assert_eq!(da.select0(1), Some(2));
+    /// assert_eq!(da.select0(2), None);
+    /// ```
+    fn select0(&self, k: usize) -> Option<usize> {
+        let s0 = self.s0.as_ref().expect("enable_select0() must be set up.");
+        unsafe { s0.select(&self.bv, k) }
     }
 }
 
@@ -257,9 +299,41 @@ impl Predecessor for DArray {
         (k != 0).then(|| self.select1(k - 1).unwrap())
     }
 
-    /// Panics always because this operation is not supported.
-    fn predecessor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`] and [`Self::enable_select0()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{DArray, Predecessor};
+    ///
+    /// let da = DArray::from_bits([true, false, true, false]).enable_rank().enable_select0();
+    ///
+    /// assert_eq!(da.predecessor0(3), Some(3));
+    /// assert_eq!(da.predecessor0(2), Some(1));
+    /// assert_eq!(da.predecessor0(1), Some(1));
+    /// assert_eq!(da.predecessor0(0), None);
+    /// ```
+    fn predecessor0(&self, pos: usize) -> Option<usize> {
+        self.r9.as_ref().expect("enable_rank() must be set up.");
+        self.s0.as_ref().expect("enable_select0() must be set up.");
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank0(pos + 1).unwrap();
+        (k != 0).then(|| self.select0(k - 1).unwrap())
     }
 }
 
@@ -300,9 +374,41 @@ impl Successor for DArray {
         (k < self.num_ones()).then(|| self.select1(k).unwrap())
     }
 
-    /// Panics always because this operation is not supported.
-    fn successor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - Constant
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`] and [`Self::enable_select0()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{DArray, Successor};
+    ///
+    /// let da = DArray::from_bits([false, true, false, true]).enable_rank().enable_select0();
+    ///
+    /// assert_eq!(da.successor0(0), Some(0));
+    /// assert_eq!(da.successor0(1), Some(2));
+    /// assert_eq!(da.successor0(2), Some(2));
+    /// assert_eq!(da.successor0(3), None);
+    /// ```
+    fn successor0(&self, pos: usize) -> Option<usize> {
+        self.r9.as_ref().expect("enable_rank() must be set up.");
+        self.s0.as_ref().expect("enable_select0() must be set up.");
+        if self.len() <= pos {
+            return None;
+        }
+        let k = self.rank0(pos).unwrap();
+        (k < self.num_zeros()).then(|| self.select0(k).unwrap())
     }
 }
 
@@ -310,20 +416,25 @@ impl Searial for DArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.bv.serialize_into(&mut writer)?;
-        mem += self.da.serialize_into(&mut writer)?;
+        mem += self.s1.serialize_into(&mut writer)?;
+        mem += self.s0.serialize_into(&mut writer)?;
         mem += self.r9.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
-        let da = DArrayIndex::deserialize_from(&mut reader)?;
+        let s1 = DArrayIndex::deserialize_from(&mut reader)?;
+        let s0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
         let r9 = Option::<Rank9SelIndex>::deserialize_from(&mut reader)?;
-        Ok(Self { bv, da, r9 })
+        Ok(Self { bv, s1, s0, r9 })
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.bv.size_in_bytes() + self.da.size_in_bytes() + self.r9.size_in_bytes()
+        self.bv.size_in_bytes()
+            + self.s1.size_in_bytes()
+            + self.s0.size_in_bytes()
+            + self.r9.size_in_bytes()
     }
 }
 
