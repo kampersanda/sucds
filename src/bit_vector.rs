@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, BitGetter, Predecessor, Ranker, Searial, Selector, Successor};
+use crate::{broadword, BitGetter, Predecessor, Ranker, Selector, Serializable, Successor};
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -862,7 +862,7 @@ impl std::fmt::Debug for BitVector {
     }
 }
 
-impl Searial for BitVector {
+impl Serializable for BitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.words.serialize_into(&mut writer)?;
         mem += self.len.serialize_into(&mut writer)?;

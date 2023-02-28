@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 
 use crate::elias_fano::iter::Iter;
 use crate::{
-    broadword, BitGetter, BitVector, DArray, Predecessor, Ranker, Searial, Selector, Successor,
+    broadword, BitGetter, BitVector, DArray, Predecessor, Ranker, Selector, Serializable, Successor,
 };
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
@@ -524,7 +524,7 @@ impl Successor for EliasFano {
     }
 }
 
-impl Searial for EliasFano {
+impl Serializable for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.high_bits.serialize_into(&mut writer)?;

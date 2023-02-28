@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use suffix::SuffixTable;
 
-use sucds::{PrefixSummedEliasFano, Searial};
+use sucds::{PrefixSummedEliasFano, Serializable};
 
 #[derive(Parser, Debug)]
 #[clap(name = "gen_lcps", about = "Generate LCP lens.")]

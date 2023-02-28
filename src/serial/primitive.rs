@@ -5,11 +5,11 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use super::Searial;
+use super::Serializable;
 
 macro_rules! common_def {
     ($int:ident) => {
-        impl Searial for $int {
+        impl Serializable for $int {
             fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
                 writer.write_all(&self.to_le_bytes())?;
                 Ok(std::mem::size_of::<Self>())
@@ -43,7 +43,7 @@ common_def!(i32);
 common_def!(i64);
 common_def!(isize);
 
-impl Searial for bool {
+impl Serializable for bool {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         (*self as u8).serialize_into(writer)
     }

@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::broadword;
-use crate::{BitVector, Searial};
+use crate::{BitVector, Serializable};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -393,7 +393,7 @@ impl Rank9SelIndex {
     }
 }
 
-impl Searial for Rank9SelIndex {
+impl Serializable for Rank9SelIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.len.serialize_into(&mut writer)?;

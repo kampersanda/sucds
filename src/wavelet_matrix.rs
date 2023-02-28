@@ -8,7 +8,7 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, Rank9Sel, Ranker, Searial, Selector};
+use crate::{BitGetter, BitVector, CompactVector, Rank9Sel, Ranker, Selector, Serializable};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -570,7 +570,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl Searial for WaveletMatrix {
+impl Serializable for WaveletMatrix {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
         mem += self.alph_size.serialize_into(&mut writer)?;

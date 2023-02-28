@@ -195,7 +195,7 @@
 //!
 //! ## Serialization/deserialization
 //!
-//! All the data structures can be serialized or deserialized through the [`Searial`] trait.
+//! All the data structures can be serialized or deserialized through the [`Serializable`] trait.
 //!
 //! ## Limitation
 //!
@@ -229,7 +229,7 @@ pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 pub use rank9sel::Rank9Sel;
-pub use serial::Searial;
+pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
 
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std

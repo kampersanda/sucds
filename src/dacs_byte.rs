@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::util;
-use crate::{BitGetter, BitVector, IntGetter, Rank9Sel, Ranker, Searial};
+use crate::{BitGetter, BitVector, IntGetter, Rank9Sel, Ranker, Serializable};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
@@ -242,7 +242,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl Searial for DacsByte {
+impl Serializable for DacsByte {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
         mem += self.data.serialize_into(&mut writer)?;

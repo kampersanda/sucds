@@ -1,7 +1,7 @@
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 
-use sucds::Searial;
+use sucds::Serializable;
 
 const SEED_BITS: u64 = 113;
 const NUM_BITS: usize = 1 << 20;
