@@ -138,7 +138,7 @@
 //! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
 //! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$), this will be the most candidate.
 //! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`EliasFano`] described below.
-//! Rank/Predecessor/Successor queries are optionally enabled using the [`Rank9Sel`] index in constant time.
+//! Rank/Predecessor/Successor queries are optionally enabled using the [`Rank9Sel`] index.
 //! [`DArray`] outperforms [`Rank9Sel`] in complexity, but the practical space overhead of [`DArray`] can be larger.
 //!
 //! #### Very sparse bit vectors

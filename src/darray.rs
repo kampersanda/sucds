@@ -15,6 +15,11 @@ use inner::DArrayIndex;
 ///
 /// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 ///
+/// # Notes
+///
+/// In the default configuration, this data structure supports only [`Self::select1()`].
+/// If other operations are needed, [`Self::enable_rank()`] and [`Self::enable_select0()`] must be set up.
+///
 /// # Examples
 ///
 /// ```
