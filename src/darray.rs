@@ -56,7 +56,7 @@ pub struct DArray {
 }
 
 impl DArray {
-    /// Creates a new instance from bit positions set in `bits`.
+    /// Creates a new instance from input bit stream `bits`.
     ///
     /// # Arguments
     ///
