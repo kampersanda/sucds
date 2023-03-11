@@ -68,8 +68,26 @@ impl SArray {
     }
 
     /// Checks if [`Self::enable_rank()`] is set.
-    pub fn has_rank(&self) -> bool {
+    pub const fn has_rank(&self) -> bool {
         self.has_rank
+    }
+
+    /// Returns the number of bits.
+    #[inline(always)]
+    pub const fn num_bits(&self) -> usize {
+        self.num_bits
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    pub const fn num_ones(&self) -> usize {
+        self.num_ones
+    }
+
+    /// Returns the number of bits unset.
+    #[inline(always)]
+    pub const fn num_zeros(&self) -> usize {
+        self.num_bits() - self.num_ones()
     }
 }
 
