@@ -11,9 +11,8 @@ use crate::{
     Successor,
 };
 
-/// Rank/Select data structure over very sparse bit vectors.
-///
-/// This is a specialized version of [EliasFano](crate::EliasFano) for bit vectors.
+/// Rank/Select data structure over very sparse bit vectors, which is
+/// a specialized version of [EliasFano](crate::EliasFano) for bit vectors.
 ///
 /// # References
 ///
@@ -355,6 +354,34 @@ mod tests {
     fn test_select0_panic() {
         let sa = SArray::from_bits([false, true, false]);
         sa.select0(0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_predecessor1_panic() {
+        let sa = SArray::from_bits([false, true, false]);
+        sa.predecessor1(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_predecessor0_panic() {
+        let sa = SArray::from_bits([false, true, false]);
+        sa.predecessor0(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_successor1_panic() {
+        let sa = SArray::from_bits([false, true, false]);
+        sa.successor1(1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_successor0_panic() {
+        let sa = SArray::from_bits([false, true, false]);
+        sa.successor0(1);
     }
 
     #[test]
