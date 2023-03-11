@@ -68,6 +68,7 @@ impl SArray {
     }
 
     /// Checks if [`Self::enable_rank()`] is set.
+    #[inline(always)]
     pub const fn has_rank(&self) -> bool {
         self.has_rank
     }

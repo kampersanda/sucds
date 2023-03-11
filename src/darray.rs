@@ -90,11 +90,13 @@ impl DArray {
     }
 
     /// Checks if [`Self::enable_rank()`] is set.
+    #[inline(always)]
     pub const fn has_rank(&self) -> bool {
         self.r9.is_some()
     }
 
     /// Checks if [`Self::enable_select0()`] is set.
+    #[inline(always)]
     pub const fn has_select0(&self) -> bool {
         self.s0.is_some()
     }
