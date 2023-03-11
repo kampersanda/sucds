@@ -119,7 +119,7 @@
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
 //! | [`DArray`] | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | -- | $`u + o(u)`$ |
-//! | [`EliasFano`] | -- | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//! | [`SArray`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! #### Plain bit vectors without index
 //!
@@ -137,15 +137,15 @@
 //!
 //! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
 //! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$), this will be the most candidate.
-//! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`EliasFano`] described below.
+//! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`SArray`] described below.
 //! Rank/Predecessor/Successor queries are optionally enabled using the [`Rank9Sel`] index.
 //! [`DArray`] outperforms [`Rank9Sel`] in complexity, but the practical space overhead of [`DArray`] can be larger.
 //!
 //! #### Very sparse bit vectors
 //!
-//! [`EliasFano`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
+//! [`SArray`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
 //! in compressed space, while supporting quick queries.
-//! This data structure is also known as [*SArray*](https://arxiv.org/abs/cs/0610001).
+//! This is a specialized wrapper of [`EliasFano`].
 //!
 //! ### Monotone-increasing integer sequences
 //!
@@ -161,7 +161,20 @@
 //! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$ (implemented by [`Predecessor`]).
 //! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$ (implemented by [`Successor`]).
 //!
-//! [`EliasFano`] is applicable to monotone-increasing integer sequences in the same complexities as bit vectors.
+//! Note that they are not limited depending on the data structures.
+//!
+//! #### Summary
+//!
+//! The implementations provided in this crate are summarized below:
+//!
+//! | Implementations | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Memory (bits) |
+//! | --- | :-: | :-: | :-: | :-: |
+//! | [`EliasFano`] | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! #### Elias-Fano encoding
+//!
+//! [`EliasFano`] is an efficient data structure for sparse sequences (i.e., $`n \ll u`$).
+//! In addition to the basic queires listed above, this provides several access queries such as binary search.
 //!
 //! ### Character sequences
 //!
@@ -216,6 +229,7 @@ pub mod elias_fano;
 mod intrinsics;
 pub mod prefix_summed_elias_fano;
 pub mod rank9sel;
+pub mod sarray;
 pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;
@@ -229,6 +243,7 @@ pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 pub use rank9sel::Rank9Sel;
+pub use sarray::SArray;
 pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
 

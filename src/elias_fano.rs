@@ -127,6 +127,12 @@ impl EliasFano {
         self
     }
 
+    /// Checks if [`Self::enable_rank()`] is set.
+    #[inline(always)]
+    pub const fn has_rank(&self) -> bool {
+        self.high_bits.has_select0()
+    }
+
     /// Gets the difference between the `k-1`-th and `k`-th integers
     /// (i.e., `select(k) - select(k-1)`), returning [`None`] if out of bounds.
     ///

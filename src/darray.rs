@@ -56,7 +56,7 @@ pub struct DArray {
 }
 
 impl DArray {
-    /// Creates a new instance from bit positions set in `bits`.
+    /// Creates a new instance from input bit stream `bits`.
     ///
     /// # Arguments
     ///
@@ -87,6 +87,18 @@ impl DArray {
     pub fn enable_select0(mut self) -> Self {
         self.s0 = Some(DArrayIndex::new(&self.bv, false));
         self
+    }
+
+    /// Checks if [`Self::enable_rank()`] is set.
+    #[inline(always)]
+    pub const fn has_rank(&self) -> bool {
+        self.r9.is_some()
+    }
+
+    /// Checks if [`Self::enable_select0()`] is set.
+    #[inline(always)]
+    pub const fn has_select0(&self) -> bool {
+        self.s0.is_some()
     }
 
     /// Returns the reference of the internal bit vector.
