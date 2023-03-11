@@ -114,11 +114,9 @@ impl BitGetter for SArray {
         if self.num_bits <= pos {
             return None;
         }
-        if let Some(ef) = self.ef.as_ref() {
-            Some(ef.binsearch(pos).is_some())
-        } else {
-            Some(false)
-        }
+        self.ef
+            .as_ref()
+            .map_or(Some(false), |ef| Some(ef.binsearch(pos).is_some()))
     }
 }
 
@@ -151,11 +149,7 @@ impl Ranker for SArray {
         if !self.has_rank() {
             panic!("enable_rank() must be set up.")
         }
-        if let Some(ef) = self.ef.as_ref() {
-            ef.rank1(pos)
-        } else {
-            Some(0)
-        }
+        self.ef.as_ref().map_or(Some(0), |ef| ef.rank1(pos))
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
@@ -207,11 +201,7 @@ impl Selector for SArray {
     /// assert_eq!(sa.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        if let Some(ef) = self.ef.as_ref() {
-            ef.select1(k)
-        } else {
-            None
-        }
+        self.ef.as_ref().and_then(|ef| ef.select1(k))
     }
 
     /// Panics always because this operation is not supported.
@@ -252,12 +242,8 @@ impl Predecessor for SArray {
         if !self.has_rank() {
             panic!("enable_rank() must be set up.")
         }
-        // NOTE(kampersanda): self.num_bits <= pos will be checked in both cases.
-        if let Some(ef) = self.ef.as_ref() {
-            ef.predecessor1(pos)
-        } else {
-            None
-        }
+        // NOTE(kampersanda): self.num_bits <= pos will be checked.
+        self.ef.as_ref().and_then(|ef| ef.predecessor1(pos))
     }
 
     /// Panics always because this operation is not supported.
@@ -298,12 +284,8 @@ impl Successor for SArray {
         if !self.has_rank() {
             panic!("enable_rank() must be set up.")
         }
-        // NOTE(kampersanda): self.num_bits <= pos will be checked in both cases.
-        if let Some(ef) = self.ef.as_ref() {
-            ef.successor1(pos)
-        } else {
-            None
-        }
+        // NOTE(kampersanda): self.num_bits <= pos will be checked.
+        self.ef.as_ref().and_then(|ef| ef.successor1(pos))
     }
 
     /// Panics always because this operation is not supported.
