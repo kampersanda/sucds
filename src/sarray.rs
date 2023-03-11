@@ -349,7 +349,10 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let sa = SArray::from_bits([false, false, false]);
+        let sa = SArray::from_bits([false, false, false]).enable_rank();
+        assert_eq!(sa.get_bit(0), Some(false));
+        assert_eq!(sa.rank1(0), Some(0));
+        assert_eq!(sa.rank0(3), Some(3));
         assert_eq!(sa.select1(0), None);
     }
 
