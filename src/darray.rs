@@ -89,6 +89,16 @@ impl DArray {
         self
     }
 
+    /// Checks if [`Self::enable_rank()`] is set.
+    pub fn has_rank(&self) -> bool {
+        self.r9.is_some()
+    }
+
+    /// Checks if [`Self::enable_select0()`] is set.
+    pub fn has_select0(&self) -> bool {
+        self.s0.is_some()
+    }
+
     /// Returns the reference of the internal bit vector.
     ///
     /// Use the iterators of [`BitVector`] to scan darray entries.
