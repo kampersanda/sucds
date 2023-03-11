@@ -145,7 +145,7 @@
 //!
 //! [`SArray`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
 //! in compressed space, while supporting quick queries.
-//! This is a wrapper of [`EliasFano`].
+//! This is a specialized wrapper of [`EliasFano`].
 //!
 //! ### Monotone-increasing integer sequences
 //!
@@ -161,7 +161,20 @@
 //! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$ (implemented by [`Predecessor`]).
 //! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$ (implemented by [`Successor`]).
 //!
-//! [`EliasFano`] is applicable to monotone-increasing integer sequences in the same complexities as bit vectors.
+//! Note that they are not limited depending on the data structures.
+//!
+//! #### Summary
+//!
+//! The implementations provided in this crate are summarized below:
+//!
+//! | Implementations | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Memory (bits) |
+//! | --- | :-: | :-: | :-: | :-: |
+//! | [`EliasFano`] | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! #### Elias-Fano encoding
+//!
+//! [`EliasFano`] is an efficient data structure for sparse sequences (i.e., $`n \ll u`$).
+//! In addition to the basic queires listed above, this provides several access queries such as binary search.
 //!
 //! ### Character sequences
 //!
