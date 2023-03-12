@@ -7,7 +7,6 @@ edition = "2018"
 
 [dependencies]
 sucds = { path = "..", features = ["intrinsics"] } # Recommend to set RUSTFLAGS="-C target-cpu=native"
-clap = { version = "3.2.23", features = ["derive"] }
 rand = "0.8.4"
 rand_chacha = "0.3.1"
 suffix = "1.3.0"
