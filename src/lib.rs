@@ -247,6 +247,8 @@ pub use sarray::SArray;
 pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
 
+use anyhow::Result;
+
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
 
@@ -315,4 +317,32 @@ pub trait Successor {
     /// Returns the smallest integer $`x_k \not\in X`$ such that $`x \leq x' < u`$, or
     /// [`None`] if not found or $`u \leq x`$.
     fn successor0(&self, x: usize) -> Option<usize>;
+}
+
+/// Interface for building a bit vector with rank/select queries.
+pub trait RsbvBuilder {
+    /// Creates a new vector from input bit stream `bits`.
+    ///
+    /// A data structure may not support a part of rank/select queries in the default
+    /// configuration. The last three flags allow to enable them if optionally supported.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: Bit stream.
+    /// - `with_rank`: Flag to enable rank1/0.
+    /// - `with_select1`: Flag to enable select1.
+    /// - `with_select0`: Flag to enable select0.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if specified queries are not supported.
+    fn build_from_bits<I>(
+        bits: I,
+        with_rank: bool,
+        with_select1: bool,
+        with_select0: bool,
+    ) -> Result<Self>
+    where
+        I: IntoIterator<Item = bool>,
+        Self: Sized;
 }

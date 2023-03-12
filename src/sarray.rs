@@ -3,12 +3,12 @@
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::broadword;
 use crate::{
-    BitGetter, BitVector, EliasFano, EliasFanoBuilder, Predecessor, Ranker, Selector, Serializable,
-    Successor,
+    BitGetter, BitVector, EliasFano, EliasFanoBuilder, Predecessor, Ranker, RsbvBuilder, Selector,
+    Serializable, Successor,
 };
 
 /// Rank/Select data structure over very sparse bit vectors, which is
@@ -89,6 +89,40 @@ impl SArray {
     #[inline(always)]
     pub const fn num_zeros(&self) -> usize {
         self.num_bits() - self.num_ones()
+    }
+}
+
+impl RsbvBuilder for SArray {
+    /// Creates a new vector from input bit stream `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: Bit stream.
+    /// - `with_rank`: Flag to enable [`Self::enable_rank()`].
+    /// - `with_select1`: Dummy.
+    /// - `with_select0`: Not supported.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `with_select0` is set.
+    fn build_from_bits<I>(
+        bits: I,
+        with_rank: bool,
+        _with_select1: bool,
+        with_select0: bool,
+    ) -> Result<Self>
+    where
+        I: IntoIterator<Item = bool>,
+        Self: Sized,
+    {
+        if with_select0 {
+            return Err(anyhow!("select0 is not supported for SArray."));
+        }
+        let mut rsbv = Self::from_bits(bits);
+        if with_rank {
+            rsbv = rsbv.enable_rank();
+        }
+        Ok(rsbv)
     }
 }
 
