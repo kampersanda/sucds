@@ -7,7 +7,9 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{BitGetter, BitVector, Predecessor, Ranker, Selector, Serializable, Successor};
+use crate::{
+    BitGetter, BitVector, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
+};
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
@@ -118,6 +120,40 @@ impl Rank9Sel {
     #[inline(always)]
     pub fn num_zeros(&self) -> usize {
         self.rs.num_zeros()
+    }
+}
+
+impl RsbvBuilder for Rank9Sel {
+    /// Creates a new vector from input bit stream `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: Bit stream.
+    /// - `with_rank`: Dummy.
+    /// - `with_select1`: Flag to enable [`Self::select1_hints()`].
+    /// - `with_select0`: Flag to enable [`Self::select0_hints()`].
+    ///
+    /// # Errors
+    ///
+    /// Never.
+    fn build_from_bits<I>(
+        bits: I,
+        _with_rank: bool,
+        with_select1: bool,
+        with_select0: bool,
+    ) -> Result<Self>
+    where
+        I: IntoIterator<Item = bool>,
+        Self: Sized,
+    {
+        let mut rsbv = Self::from_bits(bits);
+        if with_select1 {
+            rsbv = rsbv.select1_hints();
+        }
+        if with_select0 {
+            rsbv = rsbv.select0_hints();
+        }
+        Ok(rsbv)
     }
 }
 

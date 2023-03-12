@@ -6,7 +6,9 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{broadword, BitGetter, Predecessor, Ranker, Selector, Serializable, Successor};
+use crate::{
+    broadword, BitGetter, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
+};
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -475,6 +477,33 @@ impl BitVector {
     #[inline(always)]
     const fn words_for(n: usize) -> usize {
         (n + WORD_LEN - 1) / WORD_LEN
+    }
+}
+
+impl RsbvBuilder for BitVector {
+    /// Creates a new vector from input bit stream `bits`.
+    ///
+    /// # Arguments
+    ///
+    /// - `bits`: Bit stream.
+    /// - `with_rank`: Dummy.
+    /// - `with_select1`: Dummy.
+    /// - `with_select0`: Dummy.
+    ///
+    /// # Errors
+    ///
+    /// Never.
+    fn build_from_bits<I>(
+        bits: I,
+        _with_rank: bool,
+        _with_select1: bool,
+        _with_select0: bool,
+    ) -> Result<Self>
+    where
+        I: IntoIterator<Item = bool>,
+        Self: Sized,
+    {
+        Ok(Self::from_bits(bits))
     }
 }
 
