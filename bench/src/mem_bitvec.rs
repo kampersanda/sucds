@@ -48,18 +48,16 @@ fn show_memories(p: f64) {
     print_memory("DArray (with rank index)", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(bits.iter().cloned()).unwrap();
+        let idx = sucds::SArray::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
-    print_memory("EliasFano", bytes);
+    print_memory("SArray", bytes);
 
     let bytes = {
-        let idx = sucds::EliasFano::from_bits(bits.iter().cloned())
-            .unwrap()
-            .enable_rank();
+        let idx = sucds::SArray::from_bits(bits.iter().cloned()).enable_rank();
         idx.size_in_bytes()
     };
-    print_memory("EliasFano (with rank index)", bytes);
+    print_memory("SArray (with rank index)", bytes);
 }
 
 fn print_memory(name: &str, bytes: usize) {

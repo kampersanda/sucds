@@ -48,10 +48,8 @@ fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[
         b.iter(|| run_queries(&ranker, &queries));
     });
 
-    group.bench_function("sucds/EliasFano", |b| {
-        let ranker = sucds::EliasFano::from_bits(bits.iter().cloned())
-            .unwrap()
-            .enable_rank();
+    group.bench_function("sucds/SArray", |b| {
+        let ranker = sucds::SArray::from_bits(bits.iter().cloned()).enable_rank();
         b.iter(|| run_queries(&ranker, &queries));
     });
 }
