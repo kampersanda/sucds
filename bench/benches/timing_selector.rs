@@ -57,8 +57,8 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
         b.iter(|| run_queries(&selector, &queries));
     });
 
-    group.bench_function("sucds/EliasFano", |b| {
-        let selector = sucds::EliasFano::from_bits(bits.iter().cloned()).unwrap();
+    group.bench_function("sucds/SArray", |b| {
+        let selector = sucds::SArray::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&selector, &queries));
     });
 }

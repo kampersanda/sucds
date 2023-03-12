@@ -1,18 +1,23 @@
 use sucds::Serializable;
 
-const DBLP_PSEF_BYTES: &[u8] = include_bytes!("../lcps/dblp.1MiB.psef");
-const DNA_PSEF_BYTES: &[u8] = include_bytes!("../lcps/dna.1MiB.psef");
-const PROTEINS_PSEF_BYTES: &[u8] = include_bytes!("../lcps/proteins.1MiB.psef");
+const DBLP_PSEF_STR: &str = include_str!("../lcps/dblp.1MiB.txt");
+const DNA_PSEF_STR: &str = include_str!("../lcps/dna.1MiB.txt");
+const PROTEINS_PSEF_STR: &str = include_str!("../lcps/proteins.1MiB.txt");
 
-fn extract_ints_from_psef(bytes: &[u8]) -> Vec<u32> {
-    let psef = sucds::PrefixSummedEliasFano::deserialize_from(bytes).unwrap();
-    psef.iter().map(|x| x as u32).collect()
+fn parse_ints_from_str(s: &str) -> Vec<u32> {
+    let mut ints = vec![];
+    for l in s.split('\n') {
+        if !l.is_empty() {
+            ints.push(l.parse().unwrap());
+        }
+    }
+    ints
 }
 
 fn main() {
-    show_memories("dblp", &extract_ints_from_psef(DBLP_PSEF_BYTES));
-    show_memories("dna", &extract_ints_from_psef(DNA_PSEF_BYTES));
-    show_memories("proteins", &extract_ints_from_psef(PROTEINS_PSEF_BYTES));
+    show_memories("dblp", &parse_ints_from_str(DBLP_PSEF_STR));
+    show_memories("dna", &parse_ints_from_str(DNA_PSEF_STR));
+    show_memories("proteins", &parse_ints_from_str(PROTEINS_PSEF_STR));
 }
 
 fn show_data_stats(vals: &[u32]) {
