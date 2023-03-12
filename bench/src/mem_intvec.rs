@@ -6,7 +6,7 @@ const PROTEINS_PSEF_STR: &str = include_str!("../lcps/proteins.1MiB.txt");
 
 fn parse_ints_from_str(s: &str) -> Vec<u32> {
     let mut ints = vec![];
-    for l in s.split("\n") {
+    for l in s.split('\n') {
         if !l.is_empty() {
             ints.push(l.parse().unwrap());
         }
