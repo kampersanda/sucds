@@ -423,6 +423,15 @@ mod tests {
     }
 
     #[test]
+    fn test_rs_build_with_s0() {
+        let e = SArray::build_from_bits([false, true, false], false, false, true);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("select0 is not supported for SArray.".to_string())
+        );
+    }
+
+    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
         let sa = SArray::from_bits([true, false, false, true]);
