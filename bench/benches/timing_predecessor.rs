@@ -50,6 +50,11 @@ fn perform_predecessor(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], quer
         b.iter(|| run_queries(&pred, &queries));
     });
 
+    group.bench_function("sucds/DArray", |b| {
+        let pred = sucds::DArray::from_bits(bits.iter().cloned()).enable_rank();
+        b.iter(|| run_queries(&pred, &queries));
+    });
+
     group.bench_function("sucds/SArray", |b| {
         let pred = sucds::SArray::from_bits(bits.iter().cloned()).enable_rank();
         b.iter(|| run_queries(&pred, &queries));
