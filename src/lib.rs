@@ -320,7 +320,7 @@ pub trait Successor {
 }
 
 /// Interface for building a bit vector with rank/select queries.
-pub trait RsbvBuilder {
+pub trait BitVectorBuilder {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// A data structure may not support a part of rank/select queries in the default

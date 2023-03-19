@@ -9,7 +9,7 @@ use anyhow::Result;
 
 use crate::rank9sel::inner::Rank9SelIndex;
 use crate::{
-    BitGetter, BitVector, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
+    BitGetter, BitVector, BitVectorBuilder, Predecessor, Ranker, Selector, Serializable, Successor,
 };
 use inner::DArrayIndex;
 
@@ -150,7 +150,7 @@ impl DArray {
     }
 }
 
-impl RsbvBuilder for DArray {
+impl BitVectorBuilder for DArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments

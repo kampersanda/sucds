@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::{
-    BitGetter, BitVector, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
+    BitGetter, BitVector, BitVectorBuilder, Predecessor, Ranker, Selector, Serializable, Successor,
 };
 use inner::Rank9SelIndex;
 
@@ -123,7 +123,7 @@ impl Rank9Sel {
     }
 }
 
-impl RsbvBuilder for Rank9Sel {
+impl BitVectorBuilder for Rank9Sel {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments

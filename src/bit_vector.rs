@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
 use crate::{
-    broadword, BitGetter, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
+    broadword, BitGetter, BitVectorBuilder, Predecessor, Ranker, Selector, Serializable, Successor,
 };
 
 /// The number of bits in a machine word.
@@ -480,7 +480,7 @@ impl BitVector {
     }
 }
 
-impl RsbvBuilder for BitVector {
+impl BitVectorBuilder for BitVector {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments

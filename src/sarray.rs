@@ -7,8 +7,8 @@ use anyhow::{anyhow, Result};
 
 use crate::broadword;
 use crate::{
-    BitGetter, BitVector, EliasFano, EliasFanoBuilder, Predecessor, Ranker, RsbvBuilder, Selector,
-    Serializable, Successor,
+    BitGetter, BitVector, BitVectorBuilder, EliasFano, EliasFanoBuilder, Predecessor, Ranker,
+    Selector, Serializable, Successor,
 };
 
 /// Rank/Select data structure over very sparse bit vectors, which is
@@ -92,7 +92,7 @@ impl SArray {
     }
 }
 
-impl RsbvBuilder for SArray {
+impl BitVectorBuilder for SArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
