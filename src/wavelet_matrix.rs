@@ -8,7 +8,9 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, Rank9Sel, Ranker, Selector, Serializable};
+use crate::{
+    BitGetter, BitVector, BitVectorStat, CompactVector, Rank9Sel, Ranker, Selector, Serializable,
+};
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -437,7 +439,7 @@ impl WaveletMatrix {
 
         let layer = &self.layers[depth];
         for range in ranges {
-            if layer.len() < range.end {
+            if layer.num_bits() < range.end {
                 return None;
             }
             // NOTE(kampersanda): An empty range should be skipped because it is never co-occurred.
@@ -514,7 +516,7 @@ impl WaveletMatrix {
     /// Returns the number of values stored.
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.layers.get(0).map(|l| l.len()).unwrap_or(0)
+        self.layers.get(0).map(|l| l.num_bits()).unwrap_or(0)
     }
 
     /// Checks if the sequence is empty.

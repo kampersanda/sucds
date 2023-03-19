@@ -346,3 +346,18 @@ pub trait BitVectorBuilder {
         I: IntoIterator<Item = bool>,
         Self: Sized;
 }
+
+/// Interface for reporting basic statistics in a bit vector.
+pub trait BitVectorStat {
+    /// Returns the number of bits stored.
+    fn num_bits(&self) -> usize;
+
+    /// Returns the number of bits set.
+    fn num_ones(&self) -> usize;
+
+    /// Returns the number of bits unset.
+    #[inline(always)]
+    fn num_zeros(&self) -> usize {
+        self.num_bits() - self.num_ones()
+    }
+}
