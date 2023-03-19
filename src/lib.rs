@@ -252,16 +252,16 @@ use anyhow::Result;
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
 
-/// Interface for accessing elements on bit arrays.
-pub trait BitGetter {
-    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
-    fn get_bit(&self, pos: usize) -> Option<bool>;
-}
-
 /// Interface for accessing elements on integer arrays.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
+}
+
+/// Interface for accessing elements on bit arrays.
+pub trait BitGetter {
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
 /// Interface for rank queries on monotone-increasing integer sequences.
