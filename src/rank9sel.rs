@@ -33,6 +33,7 @@ use inner::Rank9SelIndex;
 ///
 /// // Need BitVectorStat
 /// assert_eq!(bv.num_bits(), 4);
+/// assert_eq!(bv.num_ones(), 2);
 ///
 /// // Need BitGetter
 /// assert_eq!(bv.get_bit(1), Some(false));
