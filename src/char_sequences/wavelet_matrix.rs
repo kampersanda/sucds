@@ -25,7 +25,8 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{CompactVector, WaveletMatrix};
+/// use sucds::char_sequences::WaveletMatrix;
+/// use sucds::int_vectors::CompactVector;
 ///
 /// let text = "banana";
 /// let len = text.chars().count();
@@ -131,7 +132,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -179,7 +181,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -212,7 +215,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -266,7 +270,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -325,7 +330,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -391,7 +397,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -495,7 +502,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("ban".chars().map(|c| c as usize))?;
