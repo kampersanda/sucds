@@ -25,7 +25,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{DacsByte, IntGetter};
+/// use sucds::int_vectors::{DacsByte, IntGetter};
 ///
 /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
@@ -120,7 +120,7 @@ impl DacsByte {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::DacsByte;
+    /// use sucds::int_vectors::DacsByte;
     ///
     /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
     /// let mut it = list.iter();
@@ -184,7 +184,7 @@ impl IntGetter for DacsByte {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{DacsByte, IntGetter};
+    /// use sucds::int_vectors::{DacsByte, IntGetter};
     ///
     /// let list = DacsByte::from_slice(&[5, 999, 334])?;
     ///

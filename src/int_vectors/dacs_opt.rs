@@ -21,7 +21,7 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{DacsOpt, IntGetter};
+/// use sucds::int_vectors::{DacsOpt, IntGetter};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
 /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
@@ -226,7 +226,7 @@ impl DacsOpt {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::DacsOpt;
+    /// use sucds::int_vectors::DacsOpt;
     ///
     /// let list = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
     /// let mut it = list.iter();
@@ -289,7 +289,7 @@ impl IntGetter for DacsOpt {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{DacsOpt, IntGetter};
+    /// use sucds::int_vectors::{DacsOpt, IntGetter};
     ///
     /// let list = DacsOpt::from_slice(&[5, 999, 334], None)?;
     ///

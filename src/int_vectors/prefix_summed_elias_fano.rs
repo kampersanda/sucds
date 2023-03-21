@@ -22,7 +22,7 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{PrefixSummedEliasFano, IntGetter};
+/// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
 ///
 /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
@@ -69,7 +69,7 @@ impl PrefixSummedEliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::PrefixSummedEliasFano;
+    /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
     ///
@@ -106,7 +106,7 @@ impl PrefixSummedEliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::PrefixSummedEliasFano;
+    /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
     /// let mut it = list.iter();
@@ -150,7 +150,7 @@ impl IntGetter for PrefixSummedEliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{PrefixSummedEliasFano, IntGetter};
+    /// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
     ///
     /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
     /// assert_eq!(list.get_int(0), Some(5));
