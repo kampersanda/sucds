@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, Rank9Sel, Ranker, Selector};
 use crate::int_vectors::CompactVector;
-use crate::util;
+use crate::utils;
 use crate::Serializable;
 
 /// Time- and space-efficient data structure for a sequence of integers,
@@ -68,7 +68,7 @@ impl WaveletMatrix {
         }
 
         let alph_size = seq.iter().max().unwrap() + 1;
-        let alph_width = util::needed_bits(alph_size);
+        let alph_width = utils::needed_bits(alph_size);
 
         let mut zeros = seq;
         let mut ones = CompactVector::new(alph_width).unwrap();

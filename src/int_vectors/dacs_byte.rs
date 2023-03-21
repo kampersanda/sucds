@@ -9,7 +9,7 @@ use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
 use crate::int_vectors::IntGetter;
-use crate::util;
+use crate::utils;
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
@@ -76,8 +76,8 @@ impl DacsByte {
                     anyhow!("vals must consist only of values castable into usize.")
                 })?);
         }
-        let num_bits = util::needed_bits(maxv);
-        let num_levels = util::ceiled_divide(num_bits, LEVEL_WIDTH);
+        let num_bits = utils::needed_bits(maxv);
+        let num_levels = utils::ceiled_divide(num_bits, LEVEL_WIDTH);
         assert_ne!(num_levels, 0);
 
         if num_levels == 1 {

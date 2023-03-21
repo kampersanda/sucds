@@ -8,7 +8,7 @@ use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::IntGetter;
-use crate::{util, Serializable};
+use crate::{utils, Serializable};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///
@@ -198,7 +198,7 @@ impl CompactVector {
                     anyhow!("vals must consist only of values castable into usize.")
                 })?);
         }
-        let mut cv = Self::with_capacity(vals.len(), util::needed_bits(max_int))?;
+        let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int))?;
         for x in vals {
             // Casting and pushing should be safe.
             cv.push_int(x.to_usize().unwrap()).unwrap();

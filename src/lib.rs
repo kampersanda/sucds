@@ -53,7 +53,7 @@ pub mod int_vectors;
 mod intrinsics;
 pub mod mii_sequences;
 pub mod serial;
-pub mod util;
+pub mod utils;
 
 pub use serial::Serializable;
 

@@ -8,7 +8,7 @@ use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
 use crate::int_vectors::{CompactVector, IntGetter};
-use crate::util;
+use crate::utils;
 use crate::Serializable;
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
@@ -105,14 +105,14 @@ impl DacsOpt {
         for x in vals {
             maxv = maxv.max(x.to_usize().unwrap());
         }
-        let num_bits = util::needed_bits(maxv);
+        let num_bits = utils::needed_bits(maxv);
         let max_levels = max_levels.min(num_bits);
 
         // Computes the number of integers with more than j bits.
         let nums_ints = {
             let mut nums_ints = vec![0; num_bits + 1];
             for x in vals {
-                nums_ints[util::needed_bits(x.to_usize().unwrap()) - 1] += 1;
+                nums_ints[utils::needed_bits(x.to_usize().unwrap()) - 1] += 1;
             }
             for j in (0..num_bits).rev() {
                 nums_ints[j] += nums_ints[j + 1];
