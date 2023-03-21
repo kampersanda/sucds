@@ -1,4 +1,4 @@
-//! Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
+//! Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 pub mod unary;
 
 use std::io::{Read, Write};
@@ -13,9 +13,7 @@ use unary::UnaryIter;
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
-/// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
-///
-/// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
+/// Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 ///
 /// # Examples
 ///
@@ -35,6 +33,10 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
     words: Vec<usize>,

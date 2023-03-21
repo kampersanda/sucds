@@ -14,6 +14,10 @@ use crate::Serializable;
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [EliasFano](crate::mii_sequences::EliasFano) for bit vectors.
 ///
+/// # Memory complexity
+///
+/// $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ bits for a bit vector with $`u`$ bits and $`n`$ set bits.
+///
 /// # Notes
 ///
 /// This data structure does not support select0.
@@ -104,7 +108,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -139,7 +143,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -219,7 +223,7 @@ impl BitGetter for SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log n)`$
+    /// $`O(\log n)`$
     ///
     /// # Examples
     ///
@@ -249,7 +253,7 @@ impl Ranker for SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -280,7 +284,7 @@ impl Ranker for SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -310,7 +314,7 @@ impl Selector for SArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///

@@ -19,8 +19,6 @@ use inner::Rank9SelIndex;
 /// - 25% overhead of space for the rank index, and
 /// - 3% overhead of space for the select index (together with the rank's overhead).
 ///
-/// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
-///
 /// # Examples
 ///
 /// ```
@@ -42,6 +40,10 @@ use inner::Rank9SelIndex;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 ///
 /// # References
 ///
@@ -170,7 +172,7 @@ impl Ranker for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -194,7 +196,7 @@ impl Ranker for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -220,7 +222,7 @@ impl Selector for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// Logarithmic
     ///
     /// # Examples
     ///
@@ -242,7 +244,7 @@ impl Selector for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// Logarithmic
     ///
     /// # Examples
     ///

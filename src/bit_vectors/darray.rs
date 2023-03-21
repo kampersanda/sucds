@@ -15,7 +15,9 @@ use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique.
 ///
-/// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
+/// # Memory complexity
+///
+/// $`u + o(u)`$ bits for a bit vector with $`u`$ bits.
 ///
 /// # Notes
 ///
@@ -41,6 +43,10 @@ use inner::DArrayIndex;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 ///
 /// # References
 ///
@@ -195,7 +201,7 @@ impl Ranker for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
@@ -224,7 +230,7 @@ impl Ranker for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
@@ -255,7 +261,7 @@ impl Selector for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -277,7 +283,7 @@ impl Selector for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
