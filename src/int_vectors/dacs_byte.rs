@@ -19,7 +19,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// DACs are a compact representation of an integer array consisting of many small values.
 /// [`DacsByte`] is a simple variant and uses [`Vec<u8>`] for each level to obtain faster
-/// operations than [`DacsOpt`](crate::DacsOpt).
+/// operations than [`DacsOpt`](super::DacsOpt).
 ///
 /// # Examples
 ///

@@ -1,4 +1,4 @@
-//! Internal index structure of [`DArray`](crate::DArray).
+//! Internal index structure of [`DArray`](super::DArray).
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -13,7 +13,7 @@ const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
 const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 
-/// The index implementation of [`DArray`](crate::DArray) separated from the bit vector.
+/// The index implementation of [`DArray`](super::DArray) separated from the bit vector.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DArrayIndex {
     block_inventory: Vec<isize>,

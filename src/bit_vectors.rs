@@ -51,7 +51,7 @@
 //!
 //! [`SArray`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
 //! in compressed space, while supporting quick queries.
-//! This is a specialized wrapper of [`EliasFano`].
+//! This is a specialized wrapper of [`EliasFano`](crate::mii_sequences::EliasFano).
 pub mod bit_vector;
 pub mod darray;
 pub mod prelude;
