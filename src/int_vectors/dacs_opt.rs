@@ -290,7 +290,7 @@ impl Default for DacsOpt {
 impl IntGetter for DacsOpt {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
-    /// # Complexities
+    /// # Complexity
     ///
     /// $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
     /// the `pos`-th integer.
