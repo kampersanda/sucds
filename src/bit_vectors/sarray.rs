@@ -6,8 +6,9 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::prelude::*;
+use crate::bit_vectors::BitVector;
 use crate::broadword;
-use crate::{BitVector, EliasFano, EliasFanoBuilder, Predecessor, Serializable, Successor};
+use crate::{EliasFano, EliasFanoBuilder, Predecessor, Serializable, Successor};
 
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [EliasFano](crate::EliasFano) for bit vectors.

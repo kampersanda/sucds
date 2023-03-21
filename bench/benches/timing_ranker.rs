@@ -39,17 +39,17 @@ fn run_queries<R: Ranker>(ranker: &R, queries: &[usize]) {
 
 fn perform_rank(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
     group.bench_function("sucds/BitVector", |b| {
-        let ranker = sucds::BitVector::from_bits(bits.iter().cloned());
+        let ranker = sucds::bit_vectors::BitVector::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&ranker, &queries));
     });
 
     group.bench_function("sucds/Rank9Sel", |b| {
-        let ranker = sucds::Rank9Sel::from_bits(bits.iter().cloned());
+        let ranker = sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&ranker, &queries));
     });
 
     group.bench_function("sucds/SArray", |b| {
-        let ranker = sucds::SArray::from_bits(bits.iter().cloned()).enable_rank();
+        let ranker = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned()).enable_rank();
         b.iter(|| run_queries(&ranker, &queries));
     });
 }

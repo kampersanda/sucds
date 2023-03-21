@@ -6,7 +6,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::{util, BitVector, IntGetter, Serializable};
+use crate::bit_vectors::BitVector;
+use crate::{util, IntGetter, Serializable};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///

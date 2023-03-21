@@ -217,32 +217,24 @@
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("`target_pointer_width` must be 64");
 
-pub mod bit_vector;
 pub mod bit_vectors;
 pub mod broadword;
 pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;
-pub mod darray;
 pub mod elias_fano;
 mod intrinsics;
 pub mod prefix_summed_elias_fano;
-pub mod rank9sel;
-pub mod sarray;
 pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;
 
-pub use bit_vector::BitVector;
 pub use compact_vector::CompactVector;
 pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
-pub use darray::DArray;
 pub use elias_fano::EliasFano;
 pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
-pub use rank9sel::Rank9Sel;
-pub use sarray::SArray;
 pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
 

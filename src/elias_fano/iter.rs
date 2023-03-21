@@ -1,7 +1,7 @@
 //! Iterator on EliasFano.
 #![cfg(target_pointer_width = "64")]
 
-use crate::bit_vector::unary::UnaryIter;
+use crate::bit_vectors::bit_vector::unary::UnaryIter;
 use crate::bit_vectors::{BitVectorStat, Selector};
 use crate::EliasFano;
 

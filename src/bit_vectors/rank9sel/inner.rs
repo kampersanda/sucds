@@ -5,9 +5,9 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
+use crate::bit_vectors::BitVector;
 use crate::bit_vectors::BitVectorStat;
-use crate::broadword;
-use crate::{BitVector, Serializable};
+use crate::{broadword, Serializable};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;

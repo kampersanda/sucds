@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::bit_vectors::prelude::*;
-use crate::BitVector;
+use crate::bit_vectors::BitVector;
 use crate::Serializable;
 use inner::Rank9SelIndex;
 

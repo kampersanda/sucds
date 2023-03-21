@@ -8,8 +8,8 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::bit_vectors::prelude::*;
-use crate::rank9sel::inner::Rank9SelIndex;
-use crate::BitVector;
+use crate::bit_vectors::rank9sel::inner::Rank9SelIndex;
+use crate::bit_vectors::BitVector;
 use crate::Serializable;
 use inner::DArrayIndex;
 

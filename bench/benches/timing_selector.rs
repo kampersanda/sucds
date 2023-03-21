@@ -43,22 +43,23 @@ fn run_queries<S: Selector>(selector: &S, queries: &[usize]) {
 
 fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
     group.bench_function("sucds/BitVector", |b| {
-        let selector = sucds::BitVector::from_bits(bits.iter().cloned());
+        let selector = sucds::bit_vectors::BitVector::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&selector, &queries));
     });
 
     group.bench_function("sucds/Rank9Sel", |b| {
-        let selector = sucds::Rank9Sel::from_bits(bits.iter().cloned()).select1_hints();
+        let selector =
+            sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned()).select1_hints();
         b.iter(|| run_queries(&selector, &queries));
     });
 
     group.bench_function("sucds/DArray", |b| {
-        let selector = sucds::DArray::from_bits(bits.iter().cloned());
+        let selector = sucds::bit_vectors::DArray::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&selector, &queries));
     });
 
     group.bench_function("sucds/SArray", |b| {
-        let selector = sucds::SArray::from_bits(bits.iter().cloned());
+        let selector = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned());
         b.iter(|| run_queries(&selector, &queries));
     });
 }
