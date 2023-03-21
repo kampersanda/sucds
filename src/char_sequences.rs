@@ -1,4 +1,4 @@
-//! Top module for monotone-increasing integer sequences.
+//! Top module for character sequences.
 //!
 //! # Introduction
 //!
