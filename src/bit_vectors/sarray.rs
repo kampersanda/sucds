@@ -108,7 +108,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -143,7 +143,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -223,7 +223,7 @@ impl BitGetter for SArray {
     ///
     /// # Complexity
     ///
-    /// $`O(\log n)`$
+    /// $`O(\lg n)`$
     ///
     /// # Examples
     ///
@@ -253,7 +253,7 @@ impl Ranker for SArray {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -284,7 +284,7 @@ impl Ranker for SArray {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///

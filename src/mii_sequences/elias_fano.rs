@@ -342,7 +342,7 @@ impl Ranker for EliasFano {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -455,7 +455,7 @@ impl Predecessor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Examples
     ///
@@ -500,7 +500,7 @@ impl Successor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Examples
     ///

@@ -17,7 +17,7 @@ use crate::Serializable;
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, \sigma)`$,
-/// most of the operations run in $`O(\log \sigma)`$ , using  $`n \log \sigma + o (n \log \sigma ) + O(\log \sigma \log n)`$ bits.
+/// most of the operations run in $`O(\lg \sigma)`$ , using  $`n \lg \sigma + o (n \lg \sigma ) + O(\lg \sigma \lg n)`$ bits.
 ///
 /// # Examples
 ///
@@ -128,7 +128,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
@@ -177,7 +177,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
@@ -211,7 +211,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
@@ -266,7 +266,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
@@ -326,7 +326,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
