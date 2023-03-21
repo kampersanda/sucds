@@ -10,8 +10,8 @@ use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::prelude::*;
 use crate::elias_fano::iter::Iter;
-use crate::Serializable;
 use crate::{broadword, BitVector, DArray};
+use crate::{Predecessor, Serializable, Successor};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 

@@ -103,8 +103,6 @@
 //! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
 //! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Ranker`]).
 //! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
-//! - $`\textrm{Predecessor}(i)`$ returns the largest position $`x \in S`$ such that $`x \leq i`$ (implemented by [`Predecessor`]).
-//! - $`\textrm{Successor}(i)`$ returns the smallest position $`x \in S`$ such that $`i \leq x`$ (implemented by [`Successor`]).
 //! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
 //!
 //! Note that they are not limited depending on the data structures.
@@ -114,12 +112,12 @@
 //! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Update | Memory (bits) |
-//! | --- | :-: | :-: | :-: | :-: | :-: | :-: |
-//! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
-//! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
-//! | [`DArray`] | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | -- | $`u + o(u)`$ |
-//! | [`SArray`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Update | Memory (bits) |
+//! | --- | :-: | :-: | :-: | :-: | :-: |
+//! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
+//! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
+//! | [`DArray`] | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | -- | $`u + o(u)`$ |
+//! | [`SArray`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
 //! #### Plain bit vectors without index
 //!
