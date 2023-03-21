@@ -16,10 +16,8 @@ use crate::Serializable;
 /// supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
-/// When a sequence stores $`n`$ integers from $`[0, \sigma -1]`$,
+/// When a sequence stores $`n`$ integers from $`[0, \sigma)`$,
 /// most of the operations run in $`O(\log \sigma)`$ , using  $`n \log \sigma + o (n \log \sigma ) + O(\log \sigma \log n)`$ bits.
-///
-/// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
 /// # Examples
 ///
@@ -46,6 +44,10 @@ use crate::Serializable;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
 /// # References
 ///
@@ -126,7 +128,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\log \sigma)`$
     ///
     /// # Examples
     ///
@@ -175,7 +177,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\log \sigma)`$
     ///
     /// # Examples
     ///
@@ -209,7 +211,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\log \sigma)`$
     ///
     /// # Examples
     ///
@@ -264,7 +266,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\log \sigma)`$
     ///
     /// # Examples
     ///
@@ -324,7 +326,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\log \sigma)`$
     ///
     /// # Examples
     ///
@@ -388,7 +390,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O( \min(\sigma, j_1 - i_1, \dots, j_r - i_r ) )`$ for `ranges` is $`[(i_1,j_1),\dots,(i_r,j_r)]`$.[^intersect]
+    /// $`O( \min(\sigma, j_1 - i_1, \dots, j_r - i_r ) )`$ for `ranges` is $`[(i_1,j_1),\dots,(i_r,j_r)]`$.[^intersect]
     ///
     /// [^intersect]: A tighter bound is analyzed in the paper: Gagie, Travis, Gonzalo Navarro, and Simon J. Puglisi.
     /// "New algorithms on wavelet trees and applications to information retrieval." Theoretical Computer Science 426 (2012): 25-41.
