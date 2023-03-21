@@ -7,7 +7,8 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
-use crate::{util, IntGetter, Serializable};
+use crate::int_vectors::IntGetter;
+use crate::{util, Serializable};
 
 /// Compact vector in which each integer is represented in a fixed number of bits.
 ///

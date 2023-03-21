@@ -8,8 +8,9 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, Rank9Sel, Ranker, Selector};
+use crate::int_vectors::CompactVector;
 use crate::util;
-use crate::{CompactVector, Serializable};
+use crate::Serializable;
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.

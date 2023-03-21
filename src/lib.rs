@@ -219,28 +219,15 @@ compile_error!("`target_pointer_width` must be 64");
 
 pub mod bit_vectors;
 pub mod broadword;
-pub mod compact_vector;
-pub mod dacs_byte;
-pub mod dacs_opt;
 pub mod increasing_sequences;
+pub mod int_vectors;
 mod intrinsics;
-pub mod prefix_summed_elias_fano;
 pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;
 
-pub use compact_vector::CompactVector;
-pub use dacs_byte::DacsByte;
-pub use dacs_opt::DacsOpt;
-pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
 
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
-
-/// Interface for accessing elements on integer arrays.
-pub trait IntGetter {
-    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
-    fn get_int(&self, pos: usize) -> Option<usize>;
-}

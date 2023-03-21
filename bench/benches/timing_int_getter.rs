@@ -7,7 +7,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 
-use sucds::IntGetter;
+use sucds::int_vectors::IntGetter;
 
 const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
@@ -82,22 +82,22 @@ fn perform_int_get(group: &mut BenchmarkGroup<WallTime>, vals: &[u32]) {
     let queries = gen_random_ints(NUM_QUERIES, 0, vals.len(), SEED_QUERIES);
 
     group.bench_function("sucds/CompactVector", |b| {
-        let getter = sucds::CompactVector::from_slice(vals).unwrap();
+        let getter = sucds::int_vectors::CompactVector::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
     group.bench_function("sucds/PrefixSummedEliasFano", |b| {
-        let getter = sucds::PrefixSummedEliasFano::from_slice(vals).unwrap();
+        let getter = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
     group.bench_function("sucds/DacsByte", |b| {
-        let getter = sucds::DacsByte::from_slice(vals).unwrap();
+        let getter = sucds::int_vectors::DacsByte::from_slice(vals).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 
     group.bench_function("sucds/DacsOpt", |b| {
-        let getter = sucds::DacsOpt::from_slice(vals, None).unwrap();
+        let getter = sucds::int_vectors::DacsOpt::from_slice(vals, None).unwrap();
         b.iter(|| run_queries(&getter, &queries));
     });
 }

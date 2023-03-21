@@ -8,8 +8,9 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
+use crate::int_vectors::IntGetter;
 use crate::util;
-use crate::{IntGetter, Serializable};
+use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;

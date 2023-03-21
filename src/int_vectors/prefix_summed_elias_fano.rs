@@ -7,7 +7,8 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::increasing_sequences::{EliasFano, EliasFanoBuilder};
-use crate::{IntGetter, Serializable};
+use crate::int_vectors::IntGetter;
+use crate::Serializable;
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.
 ///

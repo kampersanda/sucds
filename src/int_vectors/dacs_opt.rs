@@ -7,8 +7,9 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
+use crate::int_vectors::{CompactVector, IntGetter};
 use crate::util;
-use crate::{CompactVector, IntGetter, Serializable};
+use crate::Serializable;
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
