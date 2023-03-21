@@ -11,8 +11,9 @@ use anyhow::{anyhow, Result};
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::{BitVector, DArray};
 use crate::broadword;
-use crate::elias_fano::iter::Iter;
-use crate::{Predecessor, Serializable, Successor};
+use crate::increasing_sequences::{Predecessor, Successor};
+use crate::Serializable;
+use iter::Iter;
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 

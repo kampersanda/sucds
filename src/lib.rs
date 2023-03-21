@@ -222,7 +222,7 @@ pub mod broadword;
 pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;
-pub mod elias_fano;
+pub mod increasing_sequences;
 mod intrinsics;
 pub mod prefix_summed_elias_fano;
 pub mod serial;
@@ -232,8 +232,6 @@ pub mod wavelet_matrix;
 pub use compact_vector::CompactVector;
 pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
-pub use elias_fano::EliasFano;
-pub use elias_fano::EliasFanoBuilder;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 pub use serial::Serializable;
 pub use wavelet_matrix::WaveletMatrix;
@@ -245,32 +243,4 @@ pub use wavelet_matrix::WaveletMatrix;
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
-}
-
-/// Interface for predecessor queries on monotone-increasing integer sequences.
-///
-/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
-/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
-pub trait Predecessor {
-    /// Returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$, or
-    /// [`None`] if not found or $`u \leq x`$.
-    fn predecessor1(&self, x: usize) -> Option<usize>;
-
-    /// Returns the largest integer $`x' \not\in X`$ such that $`0 \leq x' \leq x`$, or
-    /// [`None`] if not found or $`u \leq x`$.
-    fn predecessor0(&self, x: usize) -> Option<usize>;
-}
-
-/// Interface for successor queries on monotone-increasing integer sequences.
-///
-/// Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
-/// such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
-pub trait Successor {
-    /// Returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$, or
-    /// [`None`] if not found or $`u \leq x`$.
-    fn successor1(&self, x: usize) -> Option<usize>;
-
-    /// Returns the smallest integer $`x_k \not\in X`$ such that $`x \leq x' < u`$, or
-    /// [`None`] if not found or $`u \leq x`$.
-    fn successor0(&self, x: usize) -> Option<usize>;
 }
