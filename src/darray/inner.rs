@@ -5,7 +5,8 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitVector, BitVectorStat, Serializable};
+use crate::bit_vectors::BitVectorStat;
+use crate::{broadword, BitVector, Serializable};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;

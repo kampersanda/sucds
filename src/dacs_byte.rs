@@ -7,8 +7,9 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
+use crate::bit_vectors::{BitGetter, Ranker};
 use crate::util;
-use crate::{BitGetter, BitVector, IntGetter, Rank9Sel, Ranker, Serializable};
+use crate::{BitVector, IntGetter, Rank9Sel, Serializable};
 
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;

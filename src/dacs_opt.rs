@@ -6,8 +6,9 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
+use crate::bit_vectors::{BitGetter, Ranker};
 use crate::util;
-use crate::{BitGetter, BitVector, CompactVector, IntGetter, Rank9Sel, Ranker, Serializable};
+use crate::{BitVector, CompactVector, IntGetter, Rank9Sel, Serializable};
 
 /// Compressed integer array using Directly Addressable Codes (DACs) with optimal assignment.
 ///
