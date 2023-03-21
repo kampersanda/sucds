@@ -22,13 +22,13 @@ fn show_memories(p: f64) {
     println!("[p = {p}]");
 
     let bytes = {
-        let idx = sucds::Rank9Sel::from_bits(bits.iter().cloned());
+        let idx = sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
     print_memory("Rank9Sel", bytes);
 
     let bytes = {
-        let idx = sucds::Rank9Sel::from_bits(bits.iter().cloned())
+        let idx = sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned())
             .select1_hints()
             .select0_hints();
         idx.size_in_bytes()
@@ -36,25 +36,25 @@ fn show_memories(p: f64) {
     print_memory("Rank9Sel (with select hints)", bytes);
 
     let bytes = {
-        let idx = sucds::DArray::from_bits(bits.iter().cloned());
+        let idx = sucds::bit_vectors::DArray::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
     print_memory("DArray", bytes);
 
     let bytes = {
-        let idx = sucds::DArray::from_bits(bits.iter().cloned()).enable_rank();
+        let idx = sucds::bit_vectors::DArray::from_bits(bits.iter().cloned()).enable_rank();
         idx.size_in_bytes()
     };
     print_memory("DArray (with rank index)", bytes);
 
     let bytes = {
-        let idx = sucds::SArray::from_bits(bits.iter().cloned());
+        let idx = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned());
         idx.size_in_bytes()
     };
     print_memory("SArray", bytes);
 
     let bytes = {
-        let idx = sucds::SArray::from_bits(bits.iter().cloned()).enable_rank();
+        let idx = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned()).enable_rank();
         idx.size_in_bytes()
     };
     print_memory("SArray (with rank index)", bytes);

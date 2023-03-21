@@ -7,25 +7,24 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::util;
-use crate::{
-    BitGetter, BitVector, BitVectorStat, CompactVector, Rank9Sel, Ranker, Selector, Serializable,
-};
+use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, Rank9Sel, Ranker, Selector};
+use crate::int_vectors::CompactVector;
+use crate::utils;
+use crate::Serializable;
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
-/// When a sequence stores $`n`$ integers from $`[0, \sigma -1]`$,
-/// most of the operations run in $`O(\log \sigma)`$ , using  $`n \log \sigma + o (n \log \sigma ) + O(\log \sigma \log n)`$ bits.
-///
-/// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
+/// When a sequence stores $`n`$ integers from $`[0, \sigma)`$,
+/// most of the operations run in $`O(\lg \sigma)`$ , using  $`n \lg \sigma + o (n \lg \sigma ) + O(\lg \sigma \lg n)`$ bits.
 ///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{CompactVector, WaveletMatrix};
+/// use sucds::char_sequences::WaveletMatrix;
+/// use sucds::int_vectors::CompactVector;
 ///
 /// let text = "banana";
 /// let len = text.chars().count();
@@ -45,6 +44,10 @@ use crate::{
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [hillbig's waveletMatrix](https://github.com/hillbig/waveletTree/blob/master/waveletMatrix.go).
 ///
 /// # References
 ///
@@ -67,7 +70,7 @@ impl WaveletMatrix {
         }
 
         let alph_size = seq.iter().max().unwrap() + 1;
-        let alph_width = util::needed_bits(alph_size);
+        let alph_width = utils::needed_bits(alph_size);
 
         let mut zeros = seq;
         let mut ones = CompactVector::new(alph_width).unwrap();
@@ -125,13 +128,14 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -173,13 +177,14 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -206,13 +211,14 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -260,13 +266,14 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -319,13 +326,14 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \sigma)`$
+    /// $`O(\lg \sigma)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -382,7 +390,7 @@ impl WaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - $`O( \min(\sigma, j_1 - i_1, \dots, j_r - i_r ) )`$ for `ranges` is $`[(i_1,j_1),\dots,(i_r,j_r)]`$.[^intersect]
+    /// $`O( \min(\sigma, j_1 - i_1, \dots, j_r - i_r ) )`$ for `ranges` is $`[(i_1,j_1),\dots,(i_r,j_r)]`$.[^intersect]
     ///
     /// [^intersect]: A tighter bound is analyzed in the paper: Gagie, Travis, Gonzalo Navarro, and Simon J. Puglisi.
     /// "New algorithms on wavelet trees and applications to information retrieval." Theoretical Computer Science 426 (2012): 25-41.
@@ -391,7 +399,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
@@ -495,7 +504,8 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, WaveletMatrix};
+    /// use sucds::char_sequences::WaveletMatrix;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("ban".chars().map(|c| c as usize))?;

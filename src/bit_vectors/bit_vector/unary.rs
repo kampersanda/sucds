@@ -1,7 +1,8 @@
 //! Unary iterator on bit vectors.
-use crate::bit_vector::WORD_LEN;
+use super::WORD_LEN;
+use crate::bit_vectors::BitVector;
+use crate::bit_vectors::BitVectorStat;
 use crate::broadword;
-use crate::{BitVector, BitVectorStat};
 
 /// Iterator for enumerating positions of set bits, created by [`BitVector::unary_iter`].
 pub struct UnaryIter<'a> {
@@ -29,7 +30,7 @@ impl<'a> UnaryIter<'a> {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false, false, true, true]);
     /// let mut it = bv.unary_iter(0);
@@ -67,7 +68,7 @@ impl<'a> UnaryIter<'a> {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false, false, true, true]);
     /// let mut it = bv.unary_iter(0);

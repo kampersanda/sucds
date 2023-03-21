@@ -9,9 +9,11 @@ use std::ops::Range;
 use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::prelude::*;
-use crate::elias_fano::iter::Iter;
-use crate::{broadword, BitVector, DArray};
-use crate::{Predecessor, Serializable, Successor};
+use crate::bit_vectors::{BitVector, DArray};
+use crate::broadword;
+use crate::mii_sequences::{Predecessor, Successor};
+use crate::Serializable;
+use iter::Iter;
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -21,19 +23,16 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
 /// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space,
 /// indicating that a sparse sequence can be stored in a very compressed space.
+///
 /// Another attraction of Elias-Fano is several search queries,
 /// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor1), and [successor](EliasFano::successor1),
 /// over the compressed representation.
-///
-/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
-/// The implementation of binary search is based on that in
-/// [tongrams::fast_ef_sequence](https://github.com/jermp/tongrams/blob/master/include/sequences/fast_ef_sequence.hpp).
 ///
 /// # Example
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{EliasFanoBuilder, Predecessor, Ranker, Selector, Successor};
+/// use sucds::mii_sequences::{EliasFanoBuilder, prelude::*};
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
 /// efb.extend([1, 3, 3, 7])?;
@@ -67,6 +66,12 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+/// The implementation of binary search is based on that in
+/// [tongrams::fast_ef_sequence](https://github.com/jermp/tongrams/blob/master/include/sequences/fast_ef_sequence.hpp).
 ///
 /// # References
 ///
@@ -138,13 +143,13 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -198,13 +203,13 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// $`O(\lg n)`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
@@ -233,13 +238,13 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic for the range
+    /// $`O(\lg |R|)`$ for the range $`R`$.
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
@@ -294,7 +299,7 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -337,7 +342,7 @@ impl Ranker for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -347,7 +352,7 @@ impl Ranker for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Ranker};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Ranker};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -400,13 +405,13 @@ impl Selector for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Selector};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Selector};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -450,13 +455,13 @@ impl Predecessor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Predecessor};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Predecessor};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -495,13 +500,13 @@ impl Successor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Successor};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Successor};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -566,7 +571,7 @@ impl Serializable for EliasFano {
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::EliasFanoBuilder;
+/// use sucds::mii_sequences::EliasFanoBuilder;
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 5)?;
 ///

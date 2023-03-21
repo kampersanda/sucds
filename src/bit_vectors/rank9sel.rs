@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::bit_vectors::prelude::*;
-use crate::BitVector;
+use crate::bit_vectors::BitVector;
 use crate::Serializable;
 use inner::Rank9SelIndex;
 
@@ -19,16 +19,13 @@ use inner::Rank9SelIndex;
 /// - 25% overhead of space for the rank index, and
 /// - 3% overhead of space for the select index (together with the rank's overhead).
 ///
-/// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
-///
 /// # Examples
 ///
 /// ```
-/// use sucds::{Rank9Sel, bit_vectors::prelude::*};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::bit_vectors::{Rank9Sel, prelude::*};
 ///
-/// let bv = Rank9Sel::from_bits([true, false, false, true])
-///     .select1_hints()  // To accelerate select1
-///     .select0_hints(); // To accelerate select0
+/// let bv = Rank9Sel::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(bv.num_bits(), 4);
 /// assert_eq!(bv.num_ones(), 2);
@@ -40,7 +37,13 @@ use inner::Rank9SelIndex;
 ///
 /// assert_eq!(bv.select1(1), Some(3));
 /// assert_eq!(bv.select0(0), Some(1));
+/// # Ok(())
+/// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::rs_bit_vector](https://github.com/ot/succinct/blob/master/rs_bit_vector.hpp).
 ///
 /// # References
 ///
@@ -58,14 +61,14 @@ impl Rank9Sel {
         Self { bv, rs }
     }
 
-    /// Builds an index for faster `select1`, `predecessor1`, and `successor1`.
+    /// Builds an index for faster select1.
     #[must_use]
     pub fn select1_hints(mut self) -> Self {
         self.rs = self.rs.select1_hints();
         self
     }
 
-    /// Builds an index for faster `select0`, `predecessor0`, and `successor0`.
+    /// Builds an index for faster select0.
     #[must_use]
     pub fn select0_hints(mut self) -> Self {
         self.rs = self.rs.select0_hints();
@@ -85,8 +88,6 @@ impl Rank9Sel {
     }
 
     /// Returns the reference of the internal bit vector.
-    ///
-    /// Use the iterators of [`BitVector`] to scan rank9sel entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
@@ -151,7 +152,7 @@ impl BitGetter for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, BitGetter};
+    /// use sucds::bit_vectors::{Rank9Sel, BitGetter};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false]);
     ///
@@ -171,12 +172,12 @@ impl Ranker for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, Rank9Sel};
+    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -195,12 +196,12 @@ impl Ranker for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, Rank9Sel};
+    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -221,12 +222,12 @@ impl Selector for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// Logarithmic
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Selector};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
     ///
@@ -243,12 +244,12 @@ impl Selector for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// Logarithmic
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Selector};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select0_hints();
     ///

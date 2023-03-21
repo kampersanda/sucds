@@ -1,4 +1,4 @@
-//! Utilities for serialization.
+//! Serializers.
 #![cfg(target_pointer_width = "64")]
 
 pub mod primitive;
@@ -13,7 +13,7 @@ use anyhow::Result;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{BitVector, Serializable};
+/// use sucds::{bit_vectors::BitVector, Serializable};
 ///
 /// let bv = BitVector::from_bits([true, false, false, true]);
 ///

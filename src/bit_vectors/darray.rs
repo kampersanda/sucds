@@ -1,4 +1,4 @@
-//! Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
+//! Constant-time select data structure over integer sets with the dense array technique.
 #![cfg(target_pointer_width = "64")]
 
 pub mod inner;
@@ -8,28 +8,29 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::bit_vectors::prelude::*;
-use crate::rank9sel::inner::Rank9SelIndex;
-use crate::BitVector;
+use crate::bit_vectors::rank9sel::inner::Rank9SelIndex;
+use crate::bit_vectors::BitVector;
 use crate::Serializable;
 use inner::DArrayIndex;
 
-/// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
+/// Constant-time select data structure over integer sets with the dense array technique.
 ///
-/// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
+/// # Memory complexity
+///
+/// $`u + o(u)`$ bits for a bit vector with $`u`$ bits.
 ///
 /// # Notes
 ///
 /// In the default configuration, this data structure supports only [`Self::select1()`].
-/// If other operations are needed, [`Self::enable_rank()`] and [`Self::enable_select0()`] must be set up.
+/// If rank queries are needed, [`Self::enable_rank()`] and [`Self::enable_select0()`] must be set up.
 ///
 /// # Examples
 ///
 /// ```
-/// use sucds::{DArray, bit_vectors::prelude::*};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::bit_vectors::{DArray, prelude::*};
 ///
-/// let da = DArray::from_bits([true, false, false, true])
-///     .enable_rank()     // To enable rank1/0
-///     .enable_select0(); // To enable select0
+/// let da = DArray::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(da.num_bits(), 4);
 /// assert_eq!(da.get_bit(1), Some(false));
@@ -39,7 +40,13 @@ use inner::DArrayIndex;
 ///
 /// assert_eq!(da.select1(1), Some(3));
 /// assert_eq!(da.select0(0), Some(1));
+/// # Ok(())
+/// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::darray](https://github.com/ot/succinct/blob/master/darray.hpp).
 ///
 /// # References
 ///
@@ -73,14 +80,14 @@ impl DArray {
         }
     }
 
-    /// Builds an index to enable rank, predecessor, and successor queries.
+    /// Builds an index to enable rank queries.
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.r9 = Some(Rank9SelIndex::new(&self.bv));
         self
     }
 
-    /// Builds an index to enable select0, predecessor0, and successor0 queries.
+    /// Builds an index to enable select0.
     #[must_use]
     pub fn enable_select0(mut self) -> Self {
         self.s0 = Some(DArrayIndex::new(&self.bv, false));
@@ -100,8 +107,6 @@ impl DArray {
     }
 
     /// Returns the reference of the internal bit vector.
-    ///
-    /// Use the iterators of [`BitVector`] to scan darray entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
@@ -176,7 +181,7 @@ impl BitGetter for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{DArray, BitGetter};
+    /// use sucds::bit_vectors::{DArray, BitGetter};
     ///
     /// let da = DArray::from_bits([true, false, false]);
     ///
@@ -196,7 +201,7 @@ impl Ranker for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
@@ -205,7 +210,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Ranker};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -225,7 +230,7 @@ impl Ranker for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
@@ -234,7 +239,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Ranker};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -256,12 +261,12 @@ impl Selector for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Selector};
     ///
     /// let da = DArray::from_bits([true, false, false, true]);
     ///
@@ -278,7 +283,7 @@ impl Selector for DArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Panics
     ///
@@ -287,7 +292,7 @@ impl Selector for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Selector};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_select0();
     ///

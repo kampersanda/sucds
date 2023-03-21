@@ -1,4 +1,4 @@
-//! Compact vector in which each integer is represented in a fixed number of bits.
+//! Updatable compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -6,15 +6,21 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::{util, BitVector, IntGetter, Serializable};
+use crate::bit_vectors::BitVector;
+use crate::int_vectors::IntGetter;
+use crate::{utils, Serializable};
 
-/// Compact vector in which each integer is represented in a fixed number of bits.
+/// Updatable compact vector in which each integer is represented in a fixed number of bits.
+///
+/// # Memory usage
+///
+/// $`n \lceil \lg u \rceil`$ bits for $`n`$ integers in which a value is in $`[0,u)`$.
 ///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{CompactVector, IntGetter};
+/// use sucds::int_vectors::{CompactVector, IntGetter};
 ///
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
@@ -52,7 +58,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::CompactVector;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
     /// assert_eq!(cv.len(), 0);
@@ -87,7 +93,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::CompactVector;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::with_capacity(10, 3)?;
     ///
@@ -130,7 +136,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, IntGetter};
     ///
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
@@ -173,7 +179,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, IntGetter};
     ///
     /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
@@ -196,7 +202,7 @@ impl CompactVector {
                     anyhow!("vals must consist only of values castable into usize.")
                 })?);
         }
-        let mut cv = Self::with_capacity(vals.len(), util::needed_bits(max_int))?;
+        let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int))?;
         for x in vals {
             // Casting and pushing should be safe.
             cv.push_int(x.to_usize().unwrap()).unwrap();
@@ -218,11 +224,15 @@ impl CompactVector {
     /// - `pos` is out of bounds, or
     /// - `val` cannot be represent in `self.width()` bits.
     ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, IntGetter};
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
     /// cv.set_int(1, 4)?;
@@ -261,11 +271,15 @@ impl CompactVector {
     ///
     /// An error is returned if `val` cannot be represent in `self.width()` bits.
     ///
+    /// # Complexity
+    ///
+    /// Constant (Amortized)
+    ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::CompactVector;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
     /// cv.push_int(2)?;
@@ -298,11 +312,15 @@ impl CompactVector {
     ///
     /// An error is returned if values in `vals` cannot be represent in `self.width()` bits.
     ///
+    /// # Complexity
+    ///
+    /// Linear
+    ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::CompactVector;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
     /// cv.extend([2, 1, 3])?;
@@ -326,7 +344,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::CompactVector;
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
     /// let mut it = cv.iter();
@@ -373,11 +391,15 @@ impl IntGetter for CompactVector {
     ///
     ///  - `pos`: Position.
     ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, IntGetter};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
     /// assert_eq!(cv.get_int(0), Some(5));

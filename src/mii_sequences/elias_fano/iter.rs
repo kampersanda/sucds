@@ -1,8 +1,9 @@
 //! Iterator on EliasFano.
 #![cfg(target_pointer_width = "64")]
 
-use crate::bit_vector::unary::UnaryIter;
-use crate::{BitVectorStat, EliasFano, Selector};
+use super::EliasFano;
+use crate::bit_vectors::bit_vector::unary::UnaryIter;
+use crate::bit_vectors::{BitVectorStat, Selector};
 
 /// Iterator for enumerating integers stored in [`EliasFano`], created by [`EliasFano::iter`].
 pub struct Iter<'a> {

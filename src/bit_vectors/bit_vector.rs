@@ -1,27 +1,25 @@
-//! Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
+//! Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 pub mod unary;
 
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vector::unary::UnaryIter;
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
 use crate::Serializable;
+use unary::UnaryIter;
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 
-/// Bit vector in a plain format, supporting some utilities such as update, chunking, and predecessor queries.
-///
-/// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
+/// Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 ///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{BitVector, bit_vectors::prelude::*};
+/// use sucds::bit_vectors::{BitVector, prelude::*};
 ///
 /// let mut bv = BitVector::new();
 /// bv.push_bit(true);
@@ -35,6 +33,10 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
     words: Vec<usize>,
@@ -47,7 +49,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
     ///
     /// let bv = BitVector::new();
     /// assert_eq!(bv.num_bits(), 0);
@@ -65,7 +67,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
     ///
     /// let bv = BitVector::with_capacity(40);
     /// assert_eq!(bv.num_bits(), 0);
@@ -89,10 +91,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, BitGetter, BitVectorStat};
     ///
     /// let bv = BitVector::from_bit(false, 5);
     /// assert_eq!(bv.num_bits(), 5);
+    /// assert_eq!(bv.get_bit(0), Some(false));
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
         let word = if bit { usize::MAX } else { 0 };
@@ -114,7 +117,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, BitGetter, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, BitGetter, BitVectorStat};
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
     /// assert_eq!(bv.num_bits(), 3);
@@ -144,7 +147,7 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{BitVector, BitGetter};
+    /// use sucds::bit_vectors::{BitVector, BitGetter};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
     /// bv.set_bit(1, false)?;
@@ -176,7 +179,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
@@ -208,7 +211,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.get_bits(1, 2), Some(0b10));
@@ -262,7 +265,7 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
     /// bv.set_bits(1, 0b11, 2)?;
@@ -332,7 +335,7 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bits(0b11, 2)?;
@@ -389,7 +392,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Predecessor};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false, true]);
     /// assert_eq!(bv.predecessor1(3), Some(3));
@@ -429,7 +432,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Predecessor};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.predecessor0(3), Some(3));
@@ -469,7 +472,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Successor};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.successor1(0), Some(0));
@@ -510,7 +513,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Successor};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false, true]);
     /// assert_eq!(bv.successor0(0), Some(0));
@@ -542,7 +545,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
     /// let mut it = bv.iter();
@@ -564,7 +567,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([true, true, false, true]);
     /// let mut it = bv.unary_iter(1);
@@ -586,7 +589,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([true, false, true, false]);
     /// assert_eq!(bv.get_word64(1), Some(0b10));
@@ -686,7 +689,7 @@ impl BitGetter for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitGetter, BitVector};
+    /// use sucds::bit_vectors::{BitGetter, BitVector};
     ///
     /// let bv = BitVector::from_bits([true, false, false]);
     /// assert_eq!(bv.get_bit(0), Some(true));
@@ -715,7 +718,7 @@ impl Ranker for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Ranker};
+    /// use sucds::bit_vectors::{BitVector, Ranker};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank1(1), Some(1));
@@ -749,7 +752,7 @@ impl Ranker for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Ranker};
+    /// use sucds::bit_vectors::{BitVector, Ranker};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank0(1), Some(0));
@@ -774,7 +777,7 @@ impl Selector for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Selector};
+    /// use sucds::bit_vectors::{BitVector, Selector};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.select1(0), Some(0));
@@ -810,7 +813,7 @@ impl Selector for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, Selector};
+    /// use sucds::bit_vectors::{BitVector, Selector};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.select0(0), Some(1));

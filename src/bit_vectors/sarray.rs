@@ -1,4 +1,4 @@
-//! Rank/Select data structure over very sparse bit vectors.
+//! Rank/Select data structure over very sparse bit vectors using the Elias-Fano scheme.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -6,11 +6,39 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::prelude::*;
+use crate::bit_vectors::BitVector;
 use crate::broadword;
-use crate::{BitVector, EliasFano, EliasFanoBuilder, Predecessor, Serializable, Successor};
+use crate::mii_sequences::{EliasFano, EliasFanoBuilder, Predecessor, Successor};
+use crate::Serializable;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
-/// a specialized version of [EliasFano](crate::EliasFano) for bit vectors.
+/// a specialized version of [EliasFano](crate::mii_sequences::EliasFano) for bit vectors.
+///
+/// # Memory complexity
+///
+/// $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ bits for a bit vector with $`u`$ bits and $`n`$ set bits.
+///
+/// # Notes
+///
+/// This data structure does not support select0.
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::bit_vectors::{SArray, prelude::*};
+///
+/// let sa = SArray::build_from_bits([true, false, false, true], true, true, false)?;
+///
+/// assert_eq!(sa.num_bits(), 4);
+/// assert_eq!(sa.get_bit(1), Some(false));
+///
+/// assert_eq!(sa.rank1(1), Some(1));
+/// assert_eq!(sa.rank0(1), Some(0));
+/// assert_eq!(sa.select1(1), Some(3));
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// # References
 ///
@@ -72,7 +100,7 @@ impl SArray {
     }
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -80,7 +108,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -89,7 +117,7 @@ impl SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, Predecessor};
+    /// use sucds::bit_vectors::SArray;
     ///
     /// let sa = SArray::from_bits([false, true, false, true]).enable_rank();
     ///
@@ -107,7 +135,7 @@ impl SArray {
     }
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -115,7 +143,7 @@ impl SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -124,7 +152,7 @@ impl SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, Successor};
+    /// use sucds::bit_vectors::SArray;
     ///
     /// let sa = SArray::from_bits([true, false, true, false]).enable_rank();
     ///
@@ -195,12 +223,12 @@ impl BitGetter for SArray {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log n)`$
+    /// $`O(\lg n)`$
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, BitGetter};
+    /// use sucds::bit_vectors::{SArray, BitGetter};
     ///
     /// let sa = SArray::from_bits([true, false, false]);
     ///
@@ -221,11 +249,11 @@ impl BitGetter for SArray {
 
 impl Ranker for SArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -234,7 +262,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Ranker};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -252,11 +280,11 @@ impl Ranker for SArray {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\lg \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -265,7 +293,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Ranker};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -286,12 +314,12 @@ impl Selector for SArray {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::{SArray, Selector};
+    /// use sucds::bit_vectors::{SArray, Selector};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]);
     ///
