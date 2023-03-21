@@ -140,7 +140,7 @@ impl BitVectorStat for Rank9Sel {
     /// Returns the number of bits stored.
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.bv.len()
+        self.bv.num_bits()
     }
 
     /// Returns the number of bits set.

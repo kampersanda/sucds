@@ -6,9 +6,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{
-    broadword, BitGetter, BitVectorBuilder, Predecessor, Ranker, Selector, Serializable, Successor,
-};
+use crate::bit_vectors::prelude::*;
+use crate::broadword;
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
@@ -21,17 +20,17 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{BitGetter, BitVector};
+/// use sucds::{bit_vectors::prelude::*, BitVector};
 ///
 /// let mut bv = BitVector::new();
 /// bv.push_bit(true);
 /// bv.push_bit(false);
 ///
-/// assert_eq!(bv.len(), 2);
-/// assert_eq!(bv.get_bit(0), Some(true));  // Need BitGetter
+/// assert_eq!(bv.num_bits(), 2);
+/// assert_eq!(bv.get_bit(0), Some(true));
 ///
 /// bv.set_bit(0, false)?;
-/// assert_eq!(bv.get_bit(0), Some(false));  // Need BitGetter
+/// assert_eq!(bv.get_bit(0), Some(false));
 /// # Ok(())
 /// # }
 /// ```
@@ -47,10 +46,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let bv = BitVector::new();
-    /// assert_eq!(bv.len(), 0);
+    /// assert_eq!(bv.num_bits(), 0);
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -65,10 +64,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let bv = BitVector::with_capacity(40);
-    /// assert_eq!(bv.len(), 0);
+    /// assert_eq!(bv.num_bits(), 0);
     /// assert_eq!(bv.capacity(), 64);
     /// ```
     pub fn with_capacity(capa: usize) -> Self {
@@ -89,10 +88,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let bv = BitVector::from_bit(false, 5);
-    /// assert_eq!(bv.len(), 5);
+    /// assert_eq!(bv.num_bits(), 5);
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
         let word = if bit { usize::MAX } else { 0 };
@@ -114,10 +113,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitGetter, BitVector};
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
-    /// assert_eq!(bv.len(), 3);
+    /// assert_eq!(bv.num_bits(), 3);
     /// assert_eq!(bv.get_bit(1), Some(true));
     /// ```
     pub fn from_bits<I>(bits: I) -> Self
@@ -138,13 +137,13 @@ impl BitVector {
     ///
     /// # Errors
     ///
-    /// An error is returned if `self.len() <= pos`.
+    /// An error is returned if `self.num_bits() <= pos`.
     ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{BitGetter, BitVector};
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
     /// bv.set_bit(1, false)?;
@@ -154,10 +153,10 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return Err(anyhow!(
-                "pos must be no greater than self.len()={}, but got {pos}.",
-                self.len()
+                "pos must be no greater than self.num_bits()={}, but got {pos}.",
+                self.num_bits()
             ));
         }
         let word = pos / WORD_LEN;
@@ -176,12 +175,12 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::BitVector;
+    /// use sucds::{bit_vectors::prelude::*, BitVector};
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
     /// bv.push_bit(false);
-    /// assert_eq!(bv.len(), 2);
+    /// assert_eq!(bv.num_bits(), 2);
     /// ```
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
@@ -198,7 +197,7 @@ impl BitVector {
     /// Returns the `len` bits starting at the `pos`-th bit, or [`None`] if
     ///
     ///  - `len` is greater than [`WORD_LEN`], or
-    ///  - `self.len() < pos + len`.
+    ///  - `self.num_bits() < pos + len`.
     ///
     /// # Arguments
     ///
@@ -216,7 +215,7 @@ impl BitVector {
     /// ```
     #[inline(always)]
     pub fn get_bits(&self, pos: usize, len: usize) -> Option<usize> {
-        if WORD_LEN < len || self.len() < pos + len {
+        if WORD_LEN < len || self.num_bits() < pos + len {
             return None;
         }
         if len == 0 {
@@ -251,7 +250,7 @@ impl BitVector {
     /// An error is returned if
     ///
     ///  - `len` is greater than [`WORD_LEN`], or
-    ///  - `self.len() < pos + len`.
+    ///  - `self.num_bits() < pos + len`.
     ///
     /// # Notes
     ///
@@ -277,10 +276,10 @@ impl BitVector {
                 "len must be no greater than {WORD_LEN}, but got {len}."
             ));
         }
-        if self.len() < pos + len {
+        if self.num_bits() < pos + len {
             return Err(anyhow!(
-                "pos+len must be no greater than self.len()={}, but got {}.",
-                self.len(),
+                "pos+len must be no greater than self.num_bits()={}, but got {}.",
+                self.num_bits(),
                 pos + len
             ));
         }
@@ -414,8 +413,8 @@ impl BitVector {
         UnaryIter::new(self, pos)
     }
 
-    /// Returns `self.get_bits(pos, 64)` but it can extend further `self.len()`,
-    /// padding with zeros. If `self.len() <= pos`, [`None`] is returned.
+    /// Returns `self.get_bits(pos, 64)` but it can extend further `self.num_bits()`,
+    /// padding with zeros. If `self.num_bits() <= pos`, [`None`] is returned.
     ///
     /// # Arguments
     ///
@@ -446,16 +445,6 @@ impl BitVector {
     /// Gets the slice of raw words.
     pub fn words(&self) -> &[usize] {
         &self.words
-    }
-
-    /// Returns the number of bits stored.
-    pub const fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Checks if the container is empty.
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     /// Returns the total number of bits it can hold without reallocating.
@@ -507,6 +496,23 @@ impl BitVectorBuilder for BitVector {
     }
 }
 
+impl BitVectorStat for BitVector {
+    /// Returns the number of bits stored.
+    fn num_bits(&self) -> usize {
+        self.len
+    }
+
+    /// Returns the number of bits set.
+    ///
+    /// # Notes
+    ///
+    /// It is performed by linear scan and in $`O(u)`$ time.
+    // TODO(kampersanda): Maintain the value online.
+    fn num_ones(&self) -> usize {
+        self.rank1(self.len).unwrap()
+    }
+}
+
 impl BitGetter for BitVector {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
@@ -537,7 +543,7 @@ impl BitGetter for BitVector {
 
 impl Ranker for BitVector {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -556,7 +562,7 @@ impl Ranker for BitVector {
     /// assert_eq!(bv.rank1(5), None);
     /// ```
     fn rank1(&self, pos: usize) -> Option<usize> {
-        if self.len() < pos {
+        if self.num_bits() < pos {
             return None;
         }
         let mut r = 0;
@@ -571,7 +577,7 @@ impl Ranker for BitVector {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -664,15 +670,15 @@ impl Selector for BitVector {
         }
         let sel =
             wpos * WORD_LEN + broadword::select_in_word(!self.words[wpos], k - cur_rank).unwrap();
-        // NOTE(kampersanda): sel can be no less than self.len() because overflowed bits are
+        // NOTE(kampersanda): sel can be no less than self.num_bits() because overflowed bits are
         // initialized by zero and can be considered by select0.
-        (sel < self.len()).then(|| sel)
+        (sel < self.num_bits()).then(|| sel)
     }
 }
 
 impl Predecessor for BitVector {
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -694,7 +700,7 @@ impl Predecessor for BitVector {
     /// assert_eq!(bv.predecessor1(0), None);
     /// ```
     fn predecessor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let mut block = pos / WORD_LEN;
@@ -712,7 +718,7 @@ impl Predecessor for BitVector {
     }
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -734,7 +740,7 @@ impl Predecessor for BitVector {
     /// assert_eq!(bv.predecessor0(0), None);
     /// ```
     fn predecessor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let mut block = pos / WORD_LEN;
@@ -754,7 +760,7 @@ impl Predecessor for BitVector {
 
 impl Successor for BitVector {
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -776,7 +782,7 @@ impl Successor for BitVector {
     /// assert_eq!(bv.successor1(3), None);
     /// ```
     fn successor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let mut block = pos / WORD_LEN;
@@ -784,7 +790,7 @@ impl Successor for BitVector {
         let mut word = (self.words[block] >> shift) << shift;
         loop {
             if let Some(ret) = broadword::lsb(word) {
-                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.num_bits());
             }
             block += 1;
             if block == self.words.len() {
@@ -795,7 +801,7 @@ impl Successor for BitVector {
     }
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -817,7 +823,7 @@ impl Successor for BitVector {
     /// assert_eq!(bv.successor0(3), None);
     /// ```
     fn successor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let mut block = pos / WORD_LEN;
@@ -825,7 +831,7 @@ impl Successor for BitVector {
         let mut word = (!self.words[block] >> shift) << shift;
         loop {
             if let Some(ret) = broadword::lsb(word) {
-                return Some(block * WORD_LEN + ret).filter(|&i| i < self.len());
+                return Some(block * WORD_LEN + ret).filter(|&i| i < self.num_bits());
             }
             block += 1;
             if block == self.words.len() {
@@ -854,7 +860,7 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos < self.bv.len() {
+        if self.pos < self.bv.num_bits() {
             let x = self.bv.get_bit(self.pos).unwrap();
             self.pos += 1;
             Some(x)
@@ -865,7 +871,7 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.bv.len(), Some(self.bv.len()))
+        (self.bv.num_bits(), Some(self.bv.num_bits()))
     }
 }
 
@@ -880,7 +886,7 @@ impl std::iter::Extend<bool> for BitVector {
 
 impl std::fmt::Debug for BitVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut bits = vec![0u8; self.len()];
+        let mut bits = vec![0u8; self.num_bits()];
         for (i, b) in bits.iter_mut().enumerate() {
             *b = self.get_bit(i).unwrap() as u8;
         }
@@ -919,7 +925,7 @@ mod tests {
         let e = bv.set_bit(3, true);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("pos must be no greater than self.len()=3, but got 3.".to_string())
+            Some("pos must be no greater than self.num_bits()=3, but got 3.".to_string())
         );
     }
 
@@ -939,7 +945,7 @@ mod tests {
         let e = bv.set_bits(2, 0b11, 2);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("pos+len must be no greater than self.len()=3, but got 4.".to_string())
+            Some("pos+len must be no greater than self.num_bits()=3, but got 4.".to_string())
         );
     }
 

@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
-use crate::broadword;
+use crate::{broadword, BitVectorStat};
 use crate::{
     BitGetter, BitVector, BitVectorBuilder, EliasFano, EliasFanoBuilder, Predecessor, Ranker,
     Selector, Serializable, Successor,
@@ -37,7 +37,7 @@ impl SArray {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        let num_bits = bv.len();
+        let num_bits = bv.num_bits();
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {

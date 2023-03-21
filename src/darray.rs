@@ -9,7 +9,8 @@ use anyhow::Result;
 
 use crate::rank9sel::inner::Rank9SelIndex;
 use crate::{
-    BitGetter, BitVector, BitVectorBuilder, Predecessor, Ranker, Selector, Serializable, Successor,
+    BitGetter, BitVector, BitVectorBuilder, BitVectorStat, Predecessor, Ranker, Selector,
+    Serializable, Successor,
 };
 use inner::DArrayIndex;
 
@@ -127,14 +128,14 @@ impl DArray {
 
     /// Gets the number of bits.
     #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.bv.len()
+    pub fn len(&self) -> usize {
+        self.bv.num_bits()
     }
 
     /// Checks if the vector is empty.
     #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.bv.is_empty()
+    pub fn is_empty(&self) -> bool {
+        self.bv.num_bits() == 0
     }
 
     /// Gets the number of bits set.
@@ -145,7 +146,7 @@ impl DArray {
 
     /// Gets the number of bits unset.
     #[inline(always)]
-    pub const fn num_zeros(&self) -> usize {
+    pub fn num_zeros(&self) -> usize {
         self.len() - self.num_ones()
     }
 }

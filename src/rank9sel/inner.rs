@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use crate::broadword;
-use crate::{BitVector, Serializable};
+use crate::{BitVector, BitVectorStat, Serializable};
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -80,7 +80,7 @@ impl Rank9SelIndex {
         block_rank_pairs.shrink_to_fit();
 
         Self {
-            len: bv.len(),
+            len: bv.num_bits(),
             block_rank_pairs,
             select1_hints: None,
             select0_hints: None,
@@ -190,10 +190,10 @@ impl Rank9SelIndex {
     /// }
     /// ```
     pub unsafe fn rank1(&self, bv: &BitVector, pos: usize) -> Option<usize> {
-        if bv.len() < pos {
+        if bv.num_bits() < pos {
             return None;
         }
-        if pos == bv.len() {
+        if pos == bv.num_bits() {
             return Some(self.num_ones());
         }
         let (sub_bpos, sub_left) = (pos / 64, pos % 64);

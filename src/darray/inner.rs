@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{broadword, BitVector, Serializable};
+use crate::{broadword, BitVector, BitVectorStat, Serializable};
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -153,7 +153,7 @@ impl DArrayIndex {
             while let Some(l) = broadword::lsb(cur_word) {
                 cur_pos += l;
                 cur_word >>= l;
-                if cur_pos >= bv.len() {
+                if cur_pos >= bv.num_bits() {
                     break;
                 }
 
