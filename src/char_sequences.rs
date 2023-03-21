@@ -2,7 +2,7 @@
 //!
 //! # Introduction
 //!
-//! *Character sequences* are another generalization of bit vectors,
+//! *Character sequences* are a generalization of [`bit_vectors`](crate::bit_vectors),
 //! whose elements are drawn from an alphabet $`\Sigma = \{ 0,1,\dots,\sigma - 1 \}`$.
 //!
 //! Let $`(c_0, c_1, \dots, c_{n-1}) \in \Sigma^{n} `$ be a sequence of $`n`$ characters.
@@ -12,7 +12,7 @@
 //! - $`\textrm{Rank}(i,c)`$ returns the number of occurrences of character $`c`$ for $`c_0,c_1,\dots,c_{i-1}`$.
 //! - $`\textrm{Select}(k,c)`$ returns the occurrence position of the $`k`$-th character $`c`$.
 //!
-//! Note that they are not limited depending on the data structures.
+//! Note that they are not limited depending on data structures.
 //!
 //! # Data structures
 //!

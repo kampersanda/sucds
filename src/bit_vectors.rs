@@ -13,7 +13,7 @@
 //! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
 //! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
 //!
-//! Note that they are not limited depending on the data structures.
+//! Note that they are not limited depending on data structures.
 //!
 //! # Data structures
 //!

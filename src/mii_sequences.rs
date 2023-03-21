@@ -2,7 +2,8 @@
 //!
 //! # Introduction
 //!
-//! *Monotone-increasing integer sequences* are a generalization of bit vectors, a multiset variant of bit positions.
+//! *Monotone-increasing integer sequences* are a generalization of [`bit_vectors`](crate::bit_vectors),
+//! a multiset variant of bit positions.
 //! More simply, it is a sorted array of integers.
 //!
 //! Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers
@@ -14,7 +15,7 @@
 //! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$ (implemented by [`Predecessor`]).
 //! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$ (implemented by [`Successor`]).
 //!
-//! Note that they are not limited depending on the data structures.
+//! Note that they are not limited depending on data structures.
 //!
 //! # Data structures
 //!
