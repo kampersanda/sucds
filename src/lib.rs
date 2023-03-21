@@ -24,14 +24,16 @@
 //!
 //! ## Data structures
 //!
-//! We introduce the data structures provided in this crate, categorized as follows:
+//! The data structures provided in this crate are categorized as follows:
 //!
-//! - [Integer arrays](crate::int_vectors)
+//! - [Integer vectors](crate::int_vectors)
 //! - [Bit vectors](crate::bit_vectors)
 //! - [Monotone-increasing integer sequences](crate::mii_sequences)
 //! - [Character sequences](crate::char_sequences)
 //!
-//! In the description, we write $`\log_2`$ with $`\lg`$.
+//! The descriptions for each category are available in the corresponding module.
+//!
+//! Throughout this document, we write $`\log_2`$ with $`\lg`$.
 //!
 //! ## Serialization/deserialization
 //!

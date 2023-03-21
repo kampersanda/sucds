@@ -1,4 +1,4 @@
-//! Compressed integer list with prefix-summed Elias-Fano encoding.
+//! Compressed integer sequence with prefix-summed Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -10,13 +10,17 @@ use crate::int_vectors::IntGetter;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Serializable;
 
-/// Compressed integer list with prefix-summed Elias-Fano encoding.
+/// Compressed integer sequence with prefix-summed Elias-Fano encoding.
 ///
-/// This stores a list of integers by converting it into an increasing sequence
-/// in a prefix-summing manner and representing the sequence through Elias-Fano encoding.
-/// When the list consists of small integers, the representation will be very compact.
+/// This stores a sequence of integers by converting it into an increasing sequence
+/// in a prefix-summing manner and representing it through the Elias-Fano encoding.
 ///
-/// This is a yet another Rust port of [succinct::elias_fano_list](https://github.com/ot/succinct/blob/master/elias_fano_list.hpp).
+/// # Space complexity
+///
+/// $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ bits where
+///
+/// - $`n`$ is the number of stored integers, and
+/// - $`N`$ is the sum of integers plus 1.
 ///
 /// # Examples
 ///
@@ -24,19 +28,23 @@ use crate::Serializable;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
 ///
-/// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+/// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
 /// // Need IntGetter
-/// assert_eq!(list.get_int(0), Some(5));
-/// assert_eq!(list.get_int(1), Some(14));
-/// assert_eq!(list.get_int(2), Some(334));
-/// assert_eq!(list.get_int(3), Some(10));
+/// assert_eq!(seq.get_int(0), Some(5));
+/// assert_eq!(seq.get_int(1), Some(14));
+/// assert_eq!(seq.get_int(2), Some(334));
+/// assert_eq!(seq.get_int(3), Some(10));
 ///
-/// assert_eq!(list.len(), 4);
-/// assert_eq!(list.sum(), 363);
+/// assert_eq!(seq.len(), 4);
+/// assert_eq!(seq.sum(), 363);
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::elias_fano_list](https://github.com/ot/succinct/blob/master/elias_fano_list.hpp).
 ///
 /// # References
 ///
@@ -52,7 +60,7 @@ pub struct PrefixSummedEliasFano {
 }
 
 impl PrefixSummedEliasFano {
-    /// Creates a new list from a slice of integers.
+    /// Creates a new sequence from a slice of integers.
     ///
     /// # Arguments
     ///
@@ -71,10 +79,10 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
     ///
-    /// assert_eq!(list.len(), 4);
-    /// assert_eq!(list.sum(), 363);
+    /// assert_eq!(seq.len(), 4);
+    /// assert_eq!(seq.sum(), 363);
     /// # Ok(())
     /// # }
     /// ```
@@ -108,8 +116,8 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
-    /// let mut it = list.iter();
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(14));
@@ -128,7 +136,7 @@ impl PrefixSummedEliasFano {
         self.ef.len()
     }
 
-    /// Checks if the list is empty.
+    /// Checks if the sequence is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -144,7 +152,7 @@ impl IntGetter for PrefixSummedEliasFano {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -152,11 +160,11 @@ impl IntGetter for PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
     ///
-    /// let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
-    /// assert_eq!(list.get_int(0), Some(5));
-    /// assert_eq!(list.get_int(1), Some(14));
-    /// assert_eq!(list.get_int(2), Some(334));
-    /// assert_eq!(list.get_int(3), None);
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
+    /// assert_eq!(seq.get_int(0), Some(5));
+    /// assert_eq!(seq.get_int(1), Some(14));
+    /// assert_eq!(seq.get_int(2), Some(334));
+    /// assert_eq!(seq.get_int(3), None);
     /// # Ok(())
     /// # }
     /// ```
@@ -229,11 +237,11 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]).unwrap();
-        let size = list.serialize_into(&mut bytes).unwrap();
+        let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]).unwrap();
+        let size = seq.serialize_into(&mut bytes).unwrap();
         let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(list, other);
+        assert_eq!(seq, other);
         assert_eq!(size, bytes.len());
-        assert_eq!(size, list.size_in_bytes());
+        assert_eq!(size, seq.size_in_bytes());
     }
 }

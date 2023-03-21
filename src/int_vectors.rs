@@ -2,16 +2,16 @@
 //!
 //! # Introduction
 //!
-//! Integer arrays consisting of many small values can be stored in compressed space
-//! using *compressed integer arrays*.
+//! Integer sequences consisting of many small values can be stored in compressed space
+//! using *compressed integer vectors*.
 //!
-//! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be an array of $`n`$ unsigned integers.
-//! Our integer arrays support the following queries:
+//! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be a sequence of $`n`$ unsigned integers.
+//! Our integer vectors support the following queries:
 //!
 //! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`IntGetter`]).
 //! - $`\textrm{Update}(i, x)`$ modifies $`a_i \gets x`$.
 //!
-//! Note that they are not limited depending on the data structures.
+//! Note that they are not limited depending on data structures.
 //!
 //! # Data structures
 //!
@@ -32,7 +32,7 @@
 //! Assuming $`u`$ is the maximum value in $`A`$ plus 1,
 //! each integer is stored in $`\lceil \lg u \rceil`$ bits of space.
 //!
-//! This is the only mutable data structure and will be the fastest due to its simplicity.
+//! This is the only updatable data structure and will be the fastest due to its simplicity.
 //! However, the compression performance is poor, especially when $`A`$ contains at least one large value.
 //!
 //! ## Compressed format with Elias-Fano encoding
@@ -49,15 +49,14 @@
 //! which are randomly-accessible variants of the VByte encoding scheme.
 //! [`DacsByte`] is a faster variant, and [`DacsOpt`] is a smaller variant.
 //!
-//! Let $`\ell(a)`$ be the length in bits of the binary representation of an integer $`a`$,
-//! $`b`$ be the length in bits for each codeword with DACs, and
-//! $`\textrm{DAC}(A)`$ be the length in bits of the encoded sequence from $`A`$ with DACs.
-//! The complexities are as shown in the table.
-//! (For simplicity, we assume all codewords have the same bit length $`b`$.)
+//! Let
 //!
-//! A notable property is the access time depends on $`\ell(a_i)`$ for the target value $`a_i`$.
-//! If values accessed are small, DACs can perform faster than [`PrefixSummedEliasFano`]
-//! due to the simplicity of the data structure.
+//!  - $`\ell(a)`$ be the length in bits of the binary representation of an integer $`a`$,
+//!  - $`b`$ be the length in bits assigned for each level with DACs, and
+//!  - $`\textrm{DAC}(A)`$ be the length in bits of the encoded sequence from $`A`$ with DACs.
+//!
+//! The complexities are as shown in the table.
+//! (For simplicity, we assume all levels have the same bit length $`b`$.)
 pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;

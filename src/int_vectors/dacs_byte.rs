@@ -1,4 +1,4 @@
-//! Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
+//! Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 #![cfg(target_pointer_width = "64")]
 
 use std::convert::TryFrom;
@@ -15,11 +15,19 @@ use crate::Serializable;
 const LEVEL_WIDTH: usize = 8;
 const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 
-/// Compressed integer array using Directly Addressable Codes (DACs) in a simple bytewise scheme.
+/// Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 ///
-/// DACs are a compact representation of an integer array consisting of many small values.
+/// DACs are a compact representation of an integer sequence consisting of many small values.
 /// [`DacsByte`] is a simple variant and uses [`Vec<u8>`] for each level to obtain faster
 /// operations than [`DacsOpt`](super::DacsOpt).
+///
+/// # Space complexities
+///
+/// $`\textrm{DAC}(A) + o(\textrm{DAC}(A)/b) + O(\lg u)`$ bits where
+///
+/// - $`u`$ is the maximum value plus 1,
+/// - $`b`$ is the length in bits assigned for each level with DACs (here $`b = 8`$), and
+/// - $`\textrm{DAC}(A)`$ is the length in bits of the encoded sequence from an original sequence $`A`$ with DACs.
 ///
 /// # Examples
 ///
@@ -27,16 +35,16 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{DacsByte, IntGetter};
 ///
-/// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+/// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
 /// // Need IntGetter
-/// assert_eq!(list.get_int(0), Some(5));
-/// assert_eq!(list.get_int(1), Some(0));
-/// assert_eq!(list.get_int(2), Some(100000));
-/// assert_eq!(list.get_int(3), Some(334));
+/// assert_eq!(seq.get_int(0), Some(5));
+/// assert_eq!(seq.get_int(1), Some(0));
+/// assert_eq!(seq.get_int(2), Some(100000));
+/// assert_eq!(seq.get_int(3), Some(334));
 ///
-/// assert_eq!(list.len(), 4);
-/// assert_eq!(list.num_levels(), 3);
+/// assert_eq!(seq.len(), 4);
+/// assert_eq!(seq.num_levels(), 3);
 /// # Ok(())
 /// # }
 /// ```
@@ -122,8 +130,8 @@ impl DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::DacsByte;
     ///
-    /// let list = DacsByte::from_slice(&[5, 0, 100000, 334])?;
-    /// let mut it = list.iter();
+    /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+    /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
     /// assert_eq!(it.next(), Some(0));
@@ -177,8 +185,8 @@ impl IntGetter for DacsByte {
     ///
     /// # Complexity
     ///
-    /// - $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
-    ///   the `pos`-th integer.
+    /// $`O( \ell_{pos} )`$ where $`\ell_{pos}`$ is the number of levels corresponding to
+    /// the `pos`-th integer.
     ///
     /// # Examples
     ///
@@ -186,12 +194,12 @@ impl IntGetter for DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{DacsByte, IntGetter};
     ///
-    /// let list = DacsByte::from_slice(&[5, 999, 334])?;
+    /// let seq = DacsByte::from_slice(&[5, 999, 334])?;
     ///
-    /// assert_eq!(list.get_int(0), Some(5));
-    /// assert_eq!(list.get_int(1), Some(999));
-    /// assert_eq!(list.get_int(2), Some(334));
-    /// assert_eq!(list.get_int(3), None);
+    /// assert_eq!(seq.get_int(0), Some(5));
+    /// assert_eq!(seq.get_int(1), Some(999));
+    /// assert_eq!(seq.get_int(2), Some(334));
+    /// assert_eq!(seq.get_int(3), None);
     /// # Ok(())
     /// # }
     /// ```
@@ -213,14 +221,14 @@ impl IntGetter for DacsByte {
 
 /// Iterator for enumerating integers, created by [`DacsByte::iter()`].
 pub struct Iter<'a> {
-    list: &'a DacsByte,
+    seq: &'a DacsByte,
     pos: usize,
 }
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub const fn new(list: &'a DacsByte) -> Self {
-        Self { list, pos: 0 }
+    pub const fn new(seq: &'a DacsByte) -> Self {
+        Self { seq, pos: 0 }
     }
 }
 
@@ -229,8 +237,8 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos < self.list.len() {
-            let x = self.list.get_int(self.pos).unwrap();
+        if self.pos < self.seq.len() {
+            let x = self.seq.get_int(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -240,7 +248,7 @@ impl<'a> Iterator for Iter<'a> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.list.len(), Some(self.list.len()))
+        (self.seq.len(), Some(self.seq.len()))
     }
 }
 
@@ -269,10 +277,10 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let list = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
+        let seq = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
 
         assert_eq!(
-            list.data,
+            seq.data,
             vec![
                 vec![0xFF, 0xFF, 0xF, 0xFF, 0xF],
                 vec![0xFF, 0xFF],
@@ -281,45 +289,45 @@ mod tests {
         );
 
         assert_eq!(
-            list.flags,
+            seq.flags,
             vec![
                 Rank9Sel::from_bits([true, false, false, true, false]),
                 Rank9Sel::from_bits([false, true])
             ]
         );
 
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 5);
-        assert_eq!(list.num_levels(), 3);
-        assert_eq!(list.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
+        assert!(!seq.is_empty());
+        assert_eq!(seq.len(), 5);
+        assert_eq!(seq.num_levels(), 3);
+        assert_eq!(seq.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
 
-        assert_eq!(list.get_int(0), Some(0xFFFF));
-        assert_eq!(list.get_int(1), Some(0xFF));
-        assert_eq!(list.get_int(2), Some(0xF));
-        assert_eq!(list.get_int(3), Some(0xFFFFF));
-        assert_eq!(list.get_int(4), Some(0xF));
+        assert_eq!(seq.get_int(0), Some(0xFFFF));
+        assert_eq!(seq.get_int(1), Some(0xFF));
+        assert_eq!(seq.get_int(2), Some(0xF));
+        assert_eq!(seq.get_int(3), Some(0xFFFFF));
+        assert_eq!(seq.get_int(4), Some(0xF));
     }
 
     #[test]
     fn test_empty() {
-        let list = DacsByte::from_slice::<usize>(&[]).unwrap();
-        assert!(list.is_empty());
-        assert_eq!(list.len(), 0);
-        assert_eq!(list.num_levels(), 1);
-        assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
+        let seq = DacsByte::from_slice::<usize>(&[]).unwrap();
+        assert!(seq.is_empty());
+        assert_eq!(seq.len(), 0);
+        assert_eq!(seq.num_levels(), 1);
+        assert_eq!(seq.widths(), vec![LEVEL_WIDTH]);
     }
 
     #[test]
     fn test_all_zeros() {
-        let list = DacsByte::from_slice(&[0, 0, 0, 0]).unwrap();
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 4);
-        assert_eq!(list.num_levels(), 1);
-        assert_eq!(list.widths(), vec![LEVEL_WIDTH]);
-        assert_eq!(list.get_int(0), Some(0));
-        assert_eq!(list.get_int(1), Some(0));
-        assert_eq!(list.get_int(2), Some(0));
-        assert_eq!(list.get_int(3), Some(0));
+        let seq = DacsByte::from_slice(&[0, 0, 0, 0]).unwrap();
+        assert!(!seq.is_empty());
+        assert_eq!(seq.len(), 4);
+        assert_eq!(seq.num_levels(), 1);
+        assert_eq!(seq.widths(), vec![LEVEL_WIDTH]);
+        assert_eq!(seq.get_int(0), Some(0));
+        assert_eq!(seq.get_int(1), Some(0));
+        assert_eq!(seq.get_int(2), Some(0));
+        assert_eq!(seq.get_int(3), Some(0));
     }
 
     #[test]
@@ -334,11 +342,11 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let list = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
-        let size = list.serialize_into(&mut bytes).unwrap();
+        let seq = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
+        let size = seq.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
-        assert_eq!(list, other);
+        assert_eq!(seq, other);
         assert_eq!(size, bytes.len());
-        assert_eq!(size, list.size_in_bytes());
+        assert_eq!(size, seq.size_in_bytes());
     }
 }

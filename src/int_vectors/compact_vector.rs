@@ -1,4 +1,4 @@
-//! Compact vector in which each integer is represented in a fixed number of bits.
+//! Updatable compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
 use std::io::{Read, Write};
@@ -10,7 +10,11 @@ use crate::bit_vectors::BitVector;
 use crate::int_vectors::IntGetter;
 use crate::{utils, Serializable};
 
-/// Compact vector in which each integer is represented in a fixed number of bits.
+/// Updatable compact vector in which each integer is represented in a fixed number of bits.
+///
+/// # Space usage
+///
+/// $`n \lceil \lg u \rceil`$ bits for $`n`$ integers in which a value is in $`[0,u)`$.
 ///
 /// # Examples
 ///
@@ -220,6 +224,10 @@ impl CompactVector {
     /// - `pos` is out of bounds, or
     /// - `val` cannot be represent in `self.width()` bits.
     ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
     /// # Examples
     ///
     /// ```
@@ -263,6 +271,10 @@ impl CompactVector {
     ///
     /// An error is returned if `val` cannot be represent in `self.width()` bits.
     ///
+    /// # Complexity
+    ///
+    /// Constant (Amortized)
+    ///
     /// # Examples
     ///
     /// ```
@@ -299,6 +311,10 @@ impl CompactVector {
     /// # Errors
     ///
     /// An error is returned if values in `vals` cannot be represent in `self.width()` bits.
+    ///
+    /// # Complexity
+    ///
+    /// Linear
     ///
     /// # Examples
     ///
@@ -374,6 +390,10 @@ impl IntGetter for CompactVector {
     /// # Arguments
     ///
     ///  - `pos`: Position.
+    ///
+    /// # Complexity
+    ///
+    /// Constant
     ///
     /// # Examples
     ///
