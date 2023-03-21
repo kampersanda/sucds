@@ -5,11 +5,9 @@ use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
-use crate::{broadword, BitVectorStat};
-use crate::{
-    BitGetter, BitVector, BitVectorBuilder, EliasFano, EliasFanoBuilder, Predecessor, Ranker,
-    Selector, Serializable, Successor,
-};
+use crate::bit_vectors::prelude::*;
+use crate::broadword;
+use crate::{BitVector, EliasFano, EliasFanoBuilder, Serializable};
 
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [EliasFano](crate::EliasFano) for bit vectors.
@@ -72,24 +70,6 @@ impl SArray {
     pub const fn has_rank(&self) -> bool {
         self.has_rank
     }
-
-    /// Returns the number of bits.
-    #[inline(always)]
-    pub const fn num_bits(&self) -> usize {
-        self.num_bits
-    }
-
-    /// Returns the number of bits set.
-    #[inline(always)]
-    pub const fn num_ones(&self) -> usize {
-        self.num_ones
-    }
-
-    /// Returns the number of bits unset.
-    #[inline(always)]
-    pub const fn num_zeros(&self) -> usize {
-        self.num_bits() - self.num_ones()
-    }
 }
 
 impl BitVectorBuilder for SArray {
@@ -123,6 +103,20 @@ impl BitVectorBuilder for SArray {
             rsbv = rsbv.enable_rank();
         }
         Ok(rsbv)
+    }
+}
+
+impl BitVectorStat for SArray {
+    /// Returns the number of bits stored.
+    #[inline(always)]
+    fn num_bits(&self) -> usize {
+        self.num_bits
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    fn num_ones(&self) -> usize {
+        self.num_ones
     }
 }
 
