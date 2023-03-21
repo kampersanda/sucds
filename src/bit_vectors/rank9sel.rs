@@ -24,7 +24,7 @@ use inner::Rank9SelIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{Rank9Sel, bit_vectors::prelude::*};
+/// use sucds::bit_vectors::{Rank9Sel, prelude::*};
 ///
 /// let bv = Rank9Sel::from_bits([true, false, false, true])
 ///     .select1_hints()  // To accelerate select1
@@ -58,14 +58,14 @@ impl Rank9Sel {
         Self { bv, rs }
     }
 
-    /// Builds an index for faster `select1`, `predecessor1`, and `successor1`.
+    /// Builds an index for faster select1.
     #[must_use]
     pub fn select1_hints(mut self) -> Self {
         self.rs = self.rs.select1_hints();
         self
     }
 
-    /// Builds an index for faster `select0`, `predecessor0`, and `successor0`.
+    /// Builds an index for faster select0.
     #[must_use]
     pub fn select0_hints(mut self) -> Self {
         self.rs = self.rs.select0_hints();
@@ -85,8 +85,6 @@ impl Rank9Sel {
     }
 
     /// Returns the reference of the internal bit vector.
-    ///
-    /// Use the iterators of [`BitVector`] to scan rank9sel entries.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.bv
     }
@@ -151,7 +149,7 @@ impl BitGetter for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, BitGetter};
+    /// use sucds::bit_vectors::{Rank9Sel, BitGetter};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false]);
     ///
@@ -176,7 +174,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, Rank9Sel};
+    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -200,7 +198,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Ranker, Rank9Sel};
+    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -226,7 +224,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Selector};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
     ///
@@ -248,7 +246,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Selector};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select0_hints();
     ///

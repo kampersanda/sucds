@@ -52,7 +52,7 @@ impl DArrayIndex {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{BitVector, darray::inner::DArrayIndex};
+    /// use sucds::bit_vectors::{BitVector, darray::inner::DArrayIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, true);
@@ -68,7 +68,7 @@ impl DArrayIndex {
     /// `Self::new(&bv, over_one=false)`.
     ///
     /// ```
-    /// use sucds::{BitVector, darray::inner::DArrayIndex};
+    /// use sucds::bit_vectors::{BitVector, darray::inner::DArrayIndex};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// let da = DArrayIndex::new(&bv, false);

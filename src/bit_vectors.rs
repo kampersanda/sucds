@@ -1,4 +1,57 @@
-//! The module for bit vectors.
+//! Top module for bit vectors.
+//!
+//! # Introduction
+//!
+//! Bit vectors and operations on them are fundamental to succinct data structures.
+//!
+//! Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
+//! at which bits are set in a bit vector of length $`u`$.
+//! Our bit vectors support the following queries:
+//!
+//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
+//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Ranker`]).
+//! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
+//! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
+//!
+//! Note that they are not limited depending on the data structures.
+//!
+//! # Summary
+//!
+//! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
+//! The implementations provided in this crate are summarized below:
+//!
+//! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Update | Memory (bits) |
+//! | --- | :-: | :-: | :-: | :-: | :-: |
+//! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
+//! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
+//! | [`DArray`] | $`O(1)`$ | $`O(1)`$ | $`O(1)`$ | -- | $`u + o(u)`$ |
+//! | [`SArray`] | $`O(\lg n)`$ | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | -- | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
+//!
+//! ## Plain bit vectors without index
+//!
+//! [`BitVector`] is a plain format without index and the only mutable data structure.
+//!
+//! All search queries are performed by linear scan in $`O(u)`$ time,
+//! although they are quickly computed in word units using bit-parallelism techniques.
+//!
+//! ## Plain bit vectors with index
+//!
+//! [`Rank9Sel`] and [`DArray`] are index structures for faster queries built on [`BitVector`].
+//!
+//! [`Rank9Sel`] is an implementation of Vigna's Rank9 and hinted selection techniques, supporting
+//! constant-time Rank and logarithmic-time Select queries.
+//!
+//! [`DArray`] is a constant-time Select data structure by Okanohara and Sadakane.
+//! If you need only Select queries on dense sets (i.e., $`n/u \approx 0.5`$), this will be the most candidate.
+//! If your bit vector is a very sparse set (i.e., $`n \ll u`$), use [`SArray`] described below.
+//! Rank/Predecessor/Successor queries are optionally enabled using the [`Rank9Sel`] index.
+//! [`DArray`] outperforms [`Rank9Sel`] in complexity, but the practical space overhead of [`DArray`] can be larger.
+//!
+//! ## Very sparse bit vectors
+//!
+//! [`SArray`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
+//! in compressed space, while supporting quick queries.
+//! This is a specialized wrapper of [`EliasFano`].
 pub mod bit_vector;
 pub mod darray;
 pub mod prelude;
