@@ -219,15 +219,14 @@ compile_error!("`target_pointer_width` must be 64");
 
 pub mod bit_vectors;
 pub mod broadword;
+pub mod char_sequences;
 pub mod int_vectors;
 mod intrinsics;
 pub mod mii_sequences;
 pub mod serial;
 pub mod util;
-pub mod wavelet_matrix;
 
 pub use serial::Serializable;
-pub use wavelet_matrix::WaveletMatrix;
 
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
