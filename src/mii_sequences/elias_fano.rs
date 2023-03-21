@@ -35,7 +35,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{EliasFanoBuilder, Predecessor, Ranker, Selector, Successor};
+/// use sucds::mii_sequences::{EliasFanoBuilder, prelude::*};
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
 /// efb.extend([1, 3, 3, 7])?;
@@ -146,7 +146,7 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -206,7 +206,7 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
@@ -241,7 +241,7 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
     /// efb.extend([1, 3, 3, 6, 7, 10])?;
@@ -296,7 +296,7 @@ impl EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::EliasFanoBuilder;
+    /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -349,7 +349,7 @@ impl Ranker for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Ranker};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Ranker};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -408,7 +408,7 @@ impl Selector for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Selector};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Selector};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -458,7 +458,7 @@ impl Predecessor for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Predecessor};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Predecessor};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -503,7 +503,7 @@ impl Successor for EliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{EliasFanoBuilder, Successor};
+    /// use sucds::mii_sequences::{EliasFanoBuilder, Successor};
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
     /// efb.extend([1, 3, 3, 7])?;
@@ -568,7 +568,7 @@ impl Serializable for EliasFano {
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::EliasFanoBuilder;
+/// use sucds::mii_sequences::EliasFanoBuilder;
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 5)?;
 ///
