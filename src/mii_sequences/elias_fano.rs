@@ -23,13 +23,10 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// When a sequence stores $`n`$ integers from $`[0, u-1]`$,
 /// this representation takes $`n \lceil \log_2 \frac{u}{n} \rceil + 2n + o(n)`$ bits of space,
 /// indicating that a sparse sequence can be stored in a very compressed space.
+///
 /// Another attraction of Elias-Fano is several search queries,
 /// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor1), and [successor](EliasFano::successor1),
 /// over the compressed representation.
-///
-/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
-/// The implementation of binary search is based on that in
-/// [tongrams::fast_ef_sequence](https://github.com/jermp/tongrams/blob/master/include/sequences/fast_ef_sequence.hpp).
 ///
 /// # Example
 ///
@@ -69,6 +66,12 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Credits
+///
+/// This is a yet another Rust port of [succinct::elias_fano](https://github.com/ot/succinct/blob/master/elias_fano.hpp).
+/// The implementation of binary search is based on that in
+/// [tongrams::fast_ef_sequence](https://github.com/jermp/tongrams/blob/master/include/sequences/fast_ef_sequence.hpp).
 ///
 /// # References
 ///
@@ -140,7 +143,7 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -200,7 +203,7 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic
+    /// $`O(\lg n)`$
     ///
     /// # Examples
     ///
@@ -235,7 +238,7 @@ impl EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Logarithmic for the range
+    /// $`O(\lg |R|)`$ for the range $`R`$.
     ///
     /// # Examples
     ///
@@ -339,7 +342,7 @@ impl Ranker for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Panics
     ///
@@ -402,7 +405,7 @@ impl Selector for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - Constant
+    /// Constant
     ///
     /// # Examples
     ///
@@ -452,7 +455,7 @@ impl Predecessor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///
@@ -497,7 +500,7 @@ impl Successor for EliasFano {
     ///
     /// # Complexity
     ///
-    /// - $`O(\log \frac{u}{n})`$
+    /// $`O(\log \frac{u}{n})`$
     ///
     /// # Examples
     ///

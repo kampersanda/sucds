@@ -2,7 +2,7 @@
 //!
 //! # Introduction
 //!
-//! *Monotone-increasing integer sequences* are a generalization of bit vectors, which are a multiset variant of $`S`$.
+//! *Monotone-increasing integer sequences* are a generalization of bit vectors, a multiset variant of bit positions.
 //! More simply, it is a sorted array of integers.
 //!
 //! Let $`X = (x_0, x_1, \dots, x_{n-1})`$ be a sequence of $`n`$ integers

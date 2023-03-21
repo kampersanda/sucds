@@ -21,7 +21,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// [`DacsByte`] is a simple variant and uses [`Vec<u8>`] for each level to obtain faster
 /// operations than [`DacsOpt`](super::DacsOpt).
 ///
-/// # Space complexities
+/// # Memory complexity
 ///
 /// $`\textrm{DAC}(A) + o(\textrm{DAC}(A)/b) + O(\lg u)`$ bits where
 ///

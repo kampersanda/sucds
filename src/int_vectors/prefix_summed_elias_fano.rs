@@ -15,7 +15,7 @@ use crate::Serializable;
 /// This stores a sequence of integers by converting it into an increasing sequence
 /// in a prefix-summing manner and representing it through the Elias-Fano encoding.
 ///
-/// # Space complexity
+/// # Memory complexity
 ///
 /// $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ bits where
 ///

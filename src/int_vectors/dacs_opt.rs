@@ -17,7 +17,7 @@ use crate::Serializable;
 /// [`DacsOpt`] uses dynamic programming to compute the configuration
 /// to achieve the minimum memory usage.
 ///
-/// # Space complexities
+/// # Memory complexity
 ///
 /// $`\textrm{DAC}(A) + o(\textrm{DAC}(A)/b) + O(\lg u)`$ bits where
 ///

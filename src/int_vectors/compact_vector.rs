@@ -12,7 +12,7 @@ use crate::{utils, Serializable};
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
 ///
-/// # Space usage
+/// # Memory usage
 ///
 /// $`n \lceil \lg u \rceil`$ bits for $`n`$ integers in which a value is in $`[0,u)`$.
 ///
