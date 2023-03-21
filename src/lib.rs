@@ -219,9 +219,9 @@ compile_error!("`target_pointer_width` must be 64");
 
 pub mod bit_vectors;
 pub mod broadword;
-pub mod increasing_sequences;
 pub mod int_vectors;
 mod intrinsics;
+pub mod mii_sequences;
 pub mod serial;
 pub mod util;
 pub mod wavelet_matrix;

@@ -61,5 +61,5 @@ pub trait BitGetter {
     fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
-pub use crate::increasing_sequences::Ranker;
-pub use crate::increasing_sequences::Selector;
+pub use crate::mii_sequences::Ranker;
+pub use crate::mii_sequences::Selector;

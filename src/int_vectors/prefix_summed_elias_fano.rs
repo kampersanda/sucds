@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::increasing_sequences::{EliasFano, EliasFanoBuilder};
 use crate::int_vectors::IntGetter;
+use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Serializable;
 
 /// Compressed integer list with prefix-summed Elias-Fano encoding.

@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
 use crate::broadword;
-use crate::increasing_sequences::{EliasFano, EliasFanoBuilder, Predecessor, Successor};
+use crate::mii_sequences::{EliasFano, EliasFanoBuilder, Predecessor, Successor};
 use crate::Serializable;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
