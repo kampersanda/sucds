@@ -26,10 +26,10 @@
 //!
 //! We introduce the data structures provided in this crate, categorized as follows:
 //!
-//! 1. [Integer arrays](#integer-arrays)
-//! 1. [Bit vectors](#bit-vectors)
-//! 1. [Monotone-increasing integer sequences](#monotone-increasing-integer-sequences)
-//! 1. [Character sequences](#character-sequences)
+//! - [Integer arrays](crate::int_vectors)
+//! - [Bit vectors](crate::bit_vectors)
+//! - [Monotone-increasing integer sequences](crate::mii_sequences)
+//! - [Character sequences](crate::char_sequences)
 //!
 //! In the description, we write $`\log_2`$ with $`\lg`$.
 //!
