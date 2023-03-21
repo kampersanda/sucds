@@ -7,11 +7,9 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
+use crate::bit_vectors::prelude::*;
 use crate::rank9sel::inner::Rank9SelIndex;
-use crate::{
-    BitGetter, BitVector, BitVectorBuilder, BitVectorStat, Predecessor, Ranker, Selector,
-    Serializable, Successor,
-};
+use crate::BitVector;
 use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
@@ -26,24 +24,20 @@ use inner::DArrayIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{DArray, BitGetter, Ranker, Selector};
+/// use sucds::{DArray, bit_vectors::prelude::*};
 ///
 /// let da = DArray::from_bits([true, false, false, true])
-///     .enable_rank()
-///     .enable_select0();
+///     .enable_rank()     // To enable rank1/0
+///     .enable_select0(); // To enable select0
 ///
-/// assert_eq!(da.len(), 4);
-///
-/// // Need BitGetter
+/// assert_eq!(da.num_bits(), 4);
 /// assert_eq!(da.get_bit(1), Some(false));
 ///
-/// // Need Ranker and enable_rank()
 /// assert_eq!(da.rank1(1), Some(1));
 /// assert_eq!(da.rank0(1), Some(0));
 ///
-/// // Need Selector
 /// assert_eq!(da.select1(1), Some(3));
-/// assert_eq!(da.select0(0), Some(1)); // Need enable_select0()
+/// assert_eq!(da.select0(0), Some(1));
 /// ```
 ///
 /// # References
@@ -125,30 +119,6 @@ impl DArray {
     pub const fn r9_index(&self) -> Option<&Rank9SelIndex> {
         self.r9.as_ref()
     }
-
-    /// Gets the number of bits.
-    #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.bv.num_bits()
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
-        self.bv.num_bits() == 0
-    }
-
-    /// Gets the number of bits set.
-    #[inline(always)]
-    pub const fn num_ones(&self) -> usize {
-        self.s1.num_ones()
-    }
-
-    /// Gets the number of bits unset.
-    #[inline(always)]
-    pub fn num_zeros(&self) -> usize {
-        self.len() - self.num_ones()
-    }
 }
 
 impl BitVectorBuilder for DArray {
@@ -185,6 +155,20 @@ impl BitVectorBuilder for DArray {
     }
 }
 
+impl BitVectorStat for DArray {
+    /// Returns the number of bits stored.
+    #[inline(always)]
+    fn num_bits(&self) -> usize {
+        self.bv.num_bits()
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    fn num_ones(&self) -> usize {
+        self.s1.num_ones()
+    }
+}
+
 impl BitGetter for DArray {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
@@ -207,7 +191,7 @@ impl BitGetter for DArray {
 
 impl Ranker for DArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -236,7 +220,7 @@ impl Ranker for DArray {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -318,7 +302,7 @@ impl Selector for DArray {
 
 impl Predecessor for DArray {
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -346,7 +330,7 @@ impl Predecessor for DArray {
     /// ```
     fn predecessor1(&self, pos: usize) -> Option<usize> {
         self.r9.as_ref().expect("enable_rank() must be set up.");
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let k = self.rank1(pos + 1).unwrap();
@@ -354,7 +338,7 @@ impl Predecessor for DArray {
     }
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -383,7 +367,7 @@ impl Predecessor for DArray {
     fn predecessor0(&self, pos: usize) -> Option<usize> {
         self.r9.as_ref().expect("enable_rank() must be set up.");
         self.s0.as_ref().expect("enable_select0() must be set up.");
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let k = self.rank0(pos + 1).unwrap();
@@ -393,7 +377,7 @@ impl Predecessor for DArray {
 
 impl Successor for DArray {
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -421,7 +405,7 @@ impl Successor for DArray {
     /// ```
     fn successor1(&self, pos: usize) -> Option<usize> {
         self.r9.as_ref().expect("enable_rank() must be set up.");
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let k = self.rank1(pos).unwrap();
@@ -429,7 +413,7 @@ impl Successor for DArray {
     }
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
+    /// [`None`] if not found or `self.num_bits() <= pos`.
     ///
     /// # Arguments
     ///
@@ -458,7 +442,7 @@ impl Successor for DArray {
     fn successor0(&self, pos: usize) -> Option<usize> {
         self.r9.as_ref().expect("enable_rank() must be set up.");
         self.s0.as_ref().expect("enable_select0() must be set up.");
-        if self.len() <= pos {
+        if self.num_bits() <= pos {
             return None;
         }
         let k = self.rank0(pos).unwrap();
