@@ -46,7 +46,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitVectorStat};
     ///
     /// let bv = BitVector::new();
     /// assert_eq!(bv.num_bits(), 0);
@@ -64,7 +64,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitVectorStat};
     ///
     /// let bv = BitVector::with_capacity(40);
     /// assert_eq!(bv.num_bits(), 0);
@@ -88,7 +88,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitVectorStat};
     ///
     /// let bv = BitVector::from_bit(false, 5);
     /// assert_eq!(bv.num_bits(), 5);
@@ -113,7 +113,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitGetter, BitVectorStat};
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
     /// assert_eq!(bv.num_bits(), 3);
@@ -143,7 +143,7 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitGetter};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
     /// bv.set_bit(1, false)?;
@@ -175,7 +175,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::{bit_vectors::prelude::*, BitVector};
+    /// use sucds::{BitVector, BitVectorStat};
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
