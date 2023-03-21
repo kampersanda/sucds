@@ -20,7 +20,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::{bit_vectors::prelude::*, BitVector};
+/// use sucds::{BitVector, bit_vectors::prelude::*};
 ///
 /// let mut bv = BitVector::new();
 /// bv.push_bit(true);

@@ -7,10 +7,8 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{
-    BitGetter, BitVector, BitVectorBuilder, BitVectorStat, Predecessor, Ranker, Selector,
-    Serializable, Successor,
-};
+use crate::bit_vectors::prelude::*;
+use crate::BitVector;
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
@@ -25,24 +23,20 @@ use inner::Rank9SelIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{Rank9Sel, BitGetter, BitVectorStat, Ranker, Selector};
+/// use sucds::{Rank9Sel, bit_vectors::prelude::*};
 ///
 /// let bv = Rank9Sel::from_bits([true, false, false, true])
 ///     .select1_hints()  // To accelerate select1
 ///     .select0_hints(); // To accelerate select0
 ///
-/// // Need BitVectorStat
 /// assert_eq!(bv.num_bits(), 4);
 /// assert_eq!(bv.num_ones(), 2);
 ///
-/// // Need BitGetter
 /// assert_eq!(bv.get_bit(1), Some(false));
 ///
-/// // Need Ranker
 /// assert_eq!(bv.rank1(1), Some(1));
 /// assert_eq!(bv.rank0(1), Some(0));
 ///
-/// // Need Selector
 /// assert_eq!(bv.select1(1), Some(3));
 /// assert_eq!(bv.select0(0), Some(1));
 /// ```
