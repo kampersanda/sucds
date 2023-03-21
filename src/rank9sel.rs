@@ -7,9 +7,9 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use crate::{
-    BitGetter, BitVector, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
-};
+use crate::bit_vectors::prelude::*;
+use crate::BitVector;
+use crate::Serializable;
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.
@@ -24,22 +24,20 @@ use inner::Rank9SelIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{Rank9Sel, BitGetter, Ranker, Selector};
+/// use sucds::{Rank9Sel, bit_vectors::prelude::*};
 ///
 /// let bv = Rank9Sel::from_bits([true, false, false, true])
 ///     .select1_hints()  // To accelerate select1
 ///     .select0_hints(); // To accelerate select0
 ///
-/// assert_eq!(bv.len(), 4);
+/// assert_eq!(bv.num_bits(), 4);
+/// assert_eq!(bv.num_ones(), 2);
 ///
-/// // Need BitGetter
 /// assert_eq!(bv.get_bit(1), Some(false));
 ///
-/// // Need Ranker
 /// assert_eq!(bv.rank1(1), Some(1));
 /// assert_eq!(bv.rank0(1), Some(0));
 ///
-/// // Need Selector
 /// assert_eq!(bv.select1(1), Some(3));
 /// assert_eq!(bv.select0(0), Some(1));
 /// ```
@@ -97,33 +95,9 @@ impl Rank9Sel {
     pub const fn rs_index(&self) -> &Rank9SelIndex {
         &self.rs
     }
-
-    /// Returns the number of bits.
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.bv.len()
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Returns the number of bits set.
-    #[inline(always)]
-    pub fn num_ones(&self) -> usize {
-        self.rs.num_ones()
-    }
-
-    /// Returns the number of bits unset.
-    #[inline(always)]
-    pub fn num_zeros(&self) -> usize {
-        self.rs.num_zeros()
-    }
 }
 
-impl RsbvBuilder for Rank9Sel {
+impl BitVectorBuilder for Rank9Sel {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -157,6 +131,20 @@ impl RsbvBuilder for Rank9Sel {
     }
 }
 
+impl BitVectorStat for Rank9Sel {
+    /// Returns the number of bits stored.
+    #[inline(always)]
+    fn num_bits(&self) -> usize {
+        self.bv.num_bits()
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    fn num_ones(&self) -> usize {
+        self.rs.num_ones()
+    }
+}
+
 impl BitGetter for Rank9Sel {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
@@ -179,7 +167,7 @@ impl BitGetter for Rank9Sel {
 
 impl Ranker for Rank9Sel {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -203,7 +191,7 @@ impl Ranker for Rank9Sel {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -270,134 +258,6 @@ impl Selector for Rank9Sel {
     /// ```
     fn select0(&self, k: usize) -> Option<usize> {
         unsafe { self.rs.select0(&self.bv, k) }
-    }
-}
-
-impl Predecessor for Rank9Sel {
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{Rank9Sel, Predecessor};
-    ///
-    /// let bv = Rank9Sel::from_bits([false, true, false, true]).select1_hints();
-    ///
-    /// assert_eq!(bv.predecessor1(3), Some(3));
-    /// assert_eq!(bv.predecessor1(2), Some(1));
-    /// assert_eq!(bv.predecessor1(1), Some(1));
-    /// assert_eq!(bv.predecessor1(0), None);
-    /// ```
-    fn predecessor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank1(pos + 1).unwrap();
-        (k != 0).then(|| self.select1(k - 1).unwrap())
-    }
-
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{Rank9Sel, Predecessor};
-    ///
-    /// let bv = Rank9Sel::from_bits([true, false, true, false]).select0_hints();
-    ///
-    /// assert_eq!(bv.predecessor0(3), Some(3));
-    /// assert_eq!(bv.predecessor0(2), Some(1));
-    /// assert_eq!(bv.predecessor0(1), Some(1));
-    /// assert_eq!(bv.predecessor0(0), None);
-    /// ```
-    fn predecessor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank0(pos + 1).unwrap();
-        (k != 0).then(|| self.select0(k - 1).unwrap())
-    }
-}
-
-impl Successor for Rank9Sel {
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{Rank9Sel, Successor};
-    ///
-    /// let bv = Rank9Sel::from_bits([true, false, true, false]).select1_hints();
-    ///
-    /// assert_eq!(bv.successor1(0), Some(0));
-    /// assert_eq!(bv.successor1(1), Some(2));
-    /// assert_eq!(bv.successor1(2), Some(2));
-    /// assert_eq!(bv.successor1(3), None);
-    /// ```
-    fn successor1(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank1(pos).unwrap();
-        (k < self.num_ones()).then(|| self.select1(k).unwrap())
-    }
-
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Logarithmic
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{Rank9Sel, Successor};
-    ///
-    /// let bv = Rank9Sel::from_bits([false, true, false, true]).select0_hints();
-    ///
-    /// assert_eq!(bv.successor0(0), Some(0));
-    /// assert_eq!(bv.successor0(1), Some(2));
-    /// assert_eq!(bv.successor0(2), Some(2));
-    /// assert_eq!(bv.successor0(3), None);
-    /// ```
-    fn successor0(&self, pos: usize) -> Option<usize> {
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank0(pos).unwrap();
-        (k < self.num_zeros()).then(|| self.select0(k).unwrap())
     }
 }
 

@@ -23,10 +23,6 @@ name = "timing_selector"
 harness = false
 
 [[bench]]
-name = "timing_predecessor"
-harness = false
-
-[[bench]]
 name = "timing_int_getter"
 harness = false
 

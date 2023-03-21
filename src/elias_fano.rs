@@ -8,10 +8,10 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
+use crate::bit_vectors::prelude::*;
 use crate::elias_fano::iter::Iter;
-use crate::{
-    broadword, BitGetter, BitVector, DArray, Predecessor, Ranker, Selector, Serializable, Successor,
-};
+use crate::{broadword, BitVector, DArray};
+use crate::{Predecessor, Serializable, Successor};
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
 
@@ -102,10 +102,10 @@ impl EliasFano {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        if bv.is_empty() {
+        if bv.num_bits() == 0 {
             return Err(anyhow!("bits must not be empty."));
         }
-        let n = bv.len();
+        let n = bv.num_bits();
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         if m == 0 {
             return Err(anyhow!("bits must contains one set bit at least."));
@@ -314,13 +314,13 @@ impl EliasFano {
 
     /// Gets the number of integers.
     #[inline(always)]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.high_bits.num_ones()
     }
 
     /// Checks if the sequence is empty.
     #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

@@ -7,10 +7,10 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
+use crate::bit_vectors::prelude::*;
 use crate::rank9sel::inner::Rank9SelIndex;
-use crate::{
-    BitGetter, BitVector, Predecessor, Ranker, RsbvBuilder, Selector, Serializable, Successor,
-};
+use crate::BitVector;
+use crate::Serializable;
 use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
@@ -25,24 +25,20 @@ use inner::DArrayIndex;
 /// # Examples
 ///
 /// ```
-/// use sucds::{DArray, BitGetter, Ranker, Selector};
+/// use sucds::{DArray, bit_vectors::prelude::*};
 ///
 /// let da = DArray::from_bits([true, false, false, true])
-///     .enable_rank()
-///     .enable_select0();
+///     .enable_rank()     // To enable rank1/0
+///     .enable_select0(); // To enable select0
 ///
-/// assert_eq!(da.len(), 4);
-///
-/// // Need BitGetter
+/// assert_eq!(da.num_bits(), 4);
 /// assert_eq!(da.get_bit(1), Some(false));
 ///
-/// // Need Ranker and enable_rank()
 /// assert_eq!(da.rank1(1), Some(1));
 /// assert_eq!(da.rank0(1), Some(0));
 ///
-/// // Need Selector
 /// assert_eq!(da.select1(1), Some(3));
-/// assert_eq!(da.select0(0), Some(1)); // Need enable_select0()
+/// assert_eq!(da.select0(0), Some(1));
 /// ```
 ///
 /// # References
@@ -124,33 +120,9 @@ impl DArray {
     pub const fn r9_index(&self) -> Option<&Rank9SelIndex> {
         self.r9.as_ref()
     }
-
-    /// Gets the number of bits.
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.bv.len()
-    }
-
-    /// Checks if the vector is empty.
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.bv.is_empty()
-    }
-
-    /// Gets the number of bits set.
-    #[inline(always)]
-    pub const fn num_ones(&self) -> usize {
-        self.s1.num_ones()
-    }
-
-    /// Gets the number of bits unset.
-    #[inline(always)]
-    pub const fn num_zeros(&self) -> usize {
-        self.len() - self.num_ones()
-    }
 }
 
-impl RsbvBuilder for DArray {
+impl BitVectorBuilder for DArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -184,6 +156,20 @@ impl RsbvBuilder for DArray {
     }
 }
 
+impl BitVectorStat for DArray {
+    /// Returns the number of bits stored.
+    #[inline(always)]
+    fn num_bits(&self) -> usize {
+        self.bv.num_bits()
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    fn num_ones(&self) -> usize {
+        self.s1.num_ones()
+    }
+}
+
 impl BitGetter for DArray {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
@@ -206,7 +192,7 @@ impl BitGetter for DArray {
 
 impl Ranker for DArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -235,7 +221,7 @@ impl Ranker for DArray {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.len() < pos`.
+    /// [`None`] if `self.num_bits() < pos`.
     ///
     /// # Complexity
     ///
@@ -315,156 +301,6 @@ impl Selector for DArray {
     }
 }
 
-impl Predecessor for DArray {
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{DArray, Predecessor};
-    ///
-    /// let da = DArray::from_bits([false, true, false, true]).enable_rank();
-    ///
-    /// assert_eq!(da.predecessor1(3), Some(3));
-    /// assert_eq!(da.predecessor1(2), Some(1));
-    /// assert_eq!(da.predecessor1(1), Some(1));
-    /// assert_eq!(da.predecessor1(0), None);
-    /// ```
-    fn predecessor1(&self, pos: usize) -> Option<usize> {
-        self.r9.as_ref().expect("enable_rank() must be set up.");
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank1(pos + 1).unwrap();
-        (k != 0).then(|| self.select1(k - 1).unwrap())
-    }
-
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`] and [`Self::enable_select0()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{DArray, Predecessor};
-    ///
-    /// let da = DArray::from_bits([true, false, true, false]).enable_rank().enable_select0();
-    ///
-    /// assert_eq!(da.predecessor0(3), Some(3));
-    /// assert_eq!(da.predecessor0(2), Some(1));
-    /// assert_eq!(da.predecessor0(1), Some(1));
-    /// assert_eq!(da.predecessor0(0), None);
-    /// ```
-    fn predecessor0(&self, pos: usize) -> Option<usize> {
-        self.r9.as_ref().expect("enable_rank() must be set up.");
-        self.s0.as_ref().expect("enable_select0() must be set up.");
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank0(pos + 1).unwrap();
-        (k != 0).then(|| self.select0(k - 1).unwrap())
-    }
-}
-
-impl Successor for DArray {
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{DArray, Successor};
-    ///
-    /// let da = DArray::from_bits([true, false, true, false]).enable_rank();
-    ///
-    /// assert_eq!(da.successor1(0), Some(0));
-    /// assert_eq!(da.successor1(1), Some(2));
-    /// assert_eq!(da.successor1(2), Some(2));
-    /// assert_eq!(da.successor1(3), None);
-    /// ```
-    fn successor1(&self, pos: usize) -> Option<usize> {
-        self.r9.as_ref().expect("enable_rank() must be set up.");
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank1(pos).unwrap();
-        (k < self.num_ones()).then(|| self.select1(k).unwrap())
-    }
-
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is unset, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - Constant
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`] and [`Self::enable_select0()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{DArray, Successor};
-    ///
-    /// let da = DArray::from_bits([false, true, false, true]).enable_rank().enable_select0();
-    ///
-    /// assert_eq!(da.successor0(0), Some(0));
-    /// assert_eq!(da.successor0(1), Some(2));
-    /// assert_eq!(da.successor0(2), Some(2));
-    /// assert_eq!(da.successor0(3), None);
-    /// ```
-    fn successor0(&self, pos: usize) -> Option<usize> {
-        self.r9.as_ref().expect("enable_rank() must be set up.");
-        self.s0.as_ref().expect("enable_select0() must be set up.");
-        if self.len() <= pos {
-            return None;
-        }
-        let k = self.rank0(pos).unwrap();
-        (k < self.num_zeros()).then(|| self.select0(k).unwrap())
-    }
-}
-
 impl Serializable for DArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -520,34 +356,6 @@ mod tests {
     fn test_select1() {
         let da = DArray::from_bits([false, true, false]);
         da.select0(0);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_predecessor1() {
-        let da = DArray::from_bits([false, true, false]);
-        da.predecessor1(1);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_predecessor0() {
-        let da = DArray::from_bits([false, true, false]);
-        da.predecessor0(1);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_successor1() {
-        let da = DArray::from_bits([false, true, false]);
-        da.successor1(1);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_successor0() {
-        let da = DArray::from_bits([false, true, false]);
-        da.successor0(1);
     }
 
     #[test]

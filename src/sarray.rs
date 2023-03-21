@@ -5,11 +5,9 @@ use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
 
+use crate::bit_vectors::prelude::*;
 use crate::broadword;
-use crate::{
-    BitGetter, BitVector, EliasFano, EliasFanoBuilder, Predecessor, Ranker, RsbvBuilder, Selector,
-    Serializable, Successor,
-};
+use crate::{BitVector, EliasFano, EliasFanoBuilder, Predecessor, Serializable, Successor};
 
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [EliasFano](crate::EliasFano) for bit vectors.
@@ -37,7 +35,7 @@ impl SArray {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        let num_bits = bv.len();
+        let num_bits = bv.num_bits();
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {
@@ -73,26 +71,78 @@ impl SArray {
         self.has_rank
     }
 
-    /// Returns the number of bits.
-    #[inline(always)]
-    pub const fn num_bits(&self) -> usize {
-        self.num_bits
+    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{SArray, Predecessor};
+    ///
+    /// let sa = SArray::from_bits([false, true, false, true]).enable_rank();
+    ///
+    /// assert_eq!(sa.predecessor1(3), Some(3));
+    /// assert_eq!(sa.predecessor1(2), Some(1));
+    /// assert_eq!(sa.predecessor1(1), Some(1));
+    /// assert_eq!(sa.predecessor1(0), None);
+    /// ```
+    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
+        if !self.has_rank() {
+            panic!("enable_rank() must be set up.")
+        }
+        // NOTE(kampersanda): self.num_bits <= pos will be checked.
+        self.ef.as_ref().and_then(|ef| ef.predecessor1(pos))
     }
 
-    /// Returns the number of bits set.
-    #[inline(always)]
-    pub const fn num_ones(&self) -> usize {
-        self.num_ones
-    }
-
-    /// Returns the number of bits unset.
-    #[inline(always)]
-    pub const fn num_zeros(&self) -> usize {
-        self.num_bits() - self.num_ones()
+    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
+    /// [`None`] if not found or `self.len() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Bit position.
+    ///
+    /// # Complexity
+    ///
+    /// - $`O(\log \frac{u}{n})`$
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::{SArray, Successor};
+    ///
+    /// let sa = SArray::from_bits([true, false, true, false]).enable_rank();
+    ///
+    /// assert_eq!(sa.successor1(0), Some(0));
+    /// assert_eq!(sa.successor1(1), Some(2));
+    /// assert_eq!(sa.successor1(2), Some(2));
+    /// assert_eq!(sa.successor1(3), None);
+    /// ```
+    pub fn successor1(&self, pos: usize) -> Option<usize> {
+        if !self.has_rank() {
+            panic!("enable_rank() must be set up.")
+        }
+        // NOTE(kampersanda): self.num_bits <= pos will be checked.
+        self.ef.as_ref().and_then(|ef| ef.successor1(pos))
     }
 }
 
-impl RsbvBuilder for SArray {
+impl BitVectorBuilder for SArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -123,6 +173,20 @@ impl RsbvBuilder for SArray {
             rsbv = rsbv.enable_rank();
         }
         Ok(rsbv)
+    }
+}
+
+impl BitVectorStat for SArray {
+    /// Returns the number of bits stored.
+    #[inline(always)]
+    fn num_bits(&self) -> usize {
+        self.num_bits
+    }
+
+    /// Returns the number of bits set.
+    #[inline(always)]
+    fn num_ones(&self) -> usize {
+        self.num_ones
     }
 }
 
@@ -245,90 +309,6 @@ impl Selector for SArray {
     }
 }
 
-impl Predecessor for SArray {
-    /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{SArray, Predecessor};
-    ///
-    /// let sa = SArray::from_bits([false, true, false, true]).enable_rank();
-    ///
-    /// assert_eq!(sa.predecessor1(3), Some(3));
-    /// assert_eq!(sa.predecessor1(2), Some(1));
-    /// assert_eq!(sa.predecessor1(1), Some(1));
-    /// assert_eq!(sa.predecessor1(0), None);
-    /// ```
-    fn predecessor1(&self, pos: usize) -> Option<usize> {
-        if !self.has_rank() {
-            panic!("enable_rank() must be set up.")
-        }
-        // NOTE(kampersanda): self.num_bits <= pos will be checked.
-        self.ef.as_ref().and_then(|ef| ef.predecessor1(pos))
-    }
-
-    /// Panics always because this operation is not supported.
-    fn predecessor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
-    }
-}
-
-impl Successor for SArray {
-    /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.len() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Bit position.
-    ///
-    /// # Complexity
-    ///
-    /// - $`O(\log \frac{u}{n})`$
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use sucds::{SArray, Successor};
-    ///
-    /// let sa = SArray::from_bits([true, false, true, false]).enable_rank();
-    ///
-    /// assert_eq!(sa.successor1(0), Some(0));
-    /// assert_eq!(sa.successor1(1), Some(2));
-    /// assert_eq!(sa.successor1(2), Some(2));
-    /// assert_eq!(sa.successor1(3), None);
-    /// ```
-    fn successor1(&self, pos: usize) -> Option<usize> {
-        if !self.has_rank() {
-            panic!("enable_rank() must be set up.")
-        }
-        // NOTE(kampersanda): self.num_bits <= pos will be checked.
-        self.ef.as_ref().and_then(|ef| ef.successor1(pos))
-    }
-
-    /// Panics always because this operation is not supported.
-    fn successor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
-    }
-}
-
 impl Serializable for SArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -403,23 +383,9 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_predecessor0_panic() {
-        let sa = SArray::from_bits([false, true, false]);
-        sa.predecessor0(1);
-    }
-
-    #[test]
-    #[should_panic]
     fn test_successor1_panic() {
         let sa = SArray::from_bits([false, true, false]);
         sa.successor1(1);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_successor0_panic() {
-        let sa = SArray::from_bits([false, true, false]);
-        sa.successor0(1);
     }
 
     #[test]

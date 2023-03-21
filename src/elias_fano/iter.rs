@@ -2,7 +2,7 @@
 #![cfg(target_pointer_width = "64")]
 
 use crate::bit_vector::unary::UnaryIter;
-use crate::{EliasFano, Selector};
+use crate::{BitVectorStat, EliasFano, Selector};
 
 /// Iterator for enumerating integers stored in [`EliasFano`], created by [`EliasFano::iter`].
 pub struct Iter<'a> {
