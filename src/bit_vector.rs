@@ -8,6 +8,7 @@ use anyhow::{anyhow, Result};
 use crate::bit_vector::unary::UnaryIter;
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
+use crate::Serializable;
 
 /// The number of bits in a machine word.
 pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;

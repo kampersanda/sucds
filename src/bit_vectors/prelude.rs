@@ -7,6 +7,5 @@
 //! use sucds::bit_vectors::prelude::*;
 //! ```
 pub use crate::{
-    BitGetter, BitVectorBuilder, BitVectorStat, Predecessor, Ranker, Selector, Serializable,
-    Successor,
+    BitGetter, BitVectorBuilder, BitVectorStat, Predecessor, Ranker, Selector, Successor,
 };

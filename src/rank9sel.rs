@@ -9,6 +9,7 @@ use anyhow::Result;
 
 use crate::bit_vectors::prelude::*;
 use crate::BitVector;
+use crate::Serializable;
 use inner::Rank9SelIndex;
 
 /// Rank/select data structure over bit vectors with Vigna's rank9 and hinted selection techniques.

@@ -10,6 +10,7 @@ use anyhow::Result;
 use crate::bit_vectors::prelude::*;
 use crate::rank9sel::inner::Rank9SelIndex;
 use crate::BitVector;
+use crate::Serializable;
 use inner::DArrayIndex;
 
 /// Constant-time select data structure over integer sets with the dense array technique by Okanohara and Sadakane.
