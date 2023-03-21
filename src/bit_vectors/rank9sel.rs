@@ -24,11 +24,10 @@ use inner::Rank9SelIndex;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::bit_vectors::{Rank9Sel, prelude::*};
 ///
-/// let bv = Rank9Sel::from_bits([true, false, false, true])
-///     .select1_hints()  // To accelerate select1
-///     .select0_hints(); // To accelerate select0
+/// let bv = Rank9Sel::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(bv.num_bits(), 4);
 /// assert_eq!(bv.num_ones(), 2);
@@ -40,6 +39,8 @@ use inner::Rank9SelIndex;
 ///
 /// assert_eq!(bv.select1(1), Some(3));
 /// assert_eq!(bv.select0(0), Some(1));
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References

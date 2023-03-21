@@ -21,16 +21,19 @@ use crate::Serializable;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::bit_vectors::{SArray, prelude::*};
 ///
-/// let sa = SArray::from_bits([true, false, false, true])
-///     .enable_rank();     // To enable rank1
+/// let sa = SArray::build_from_bits([true, false, false, true], true, true, false)?;
 ///
 /// assert_eq!(sa.num_bits(), 4);
 /// assert_eq!(sa.get_bit(1), Some(false));
 ///
 /// assert_eq!(sa.rank1(1), Some(1));
+/// assert_eq!(sa.rank0(1), Some(0));
 /// assert_eq!(sa.select1(1), Some(3));
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References

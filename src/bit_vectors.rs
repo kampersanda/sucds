@@ -15,7 +15,7 @@
 //!
 //! Note that they are not limited depending on the data structures.
 //!
-//! # Summary
+//! # Data structures
 //!
 //! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
 //! The implementations provided in this crate are summarized below:

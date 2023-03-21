@@ -25,11 +25,10 @@ use inner::DArrayIndex;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::bit_vectors::{DArray, prelude::*};
 ///
-/// let da = DArray::from_bits([true, false, false, true])
-///     .enable_rank()     // To enable rank1/0
-///     .enable_select0(); // To enable select0
+/// let da = DArray::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(da.num_bits(), 4);
 /// assert_eq!(da.get_bit(1), Some(false));
@@ -39,6 +38,8 @@ use inner::DArrayIndex;
 ///
 /// assert_eq!(da.select1(1), Some(3));
 /// assert_eq!(da.select0(0), Some(1));
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # References
