@@ -11,7 +11,6 @@ You can measure time performances with the following commands.
 ```console
 cargo bench timing_ranker
 cargo bench timing_selector
-cargo bench timing_predecessor
 ```
 
 You can also measure memory efficiency with the following command.
