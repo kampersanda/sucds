@@ -62,7 +62,7 @@ pub struct WaveletMatrix<B> {
 
 impl<B> WaveletMatrix<B>
 where
-    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector + Sized,
 {
     /// Creates a new instance from an input sequence `seq`.
     ///
@@ -578,7 +578,7 @@ impl<'a, B> Iter<'a, B> {
 
 impl<'a, B> Iterator for Iter<'a, B>
 where
-    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector + Sized,
 {
     type Item = usize;
 
