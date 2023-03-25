@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, Build, IntVectorStat};
+use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
 use crate::Serializable;
 
@@ -193,7 +193,7 @@ impl Build for DacsByte {
     }
 }
 
-impl IntVectorStat for DacsByte {
+impl NumVals for DacsByte {
     /// Returns the number of integers stored.
     fn num_vals(&self) -> usize {
         self.len()

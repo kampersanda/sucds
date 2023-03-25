@@ -160,7 +160,7 @@ impl Build for PrefixSummedEliasFano {
     }
 }
 
-impl IntVectorStat for PrefixSummedEliasFano {
+impl NumVals for PrefixSummedEliasFano {
     /// Returns the number of integers stored.
     fn num_vals(&self) -> usize {
         self.len()

@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, Build, CompactVector, IntVectorStat};
+use crate::int_vectors::{Access, Build, CompactVector, NumVals};
 use crate::utils;
 use crate::Serializable;
 
@@ -300,7 +300,7 @@ impl Build for DacsOpt {
     }
 }
 
-impl IntVectorStat for DacsOpt {
+impl NumVals for DacsOpt {
     /// Returns the number of integers stored.
     fn num_vals(&self) -> usize {
         self.len()

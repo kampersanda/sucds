@@ -89,7 +89,7 @@ pub trait Build {
 }
 
 /// Interface for reporting basic statistics of integer vectors.
-pub trait IntVectorStat {
+pub trait NumVals {
     /// Returns the number of integers stored.
     fn num_vals(&self) -> usize;
 }

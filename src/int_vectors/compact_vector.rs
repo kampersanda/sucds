@@ -397,7 +397,7 @@ impl Build for CompactVector {
     }
 }
 
-impl IntVectorStat for CompactVector {
+impl NumVals for CompactVector {
     /// Returns the number of integers stored.
     fn num_vals(&self) -> usize {
         self.len()
