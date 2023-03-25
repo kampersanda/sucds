@@ -8,7 +8,7 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, DArray, Selector};
+use crate::bit_vectors::{Access, BitVector, DArray, NumBits, Select};
 use crate::broadword;
 use crate::Serializable;
 use iter::Iter;
@@ -110,7 +110,7 @@ impl EliasFano {
         }
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
-            if bv.get_bit(i).unwrap() {
+            if bv.access(i).unwrap() {
                 b.push(i)?;
             }
         }
@@ -216,7 +216,7 @@ impl EliasFano {
     /// ```
     #[inline(always)]
     pub fn binsearch(&self, val: usize) -> Option<usize> {
-        // TODO(kampersanda): Implement BitGetter.
+        // TODO(kampersanda): Implement Access.
         self.binsearch_range(0..self.len(), val)
     }
 
@@ -324,7 +324,7 @@ impl EliasFano {
         let l_pos = pos & ((1 << self.low_len) - 1);
 
         while h_pos > 0
-            && self.high_bits.get_bit(h_pos - 1).unwrap()
+            && self.high_bits.access(h_pos - 1).unwrap()
             && self
                 .low_bits
                 .get_bits((rank - 1) * self.low_len, self.low_len)

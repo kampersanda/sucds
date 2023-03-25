@@ -1,7 +1,7 @@
 //! Unary iterator on bit vectors.
 use super::WORD_LEN;
 use crate::bit_vectors::BitVector;
-use crate::bit_vectors::BitVectorStat;
+use crate::bit_vectors::NumBits;
 use crate::broadword;
 
 /// Iterator for enumerating positions of set bits, created by [`BitVector::unary_iter`].

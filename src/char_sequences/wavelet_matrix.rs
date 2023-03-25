@@ -7,7 +7,7 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::{BitGetter, BitVector, BitVectorBuilder, BitVectorStat, Ranker, Selector};
+use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::utils;
 use crate::Serializable;
@@ -62,7 +62,7 @@ pub struct WaveletMatrix<B> {
 
 impl<B> WaveletMatrix<B>
 where
-    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+    B: Access + Build + NumBits + Rank + Select,
 {
     /// Creates a new instance from an input sequence `seq`.
     ///
@@ -166,7 +166,7 @@ where
         let mut val = 0;
         for layer in &self.layers {
             val <<= 1;
-            if layer.get_bit(pos).unwrap() {
+            if layer.access(pos).unwrap() {
                 val |= 1;
                 pos = layer.rank1(pos).unwrap() + layer.num_zeros();
             } else {
@@ -578,7 +578,7 @@ impl<'a, B> Iter<'a, B> {
 
 impl<'a, B> Iterator for Iter<'a, B>
 where
-    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+    B: Access + Build + NumBits + Rank + Select,
 {
     type Item = usize;
 

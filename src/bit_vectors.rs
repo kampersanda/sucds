@@ -8,9 +8,9 @@
 //! at which bits are set in a bit vector of length $`u`$.
 //! Our bit vectors support the following queries:
 //!
-//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
-//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Ranker`]).
-//! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Selector`]).
+//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`Access`]).
+//! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Rank`]).
+//! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Select`]).
 //! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
 //!
 //! Note that they are not limited depending on data structures.
@@ -20,7 +20,7 @@
 //! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementations | [Access](BitGetter) | [Rank](Ranker) | [Select](Selector) | Update | Memory (bits) |
+//! | Implementations | [Access](Access) | [Rank](Rank) | [Select](Select) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
@@ -66,7 +66,7 @@ pub use sarray::SArray;
 use anyhow::Result;
 
 /// Interface for building a bit vector with rank/select queries.
-pub trait BitVectorBuilder {
+pub trait Build {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// A data structure may not support a part of rank/select queries in the default
@@ -94,7 +94,7 @@ pub trait BitVectorBuilder {
 }
 
 /// Interface for reporting basic statistics in a bit vector.
-pub trait BitVectorStat {
+pub trait NumBits {
     /// Returns the number of bits stored.
     fn num_bits(&self) -> usize;
 
@@ -109,16 +109,16 @@ pub trait BitVectorStat {
 }
 
 /// Interface for accessing elements on bit arrays.
-pub trait BitGetter {
+pub trait Access {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
-    fn get_bit(&self, pos: usize) -> Option<bool>;
+    fn access(&self, pos: usize) -> Option<bool>;
 }
 
 /// Interface for rank queries on bit vectors.
 ///
 /// Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
 /// at which bits are set in a bit vector of length $`u`$.
-pub trait Ranker {
+pub trait Rank {
     /// Returns the cardinality of $`\{ x \in S \mid x < i \}`$,
     /// or [`None`] if $`u < x`$.
     fn rank1(&self, x: usize) -> Option<usize>;
@@ -132,7 +132,7 @@ pub trait Ranker {
 ///
 /// Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
 /// at which bits are set in a bit vector of length $`u`$.
-pub trait Selector {
+pub trait Select {
     /// Returns the $`k`$-th smallest position in $`S`$, or
     /// [`None`] if out of bounds.
     fn select1(&self, k: usize) -> Option<usize>;

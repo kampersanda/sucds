@@ -7,7 +7,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 
-use sucds::bit_vectors::Selector;
+use sucds::bit_vectors::Select;
 
 const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
@@ -31,7 +31,7 @@ fn count_ones(bits: &[bool]) -> usize {
     bits.iter().filter(|&&b| b).count()
 }
 
-fn run_queries<S: Selector>(selector: &S, queries: &[usize]) {
+fn run_queries<S: Select>(selector: &S, queries: &[usize]) {
     let mut sum = 0;
     for &q in queries {
         sum += selector.select1(q).unwrap();

@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
-use crate::int_vectors::{prelude::*, CompactVector};
+use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
+use crate::int_vectors::{CompactVector, IntGetter, IntVectorBuilder, IntVectorStat};
 use crate::utils;
 use crate::Serializable;
 
@@ -338,7 +338,7 @@ impl IntGetter for DacsOpt {
         let mut width = 0;
         for j in 0..self.num_levels() {
             x |= self.data[j].get_int(pos).unwrap() << (j * width);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
+            if j == self.num_levels() - 1 || !self.flags[j].access(pos).unwrap() {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();
