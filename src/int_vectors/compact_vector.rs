@@ -210,6 +210,33 @@ impl CompactVector {
         Ok(cv)
     }
 
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Position.
+    ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::int_vectors::CompactVector;
+    ///
+    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// assert_eq!(cv.get_int(0), Some(5));
+    /// assert_eq!(cv.get_int(1), Some(256));
+    /// assert_eq!(cv.get_int(2), Some(0));
+    /// assert_eq!(cv.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    pub fn get_int(&self, pos: usize) -> Option<usize> {
+        self.chunks.get_bits(pos * self.width, self.width)
+    }
+
     /// Sets the `pos`-th integer to `val`.
     ///
     /// # Arguments
@@ -405,7 +432,8 @@ impl NumVals for CompactVector {
 }
 
 impl Access for CompactVector {
-    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds
+    /// (just wrapping [`Self::get_int()`]).
     ///
     /// # Arguments
     ///
@@ -429,7 +457,7 @@ impl Access for CompactVector {
     /// # Ok(())
     /// # }
     fn access(&self, pos: usize) -> Option<usize> {
-        self.chunks.get_bits(pos * self.width, self.width)
+        self.get_int(pos)
     }
 }
 
