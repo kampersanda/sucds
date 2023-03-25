@@ -55,8 +55,9 @@
 //!
 //! # Examples
 //!
-//! The [`prelude`] module provides several traits for essential behaviors,
+//! This module provides several traits for essential behaviors,
 //! allowing to compare our bit vectors as components in your data structures.
+//! You can easily import them through [`prelude`].
 //!
 //! ```
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
