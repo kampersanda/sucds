@@ -161,7 +161,7 @@ impl Build for DArray {
     }
 }
 
-impl BitVectorStat for DArray {
+impl NumBits for DArray {
     /// Returns the number of bits stored.
     #[inline(always)]
     fn num_bits(&self) -> usize {

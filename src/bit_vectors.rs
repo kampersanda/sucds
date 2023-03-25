@@ -94,7 +94,7 @@ pub trait Build {
 }
 
 /// Interface for reporting basic statistics in a bit vector.
-pub trait BitVectorStat {
+pub trait NumBits {
     /// Returns the number of bits stored.
     fn num_bits(&self) -> usize;
 

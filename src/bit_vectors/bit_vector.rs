@@ -49,7 +49,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, NumBits};
     ///
     /// let bv = BitVector::new();
     /// assert_eq!(bv.num_bits(), 0);
@@ -67,7 +67,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, NumBits};
     ///
     /// let bv = BitVector::with_capacity(40);
     /// assert_eq!(bv.num_bits(), 0);
@@ -91,7 +91,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Access, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, Access, NumBits};
     ///
     /// let bv = BitVector::from_bit(false, 5);
     /// assert_eq!(bv.num_bits(), 5);
@@ -117,7 +117,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Access, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, Access, NumBits};
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
     /// assert_eq!(bv.num_bits(), 3);
@@ -205,7 +205,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, NumBits};
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
@@ -688,7 +688,7 @@ impl Build for BitVector {
     }
 }
 
-impl BitVectorStat for BitVector {
+impl NumBits for BitVector {
     /// Returns the number of bits stored.
     fn num_bits(&self) -> usize {
         self.len

@@ -7,7 +7,7 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::{Access, BitVector, BitVectorStat, Build, Rank, Select};
+use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::utils;
 use crate::Serializable;
@@ -62,7 +62,7 @@ pub struct WaveletMatrix<B> {
 
 impl<B> WaveletMatrix<B>
 where
-    B: Access + Build + BitVectorStat + Rank + Select,
+    B: Access + Build + NumBits + Rank + Select,
 {
     /// Creates a new instance from an input sequence `seq`.
     ///
@@ -578,7 +578,7 @@ impl<'a, B> Iter<'a, B> {
 
 impl<'a, B> Iterator for Iter<'a, B>
 where
-    B: Access + Build + BitVectorStat + Rank + Select,
+    B: Access + Build + NumBits + Rank + Select,
 {
     type Item = usize;
 

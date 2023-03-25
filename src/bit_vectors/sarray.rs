@@ -204,7 +204,7 @@ impl Build for SArray {
     }
 }
 
-impl BitVectorStat for SArray {
+impl NumBits for SArray {
     /// Returns the number of bits stored.
     #[inline(always)]
     fn num_bits(&self) -> usize {

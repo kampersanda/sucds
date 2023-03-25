@@ -132,7 +132,7 @@ impl Build for Rank9Sel {
     }
 }
 
-impl BitVectorStat for Rank9Sel {
+impl NumBits for Rank9Sel {
     /// Returns the number of bits stored.
     #[inline(always)]
     fn num_bits(&self) -> usize {
