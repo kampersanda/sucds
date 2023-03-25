@@ -10,10 +10,10 @@
 //! such that $`0 \leq x_0`$, $`x_i \leq x_{i+1}`$, and $`x_{n-1} < u`$ for a universe $`u`$.
 //! Our sequences support the following queries:
 //!
-//! - $`\textrm{Rank}(x)`$ returns the number of elements $`x_k \in X`$ such that $`x_k < x`$ (implemented by [`Ranker`]).
-//! - $`\textrm{Select}(k)`$ returns $`x_k`$ (implemented by [`Selector`]).
-//! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$ (implemented by [`Predecessor`]).
-//! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$ (implemented by [`Successor`]).
+//! - $`\textrm{Rank}(x)`$ returns the number of elements $`x_k \in X`$ such that $`x_k < x`$.
+//! - $`\textrm{Select}(k)`$ returns $`x_k`$.
+//! - $`\textrm{Predecessor}(x)`$ returns the largest element $`x_k \in X`$ such that $`x_k \leq x`$.
+//! - $`\textrm{Successor}(x)`$ returns the smallest element $`x_k \in X`$ such that $`x \leq x_k`$.
 //!
 //! Note that they are not limited depending on data structures.
 //!
@@ -21,7 +21,7 @@
 //!
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementations | [Rank](Ranker) | [Select](Selector) | [Pred](Predecessor)/[Succ](Successor) | Memory (bits) |
+//! | Implementations | Rank | Select | Pred/Succ | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: |
 //! | [`EliasFano`] | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!

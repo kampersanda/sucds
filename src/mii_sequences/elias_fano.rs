@@ -23,7 +23,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// indicating that a sparse sequence can be stored in a very compressed space.
 ///
 /// Another attraction of Elias-Fano is several search queries,
-/// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor1), and [successor](EliasFano::successor1),
+/// such as binary search, predecessor, and successor,
 /// over the compressed representation.
 ///
 /// # Example
@@ -117,8 +117,8 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Builds an index to enable operations [`Self::rank1()`],
-    /// [`Self::predecessor1()`], and [`Self::successor1()`].
+    /// Builds an index to enable operations [`Self::rank()`],
+    /// [`Self::predecessor()`], and [`Self::successor()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits = self.high_bits.enable_select0();
