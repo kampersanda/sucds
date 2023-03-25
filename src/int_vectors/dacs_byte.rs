@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
+use crate::bit_vectors::{BitGetter, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::IntGetter;
 use crate::utils;
 use crate::Serializable;

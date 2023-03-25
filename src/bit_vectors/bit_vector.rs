@@ -635,7 +635,7 @@ impl BitVector {
     }
 }
 
-impl BitVectorBuilder for BitVector {
+impl Build for BitVector {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -707,7 +707,7 @@ impl BitGetter for BitVector {
     }
 }
 
-impl Ranker for BitVector {
+impl Rank for BitVector {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -718,7 +718,7 @@ impl Ranker for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Ranker};
+    /// use sucds::bit_vectors::{BitVector, Rank};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank1(1), Some(1));
@@ -752,7 +752,7 @@ impl Ranker for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Ranker};
+    /// use sucds::bit_vectors::{BitVector, Rank};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.rank0(1), Some(0));
@@ -766,7 +766,7 @@ impl Ranker for BitVector {
     }
 }
 
-impl Selector for BitVector {
+impl Select for BitVector {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `k` is no less than the number of ones.
     ///
@@ -777,7 +777,7 @@ impl Selector for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Selector};
+    /// use sucds::bit_vectors::{BitVector, Select};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.select1(0), Some(0));
@@ -813,7 +813,7 @@ impl Selector for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Selector};
+    /// use sucds::bit_vectors::{BitVector, Select};
     ///
     /// let bv = BitVector::from_bits([true, false, false, true]);
     /// assert_eq!(bv.select0(0), Some(1));

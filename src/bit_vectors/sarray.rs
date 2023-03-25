@@ -170,7 +170,7 @@ impl SArray {
     }
 }
 
-impl BitVectorBuilder for SArray {
+impl Build for SArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -247,7 +247,7 @@ impl BitGetter for SArray {
     }
 }
 
-impl Ranker for SArray {
+impl Rank for SArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -262,7 +262,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Rank};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -293,7 +293,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Rank};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -308,7 +308,7 @@ impl Ranker for SArray {
     }
 }
 
-impl Selector for SArray {
+impl Select for SArray {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -319,7 +319,7 @@ impl Selector for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Selector};
+    /// use sucds::bit_vectors::{SArray, Select};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]);
     ///

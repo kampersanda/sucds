@@ -98,7 +98,7 @@ impl Rank9Sel {
     }
 }
 
-impl BitVectorBuilder for Rank9Sel {
+impl Build for Rank9Sel {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -166,7 +166,7 @@ impl BitGetter for Rank9Sel {
     }
 }
 
-impl Ranker for Rank9Sel {
+impl Rank for Rank9Sel {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -177,7 +177,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
+    /// use sucds::bit_vectors::{Rank9Sel, Rank};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -201,7 +201,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
+    /// use sucds::bit_vectors::{Rank9Sel, Rank};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -216,7 +216,7 @@ impl Ranker for Rank9Sel {
     }
 }
 
-impl Selector for Rank9Sel {
+impl Select for Rank9Sel {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -227,7 +227,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Select};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
     ///
@@ -249,7 +249,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Select};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select0_hints();
     ///

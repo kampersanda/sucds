@@ -3,7 +3,7 @@
 
 use super::EliasFano;
 use crate::bit_vectors::bit_vector::unary::UnaryIter;
-use crate::bit_vectors::{BitVectorStat, Selector};
+use crate::bit_vectors::{BitVectorStat, Select};
 
 /// Iterator for enumerating integers stored in [`EliasFano`], created by [`EliasFano::iter`].
 pub struct Iter<'a> {

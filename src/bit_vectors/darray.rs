@@ -127,7 +127,7 @@ impl DArray {
     }
 }
 
-impl BitVectorBuilder for DArray {
+impl Build for DArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -195,7 +195,7 @@ impl BitGetter for DArray {
     }
 }
 
-impl Ranker for DArray {
+impl Rank for DArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -210,7 +210,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Rank};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -239,7 +239,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Rank};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -255,7 +255,7 @@ impl Ranker for DArray {
     }
 }
 
-impl Selector for DArray {
+impl Select for DArray {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -266,7 +266,7 @@ impl Selector for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Select};
     ///
     /// let da = DArray::from_bits([true, false, false, true]);
     ///
@@ -292,7 +292,7 @@ impl Selector for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Select};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_select0();
     ///

@@ -6,4 +6,4 @@
 //! # #![allow(unused_imports)]
 //! use sucds::bit_vectors::prelude::*;
 //! ```
-pub use crate::bit_vectors::{BitGetter, BitVectorBuilder, BitVectorStat, Ranker, Selector};
+pub use crate::bit_vectors::{BitGetter, BitVectorStat, Build, Rank, Select};

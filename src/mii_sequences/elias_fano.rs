@@ -8,7 +8,7 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, DArray, Selector};
+use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, DArray, Select};
 use crate::broadword;
 use crate::Serializable;
 use iter::Iter;
