@@ -160,6 +160,13 @@ impl IntVectorBuilder for PrefixSummedEliasFano {
     }
 }
 
+impl IntVectorStat for PrefixSummedEliasFano {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len()
+    }
+}
+
 impl IntGetter for PrefixSummedEliasFano {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///

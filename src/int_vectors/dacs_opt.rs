@@ -253,7 +253,7 @@ impl DacsOpt {
         Iter::new(self)
     }
 
-    /// Gets the number of bits.
+    /// Gets the number of integers.
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.data[0].len()
@@ -297,6 +297,13 @@ impl IntVectorBuilder for DacsOpt {
         Self: Sized,
     {
         Self::from_slice(vals, None)
+    }
+}
+
+impl IntVectorStat for DacsOpt {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len()
     }
 }
 

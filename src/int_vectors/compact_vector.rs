@@ -360,7 +360,7 @@ impl CompactVector {
         Iter::new(self)
     }
 
-    /// Gets the number of ints.
+    /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
@@ -372,7 +372,7 @@ impl CompactVector {
         self.len() == 0
     }
 
-    /// Returns the total number of bits it can hold without reallocating.
+    /// Returns the total number of integers it can hold without reallocating.
     pub fn capacity(&self) -> usize {
         self.chunks.capacity() / self.width()
     }
@@ -394,6 +394,13 @@ impl IntVectorBuilder for CompactVector {
         Self: Sized,
     {
         Self::from_slice(vals)
+    }
+}
+
+impl IntVectorStat for CompactVector {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len
     }
 }
 

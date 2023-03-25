@@ -88,6 +88,12 @@ pub trait IntVectorBuilder {
         Self: Sized;
 }
 
+/// Interface for reporting basic statistics of integer vectors.
+pub trait IntVectorStat {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize;
+}
+
 /// Interface for accessing elements on integer vectors.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.

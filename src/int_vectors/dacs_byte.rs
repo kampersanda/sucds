@@ -145,7 +145,7 @@ impl DacsByte {
         Iter::new(self)
     }
 
-    /// Gets the number of bits.
+    /// Gets the number of integers.
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.data[0].len()
@@ -190,6 +190,13 @@ impl IntVectorBuilder for DacsByte {
         Self: Sized,
     {
         Self::from_slice(vals)
+    }
+}
+
+impl IntVectorStat for DacsByte {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len()
     }
 }
 
