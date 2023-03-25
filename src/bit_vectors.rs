@@ -52,6 +52,36 @@
 //! [`SArray`] is a data structure that allows us to store very sparse sets (i.e., $`n \ll u`$)
 //! in compressed space, while supporting quick queries.
 //! This is a specialized wrapper of [`EliasFano`](crate::mii_sequences::EliasFano).
+//!
+//! # Examples
+//!
+//! The [`prelude`] module provides several traits for essential behaviors,
+//! allowing to compare our bit vectors as components in your data structures.
+//!
+//! ```
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use sucds::bit_vectors::{Rank9Sel, prelude::*};
+//!
+//! let bv = Rank9Sel::build_from_bits(
+//!     [true, false, false, true],
+//!     true, // Enables rank1/0
+//!     true, // Enables select1
+//!     true  // Enables select0
+//! )?;
+//!
+//! assert_eq!(bv.num_bits(), 4);
+//! assert_eq!(bv.num_ones(), 2);
+//!
+//! assert_eq!(bv.access(1), Some(false));
+//!
+//! assert_eq!(bv.rank1(1), Some(1));
+//! assert_eq!(bv.rank0(1), Some(0));
+//!
+//! assert_eq!(bv.select1(1), Some(3));
+//! assert_eq!(bv.select0(0), Some(1));
+//! # Ok(())
+//! # }
+//! ```
 pub mod bit_vector;
 pub mod darray;
 pub mod prelude;
