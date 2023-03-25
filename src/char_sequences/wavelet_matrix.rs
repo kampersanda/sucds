@@ -7,7 +7,7 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, Rank9Sel, Ranker, Selector};
+use crate::bit_vectors::{BitGetter, BitVector, BitVectorBuilder, BitVectorStat, Ranker, Selector};
 use crate::int_vectors::CompactVector;
 use crate::utils;
 use crate::Serializable;
@@ -17,12 +17,14 @@ use crate::Serializable;
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, \sigma)`$,
-/// most of the operations run in $`O(\lg \sigma)`$ , using  $`n \lg \sigma + o (n \lg \sigma ) + O(\lg \sigma \lg n)`$ bits.
+/// most of the operations run in $`O(\lg \sigma)`$ time, using  $`O(n \lg \sigma )`$ bits of memory
+/// (assuming constant-time and linear-space implementation).
 ///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use sucds::bit_vectors::Rank9Sel;
 /// use sucds::char_sequences::WaveletMatrix;
 /// use sucds::int_vectors::CompactVector;
 ///
@@ -32,7 +34,7 @@ use crate::Serializable;
 /// // It accepts an integer representable in 8 bits.
 /// let mut seq = CompactVector::new(8)?;
 /// seq.extend(text.chars().map(|c| c as usize))?;
-/// let wm = WaveletMatrix::new(seq)?;
+/// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
 ///
 /// assert_eq!(wm.len(), len);
 /// assert_eq!(wm.alph_size(), 'n' as usize + 1);
@@ -53,17 +55,23 @@ use crate::Serializable;
 ///
 /// - F. Claude, and G. Navarro, "The Wavelet Matrix," In SPIRE 2012.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct WaveletMatrix {
-    layers: Vec<Rank9Sel>,
+pub struct WaveletMatrix<B> {
+    layers: Vec<B>,
     alph_size: usize,
 }
 
-impl WaveletMatrix {
+impl<B> WaveletMatrix<B>
+where
+    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+{
     /// Creates a new instance from an input sequence `seq`.
     ///
     /// # Errors
     ///
-    /// An error is returned if `seq` is empty.
+    /// An error is returned if
+    ///
+    ///  - `seq` is empty, or
+    ///  - `B::build_from_bits` fails.
     pub fn new(seq: CompactVector) -> Result<Self> {
         if seq.is_empty() {
             return Err(anyhow!("seq must not be empty."));
@@ -96,7 +104,7 @@ impl WaveletMatrix {
             );
             zeros = next_zeros;
             ones = next_ones;
-            layers.push(Rank9Sel::new(bv).select1_hints().select0_hints());
+            layers.push(B::build_from_bits(bv.iter(), true, true, true)?);
         }
 
         Ok(Self { layers, alph_size })
@@ -134,12 +142,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.access(2), Some('n' as usize));
     /// assert_eq!(wm.access(5), Some('a' as usize));
@@ -183,12 +192,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
     /// assert_eq!(wm.rank(5, 'c' as usize), Some(0));
@@ -217,12 +227,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.rank_range(1..4, 'a' as usize), Some(2));
     /// assert_eq!(wm.rank_range(2..4, 'c' as usize), Some(0));
@@ -272,12 +283,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.select(1, 'a' as usize), Some(3));
     /// assert_eq!(wm.select(0, 'c' as usize), None);
@@ -332,12 +344,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.quantile(1..4, 0), Some('a' as usize)); // The 0th in "ana" should be "a"
     /// assert_eq!(wm.quantile(1..4, 1), Some('a' as usize)); // The 1st in "ana" should be "a"
@@ -399,12 +412,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
@@ -504,12 +518,13 @@ impl WaveletMatrix {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("ban".chars().map(|c| c as usize))?;
-    /// let wm = WaveletMatrix::new(seq)?;
+    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// let mut it = wm.iter();
     /// assert_eq!(it.next(), Some('b' as usize));
@@ -519,7 +534,7 @@ impl WaveletMatrix {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<B> {
         Iter::new(self)
     }
 
@@ -549,19 +564,22 @@ impl WaveletMatrix {
 }
 
 /// Iterator for enumerating integers, created by [`WaveletMatrix::iter()`].
-pub struct Iter<'a> {
-    wm: &'a WaveletMatrix,
+pub struct Iter<'a, B> {
+    wm: &'a WaveletMatrix<B>,
     pos: usize,
 }
 
-impl<'a> Iter<'a> {
+impl<'a, B> Iter<'a, B> {
     /// Creates a new iterator.
-    pub const fn new(wm: &'a WaveletMatrix) -> Self {
+    pub const fn new(wm: &'a WaveletMatrix<B>) -> Self {
         Self { wm, pos: 0 }
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl<'a, B> Iterator for Iter<'a, B>
+where
+    B: BitGetter + BitVectorBuilder + BitVectorStat + Ranker + Selector,
+{
     type Item = usize;
 
     #[inline(always)]
@@ -582,7 +600,10 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl Serializable for WaveletMatrix {
+impl<B> Serializable for WaveletMatrix<B>
+where
+    B: Serializable,
+{
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
         mem += self.alph_size.serialize_into(&mut writer)?;
@@ -590,7 +611,7 @@ impl Serializable for WaveletMatrix {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
+        let layers = Vec::<B>::deserialize_from(&mut reader)?;
         let alph_size = usize::deserialize_from(&mut reader)?;
         Ok(Self { layers, alph_size })
     }
@@ -604,9 +625,11 @@ impl Serializable for WaveletMatrix {
 mod test {
     use super::*;
 
+    use crate::bit_vectors::Rank9Sel;
+
     #[test]
     fn test_empty_seq() {
-        let e = WaveletMatrix::new(CompactVector::new(1).unwrap());
+        let e = WaveletMatrix::<Rank9Sel>::new(CompactVector::new(1).unwrap());
         assert_eq!(
             e.err().map(|x| x.to_string()),
             Some("seq must not be empty.".to_string())
@@ -621,7 +644,7 @@ mod test {
 
         let mut seq = CompactVector::new(8).unwrap();
         seq.extend(text.chars().map(|c| c as usize)).unwrap();
-        let wm = WaveletMatrix::new(seq).unwrap();
+        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
 
         assert_eq!(wm.len(), len);
         assert_eq!(wm.alph_size(), ('u' as usize) + 1);
@@ -645,7 +668,7 @@ mod test {
         let text = "tobeornottobethatisthequestion";
         let mut seq = CompactVector::new(8).unwrap();
         seq.extend(text.chars().map(|c| c as usize)).unwrap();
-        let wm = WaveletMatrix::new(seq).unwrap();
+        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
 
         let mut bytes = vec![];
         let size = wm.serialize_into(&mut bytes).unwrap();

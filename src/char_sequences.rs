@@ -20,7 +20,7 @@
 //!
 //! | Implementation | Access | Rank | Select | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: |
-//! | [`WaveletMatrix`] | $`O(\lg \sigma)`$ | $`O(\lg \sigma)`$ | $`O(\lg \sigma)`$ | $`n \lg \sigma + o (n \lg \sigma ) + O(\lg \sigma \lg n)`$ |
+//! | [`WaveletMatrix`] | $`O(\lg \sigma)`$ | $`O(\lg \sigma)`$ | $`O(\lg \sigma)`$ | $`O(n \lg \sigma )`$ |
 //!
 //! Since there is only one implementation, we do not provide traits for the queries.
 //!
@@ -29,6 +29,9 @@
 //! [`WaveletMatrix`] is a practical variant of Wavelet trees that are functional character sequences.
 //! In addition to the basic queires listed above, this provides several range queries
 //! such as [`quantile`](WaveletMatrix::quantile) or [`intersect`](WaveletMatrix::intersect).
+//!
+//! Its complexities are related to those of a [bit vector](crate::bit_vectors) used internally.
+//! For simplicity, the above table assumes constant-time and linear-space implementation.
 pub mod wavelet_matrix;
 
 pub use wavelet_matrix::WaveletMatrix;
