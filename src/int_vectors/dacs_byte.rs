@@ -38,10 +38,10 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
 /// // Need Access
-/// assert_eq!(seq.get_int(0), Some(5));
-/// assert_eq!(seq.get_int(1), Some(0));
-/// assert_eq!(seq.get_int(2), Some(100000));
-/// assert_eq!(seq.get_int(3), Some(334));
+/// assert_eq!(seq.access(0), Some(5));
+/// assert_eq!(seq.access(1), Some(0));
+/// assert_eq!(seq.access(2), Some(100000));
+/// assert_eq!(seq.access(3), Some(334));
 ///
 /// assert_eq!(seq.len(), 4);
 /// assert_eq!(seq.num_levels(), 3);
@@ -216,14 +216,14 @@ impl Access for DacsByte {
     ///
     /// let seq = DacsByte::from_slice(&[5, 999, 334])?;
     ///
-    /// assert_eq!(seq.get_int(0), Some(5));
-    /// assert_eq!(seq.get_int(1), Some(999));
-    /// assert_eq!(seq.get_int(2), Some(334));
-    /// assert_eq!(seq.get_int(3), None);
+    /// assert_eq!(seq.access(0), Some(5));
+    /// assert_eq!(seq.access(1), Some(999));
+    /// assert_eq!(seq.access(2), Some(334));
+    /// assert_eq!(seq.access(3), None);
     /// # Ok(())
     /// # }
     /// ```
-    fn get_int(&self, mut pos: usize) -> Option<usize> {
+    fn access(&self, mut pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
@@ -260,7 +260,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.seq.len() {
-            let x = self.seq.get_int(self.pos).unwrap();
+            let x = self.seq.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -323,11 +323,11 @@ mod tests {
         assert_eq!(seq.num_levels(), 3);
         assert_eq!(seq.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
 
-        assert_eq!(seq.get_int(0), Some(0xFFFF));
-        assert_eq!(seq.get_int(1), Some(0xFF));
-        assert_eq!(seq.get_int(2), Some(0xF));
-        assert_eq!(seq.get_int(3), Some(0xFFFFF));
-        assert_eq!(seq.get_int(4), Some(0xF));
+        assert_eq!(seq.access(0), Some(0xFFFF));
+        assert_eq!(seq.access(1), Some(0xFF));
+        assert_eq!(seq.access(2), Some(0xF));
+        assert_eq!(seq.access(3), Some(0xFFFFF));
+        assert_eq!(seq.access(4), Some(0xF));
     }
 
     #[test]
@@ -346,10 +346,10 @@ mod tests {
         assert_eq!(seq.len(), 4);
         assert_eq!(seq.num_levels(), 1);
         assert_eq!(seq.widths(), vec![LEVEL_WIDTH]);
-        assert_eq!(seq.get_int(0), Some(0));
-        assert_eq!(seq.get_int(1), Some(0));
-        assert_eq!(seq.get_int(2), Some(0));
-        assert_eq!(seq.get_int(3), Some(0));
+        assert_eq!(seq.access(0), Some(0));
+        assert_eq!(seq.access(1), Some(0));
+        assert_eq!(seq.access(2), Some(0));
+        assert_eq!(seq.access(3), Some(0));
     }
 
     #[test]

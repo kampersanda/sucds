@@ -71,7 +71,7 @@ fn criterion_int_get_proteins(c: &mut Criterion) {
 fn run_queries<G: Access>(getter: &G, queries: &[usize]) {
     let mut sum = 0;
     for &q in queries {
-        sum += getter.get_int(q).unwrap();
+        sum += getter.access(q).unwrap();
     }
     if sum == 0 {
         panic!("Should not come.");

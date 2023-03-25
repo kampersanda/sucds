@@ -97,5 +97,5 @@ pub trait IntVectorStat {
 /// Interface for accessing elements on integer vectors.
 pub trait Access {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
-    fn get_int(&self, pos: usize) -> Option<usize>;
+    fn access(&self, pos: usize) -> Option<usize>;
 }

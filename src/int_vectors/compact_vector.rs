@@ -29,10 +29,10 @@ use crate::{utils, Serializable};
 /// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
-/// assert_eq!(cv.get_int(0), Some(7));  // Need Access
+/// assert_eq!(cv.access(0), Some(7));  // Need Access
 ///
 /// cv.set_int(0, 5)?;
-/// assert_eq!(cv.get_int(0), Some(5));  // Need Access
+/// assert_eq!(cv.access(0), Some(5));  // Need Access
 /// # Ok(())
 /// # }
 /// ```
@@ -141,7 +141,7 @@ impl CompactVector {
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.get_int(0), Some(7));
+    /// assert_eq!(cv.access(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -184,7 +184,7 @@ impl CompactVector {
     /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.get_int(0), Some(7));
+    /// assert_eq!(cv.access(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -236,7 +236,7 @@ impl CompactVector {
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
     /// cv.set_int(1, 4)?;
-    /// assert_eq!(cv.get_int(1), Some(4));
+    /// assert_eq!(cv.access(1), Some(4));
     /// # Ok(())
     /// # }
     /// ```
@@ -422,13 +422,13 @@ impl Access for CompactVector {
     /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
-    /// assert_eq!(cv.get_int(0), Some(5));
-    /// assert_eq!(cv.get_int(1), Some(256));
-    /// assert_eq!(cv.get_int(2), Some(0));
-    /// assert_eq!(cv.get_int(3), None);
+    /// assert_eq!(cv.access(0), Some(5));
+    /// assert_eq!(cv.access(1), Some(256));
+    /// assert_eq!(cv.access(2), Some(0));
+    /// assert_eq!(cv.access(3), None);
     /// # Ok(())
     /// # }
-    fn get_int(&self, pos: usize) -> Option<usize> {
+    fn access(&self, pos: usize) -> Option<usize> {
         self.chunks.get_bits(pos * self.width, self.width)
     }
 }
@@ -452,7 +452,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.cv.len() {
-            let x = self.cv.get_int(self.pos).unwrap();
+            let x = self.cv.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -470,7 +470,7 @@ impl std::fmt::Debug for CompactVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ints = vec![0; self.len()];
         for (i, b) in ints.iter_mut().enumerate() {
-            *b = self.get_int(i).unwrap();
+            *b = self.access(i).unwrap();
         }
         f.debug_struct("CompactVector")
             .field("ints", &ints)

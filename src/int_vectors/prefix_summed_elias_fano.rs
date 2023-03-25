@@ -31,10 +31,10 @@ use crate::Serializable;
 /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
 /// // Need Access
-/// assert_eq!(seq.get_int(0), Some(5));
-/// assert_eq!(seq.get_int(1), Some(14));
-/// assert_eq!(seq.get_int(2), Some(334));
-/// assert_eq!(seq.get_int(3), Some(10));
+/// assert_eq!(seq.access(0), Some(5));
+/// assert_eq!(seq.access(1), Some(14));
+/// assert_eq!(seq.access(2), Some(334));
+/// assert_eq!(seq.access(3), Some(10));
 ///
 /// assert_eq!(seq.len(), 4);
 /// assert_eq!(seq.sum(), 363);
@@ -181,14 +181,14 @@ impl Access for PrefixSummedEliasFano {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
-    /// assert_eq!(seq.get_int(0), Some(5));
-    /// assert_eq!(seq.get_int(1), Some(14));
-    /// assert_eq!(seq.get_int(2), Some(334));
-    /// assert_eq!(seq.get_int(3), None);
+    /// assert_eq!(seq.access(0), Some(5));
+    /// assert_eq!(seq.access(1), Some(14));
+    /// assert_eq!(seq.access(2), Some(334));
+    /// assert_eq!(seq.access(3), None);
     /// # Ok(())
     /// # }
     /// ```
-    fn get_int(&self, pos: usize) -> Option<usize> {
+    fn access(&self, pos: usize) -> Option<usize> {
         self.ef.delta(pos)
     }
 }
@@ -227,7 +227,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.efl.len() {
-            let x = self.efl.get_int(self.pos).unwrap();
+            let x = self.efl.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
