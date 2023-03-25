@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Build, CompactVector, IntGetter, IntVectorStat};
+use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
+use crate::int_vectors::{Access, Build, CompactVector, IntVectorStat};
 use crate::utils;
 use crate::Serializable;
 
@@ -31,12 +31,12 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{DacsOpt, IntGetter};
+/// use sucds::int_vectors::{DacsOpt, Access};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
 /// let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
 ///
-/// // Need IntGetter
+/// // Need Access
 /// assert_eq!(seq.get_int(0), Some(5));
 /// assert_eq!(seq.get_int(1), Some(0));
 /// assert_eq!(seq.get_int(2), Some(100000));
@@ -307,7 +307,7 @@ impl IntVectorStat for DacsOpt {
     }
 }
 
-impl IntGetter for DacsOpt {
+impl Access for DacsOpt {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -319,7 +319,7 @@ impl IntGetter for DacsOpt {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{DacsOpt, IntGetter};
+    /// use sucds::int_vectors::{DacsOpt, Access};
     ///
     /// let seq = DacsOpt::from_slice(&[5, 999, 334], None)?;
     ///
@@ -338,7 +338,9 @@ impl IntGetter for DacsOpt {
         let mut width = 0;
         for j in 0..self.num_levels() {
             x |= self.data[j].get_int(pos).unwrap() << (j * width);
-            if j == self.num_levels() - 1 || !self.flags[j].access(pos).unwrap() {
+            if j == self.num_levels() - 1
+                || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
+            {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();

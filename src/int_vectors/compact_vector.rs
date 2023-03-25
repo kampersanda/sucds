@@ -20,7 +20,7 @@ use crate::{utils, Serializable};
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{CompactVector, IntGetter};
+/// use sucds::int_vectors::{CompactVector, Access};
 ///
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
@@ -29,10 +29,10 @@ use crate::{utils, Serializable};
 /// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
-/// assert_eq!(cv.get_int(0), Some(7));  // Need IntGetter
+/// assert_eq!(cv.get_int(0), Some(7));  // Need Access
 ///
 /// cv.set_int(0, 5)?;
-/// assert_eq!(cv.get_int(0), Some(5));  // Need IntGetter
+/// assert_eq!(cv.get_int(0), Some(5));  // Need Access
 /// # Ok(())
 /// # }
 /// ```
@@ -136,7 +136,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
@@ -179,7 +179,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
@@ -232,7 +232,7 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
     /// cv.set_int(1, 4)?;
@@ -404,7 +404,7 @@ impl IntVectorStat for CompactVector {
     }
 }
 
-impl IntGetter for CompactVector {
+impl Access for CompactVector {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Arguments
@@ -419,7 +419,7 @@ impl IntGetter for CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
     /// assert_eq!(cv.get_int(0), Some(5));

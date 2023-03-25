@@ -7,8 +7,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Build, IntGetter, IntVectorStat};
+use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
+use crate::int_vectors::{Access, Build, IntVectorStat};
 use crate::utils;
 use crate::Serializable;
 
@@ -33,11 +33,11 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{DacsByte, IntGetter};
+/// use sucds::int_vectors::{DacsByte, Access};
 ///
 /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
-/// // Need IntGetter
+/// // Need Access
 /// assert_eq!(seq.get_int(0), Some(5));
 /// assert_eq!(seq.get_int(1), Some(0));
 /// assert_eq!(seq.get_int(2), Some(100000));
@@ -200,7 +200,7 @@ impl IntVectorStat for DacsByte {
     }
 }
 
-impl IntGetter for DacsByte {
+impl Access for DacsByte {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -212,7 +212,7 @@ impl IntGetter for DacsByte {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{DacsByte, IntGetter};
+    /// use sucds::int_vectors::{DacsByte, Access};
     ///
     /// let seq = DacsByte::from_slice(&[5, 999, 334])?;
     ///
@@ -230,7 +230,9 @@ impl IntGetter for DacsByte {
         let mut x = 0;
         for j in 0..self.num_levels() {
             x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].access(pos).unwrap() {
+            if j == self.num_levels() - 1
+                || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
+            {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();

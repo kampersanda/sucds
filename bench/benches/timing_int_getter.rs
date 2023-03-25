@@ -7,7 +7,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 
-use sucds::int_vectors::IntGetter;
+use sucds::int_vectors::Access;
 
 const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
@@ -68,7 +68,7 @@ fn criterion_int_get_proteins(c: &mut Criterion) {
     perform_int_get(&mut group, &vals);
 }
 
-fn run_queries<G: IntGetter>(getter: &G, queries: &[usize]) {
+fn run_queries<G: Access>(getter: &G, queries: &[usize]) {
     let mut sum = 0;
     for &q in queries {
         sum += getter.get_int(q).unwrap();

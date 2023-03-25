@@ -8,7 +8,7 @@
 //! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be a sequence of $`n`$ unsigned integers.
 //! Our integer vectors support the following queries:
 //!
-//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`IntGetter`]).
+//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`Access`]).
 //! - $`\textrm{Update}(i, x)`$ modifies $`a_i \gets x`$.
 //!
 //! Note that they are not limited depending on data structures.
@@ -17,7 +17,7 @@
 //!
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementation | [Access](IntGetter) | Update | Memory (bits) |
+//! | Implementation | [Access](Access) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: |
 //! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
 //! | [`PrefixSummedEliasFano`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
@@ -95,7 +95,7 @@ pub trait IntVectorStat {
 }
 
 /// Interface for accessing elements on integer vectors.
-pub trait IntGetter {
+pub trait Access {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;
 }

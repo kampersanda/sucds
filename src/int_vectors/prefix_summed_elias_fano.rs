@@ -26,11 +26,11 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
+/// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
 /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
-/// // Need IntGetter
+/// // Need Access
 /// assert_eq!(seq.get_int(0), Some(5));
 /// assert_eq!(seq.get_int(1), Some(14));
 /// assert_eq!(seq.get_int(2), Some(334));
@@ -167,7 +167,7 @@ impl IntVectorStat for PrefixSummedEliasFano {
     }
 }
 
-impl IntGetter for PrefixSummedEliasFano {
+impl Access for PrefixSummedEliasFano {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -178,7 +178,7 @@ impl IntGetter for PrefixSummedEliasFano {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{PrefixSummedEliasFano, IntGetter};
+    /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
     /// assert_eq!(seq.get_int(0), Some(5));
