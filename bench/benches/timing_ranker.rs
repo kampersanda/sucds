@@ -7,7 +7,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 
-use sucds::bit_vectors::Ranker;
+use sucds::bit_vectors::Rank;
 
 const SAMPLE_SIZE: usize = 30;
 const WARM_UP_TIME: Duration = Duration::from_secs(5);
@@ -27,7 +27,7 @@ fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> 
     (0..len).map(|_| rng.gen_range(min..=max)).collect()
 }
 
-fn run_queries<R: Ranker>(ranker: &R, queries: &[usize]) {
+fn run_queries<R: Rank>(ranker: &R, queries: &[usize]) {
     let mut sum = 0;
     for &q in queries {
         sum += ranker.rank1(q).unwrap();

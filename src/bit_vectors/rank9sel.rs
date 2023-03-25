@@ -30,7 +30,7 @@ use inner::Rank9SelIndex;
 /// assert_eq!(bv.num_bits(), 4);
 /// assert_eq!(bv.num_ones(), 2);
 ///
-/// assert_eq!(bv.get_bit(1), Some(false));
+/// assert_eq!(bv.access(1), Some(false));
 ///
 /// assert_eq!(bv.rank1(1), Some(1));
 /// assert_eq!(bv.rank0(1), Some(0));
@@ -96,9 +96,19 @@ impl Rank9Sel {
     pub const fn rs_index(&self) -> &Rank9SelIndex {
         &self.rs
     }
+
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.bv.len()
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
-impl BitVectorBuilder for Rank9Sel {
+impl Build for Rank9Sel {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -132,11 +142,11 @@ impl BitVectorBuilder for Rank9Sel {
     }
 }
 
-impl BitVectorStat for Rank9Sel {
-    /// Returns the number of bits stored.
+impl NumBits for Rank9Sel {
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.bv.num_bits()
+        self.len()
     }
 
     /// Returns the number of bits set.
@@ -146,27 +156,27 @@ impl BitVectorStat for Rank9Sel {
     }
 }
 
-impl BitGetter for Rank9Sel {
+impl Access for Rank9Sel {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, BitGetter};
+    /// use sucds::bit_vectors::{Rank9Sel, Access};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false]);
     ///
-    /// assert_eq!(bv.get_bit(0), Some(true));
-    /// assert_eq!(bv.get_bit(1), Some(false));
-    /// assert_eq!(bv.get_bit(2), Some(false));
-    /// assert_eq!(bv.get_bit(3), None);
+    /// assert_eq!(bv.access(0), Some(true));
+    /// assert_eq!(bv.access(1), Some(false));
+    /// assert_eq!(bv.access(2), Some(false));
+    /// assert_eq!(bv.access(3), None);
     /// ```
-    fn get_bit(&self, pos: usize) -> Option<bool> {
-        self.bv.get_bit(pos)
+    fn access(&self, pos: usize) -> Option<bool> {
+        self.bv.access(pos)
     }
 }
 
-impl Ranker for Rank9Sel {
+impl Rank for Rank9Sel {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -177,7 +187,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
+    /// use sucds::bit_vectors::{Rank9Sel, Rank};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -201,7 +211,7 @@ impl Ranker for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Ranker};
+    /// use sucds::bit_vectors::{Rank9Sel, Rank};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]);
     ///
@@ -216,7 +226,7 @@ impl Ranker for Rank9Sel {
     }
 }
 
-impl Selector for Rank9Sel {
+impl Select for Rank9Sel {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -227,7 +237,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Select};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
     ///
@@ -249,7 +259,7 @@ impl Selector for Rank9Sel {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Rank9Sel, Selector};
+    /// use sucds::bit_vectors::{Rank9Sel, Select};
     ///
     /// let bv = Rank9Sel::from_bits([true, false, false, true]).select0_hints();
     ///

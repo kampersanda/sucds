@@ -31,7 +31,7 @@ use crate::Serializable;
 /// let sa = SArray::build_from_bits([true, false, false, true], true, true, false)?;
 ///
 /// assert_eq!(sa.num_bits(), 4);
-/// assert_eq!(sa.get_bit(1), Some(false));
+/// assert_eq!(sa.access(1), Some(false));
 ///
 /// assert_eq!(sa.rank1(1), Some(1));
 /// assert_eq!(sa.rank0(1), Some(0));
@@ -168,9 +168,19 @@ impl SArray {
         // NOTE(kampersanda): self.num_bits <= pos will be checked.
         self.ef.as_ref().and_then(|ef| ef.successor(pos))
     }
+
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.num_bits
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
-impl BitVectorBuilder for SArray {
+impl Build for SArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -204,11 +214,11 @@ impl BitVectorBuilder for SArray {
     }
 }
 
-impl BitVectorStat for SArray {
-    /// Returns the number of bits stored.
+impl NumBits for SArray {
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.num_bits
+        self.len()
     }
 
     /// Returns the number of bits set.
@@ -218,7 +228,7 @@ impl BitVectorStat for SArray {
     }
 }
 
-impl BitGetter for SArray {
+impl Access for SArray {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -228,16 +238,16 @@ impl BitGetter for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, BitGetter};
+    /// use sucds::bit_vectors::{SArray, Access};
     ///
     /// let sa = SArray::from_bits([true, false, false]);
     ///
-    /// assert_eq!(sa.get_bit(0), Some(true));
-    /// assert_eq!(sa.get_bit(1), Some(false));
-    /// assert_eq!(sa.get_bit(2), Some(false));
-    /// assert_eq!(sa.get_bit(3), None);
+    /// assert_eq!(sa.access(0), Some(true));
+    /// assert_eq!(sa.access(1), Some(false));
+    /// assert_eq!(sa.access(2), Some(false));
+    /// assert_eq!(sa.access(3), None);
     /// ```
-    fn get_bit(&self, pos: usize) -> Option<bool> {
+    fn access(&self, pos: usize) -> Option<bool> {
         if self.num_bits <= pos {
             return None;
         }
@@ -247,7 +257,7 @@ impl BitGetter for SArray {
     }
 }
 
-impl Ranker for SArray {
+impl Rank for SArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -262,7 +272,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Rank};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -293,7 +303,7 @@ impl Ranker for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Ranker};
+    /// use sucds::bit_vectors::{SArray, Rank};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -308,7 +318,7 @@ impl Ranker for SArray {
     }
 }
 
-impl Selector for SArray {
+impl Select for SArray {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -319,7 +329,7 @@ impl Selector for SArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{SArray, Selector};
+    /// use sucds::bit_vectors::{SArray, Select};
     ///
     /// let sa = SArray::from_bits([true, false, false, true]);
     ///
@@ -375,7 +385,7 @@ mod tests {
     #[test]
     fn test_all_zeros() {
         let sa = SArray::from_bits([false, false, false]).enable_rank();
-        assert_eq!(sa.get_bit(0), Some(false));
+        assert_eq!(sa.access(0), Some(false));
         assert_eq!(sa.rank1(0), Some(0));
         assert_eq!(sa.rank0(3), Some(3));
         assert_eq!(sa.select1(0), None);

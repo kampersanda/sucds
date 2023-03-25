@@ -33,7 +33,7 @@ use inner::DArrayIndex;
 /// let da = DArray::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(da.num_bits(), 4);
-/// assert_eq!(da.get_bit(1), Some(false));
+/// assert_eq!(da.access(1), Some(false));
 ///
 /// assert_eq!(da.rank1(1), Some(1));
 /// assert_eq!(da.rank0(1), Some(0));
@@ -125,9 +125,19 @@ impl DArray {
     pub const fn r9_index(&self) -> Option<&Rank9SelIndex> {
         self.r9.as_ref()
     }
+
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.bv.len()
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
-impl BitVectorBuilder for DArray {
+impl Build for DArray {
     /// Creates a new vector from input bit stream `bits`.
     ///
     /// # Arguments
@@ -161,11 +171,11 @@ impl BitVectorBuilder for DArray {
     }
 }
 
-impl BitVectorStat for DArray {
-    /// Returns the number of bits stored.
+impl NumBits for DArray {
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.bv.num_bits()
+        self.len()
     }
 
     /// Returns the number of bits set.
@@ -175,27 +185,27 @@ impl BitVectorStat for DArray {
     }
 }
 
-impl BitGetter for DArray {
+impl Access for DArray {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, BitGetter};
+    /// use sucds::bit_vectors::{DArray, Access};
     ///
     /// let da = DArray::from_bits([true, false, false]);
     ///
-    /// assert_eq!(da.get_bit(0), Some(true));
-    /// assert_eq!(da.get_bit(1), Some(false));
-    /// assert_eq!(da.get_bit(2), Some(false));
-    /// assert_eq!(da.get_bit(3), None);
+    /// assert_eq!(da.access(0), Some(true));
+    /// assert_eq!(da.access(1), Some(false));
+    /// assert_eq!(da.access(2), Some(false));
+    /// assert_eq!(da.access(3), None);
     /// ```
-    fn get_bit(&self, pos: usize) -> Option<bool> {
-        self.bv.get_bit(pos)
+    fn access(&self, pos: usize) -> Option<bool> {
+        self.bv.access(pos)
     }
 }
 
-impl Ranker for DArray {
+impl Rank for DArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
     /// [`None`] if `self.num_bits() < pos`.
     ///
@@ -210,7 +220,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Rank};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -239,7 +249,7 @@ impl Ranker for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Ranker};
+    /// use sucds::bit_vectors::{DArray, Rank};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_rank();
     ///
@@ -255,7 +265,7 @@ impl Ranker for DArray {
     }
 }
 
-impl Selector for DArray {
+impl Select for DArray {
     /// Searches the position of the `k`-th bit set, or
     /// [`None`] if `self.num_ones() <= k`.
     ///
@@ -266,7 +276,7 @@ impl Selector for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Select};
     ///
     /// let da = DArray::from_bits([true, false, false, true]);
     ///
@@ -292,7 +302,7 @@ impl Selector for DArray {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, Selector};
+    /// use sucds::bit_vectors::{DArray, Select};
     ///
     /// let da = DArray::from_bits([true, false, false, true]).enable_select0();
     ///
