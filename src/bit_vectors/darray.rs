@@ -125,6 +125,16 @@ impl DArray {
     pub const fn r9_index(&self) -> Option<&Rank9SelIndex> {
         self.r9.as_ref()
     }
+
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.bv.len()
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl Build for DArray {
@@ -162,10 +172,10 @@ impl Build for DArray {
 }
 
 impl NumBits for DArray {
-    /// Returns the number of bits stored.
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.bv.num_bits()
+        self.len()
     }
 
     /// Returns the number of bits set.

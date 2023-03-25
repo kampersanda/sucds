@@ -634,6 +634,16 @@ impl BitVector {
         Some(word)
     }
 
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Gets the slice of raw words.
     pub fn words(&self) -> &[usize] {
         &self.words
@@ -689,17 +699,16 @@ impl Build for BitVector {
 }
 
 impl NumBits for BitVector {
-    /// Returns the number of bits stored.
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     fn num_bits(&self) -> usize {
-        self.len
+        self.len()
     }
 
     /// Returns the number of bits set.
     ///
     /// # Notes
     ///
-    /// It is performed by linear scan and in $`O(u)`$ time.
-    // TODO(kampersanda): Maintain the value online.
+    /// It is performed by linear scan in $`O(u)`$ time.
     fn num_ones(&self) -> usize {
         self.rank1(self.len).unwrap()
     }

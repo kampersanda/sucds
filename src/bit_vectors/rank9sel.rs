@@ -96,6 +96,16 @@ impl Rank9Sel {
     pub const fn rs_index(&self) -> &Rank9SelIndex {
         &self.rs
     }
+
+    /// Returns the number of bits stored.
+    pub const fn len(&self) -> usize {
+        self.bv.len()
+    }
+
+    /// Checks if the vector is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl Build for Rank9Sel {
@@ -133,10 +143,10 @@ impl Build for Rank9Sel {
 }
 
 impl NumBits for Rank9Sel {
-    /// Returns the number of bits stored.
+    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
     fn num_bits(&self) -> usize {
-        self.bv.num_bits()
+        self.len()
     }
 
     /// Returns the number of bits set.
