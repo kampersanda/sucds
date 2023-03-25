@@ -39,28 +39,23 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
 ///
-/// // Need Selector
-/// assert_eq!(ef.select1(0), Some(1));
-/// assert_eq!(ef.select1(1), Some(3));
-/// assert_eq!(ef.select1(2), Some(3));
-/// assert_eq!(ef.select1(3), Some(7));
+/// assert_eq!(ef.select(0), Some(1));
+/// assert_eq!(ef.select(1), Some(3));
+/// assert_eq!(ef.select(2), Some(3));
+/// assert_eq!(ef.select(3), Some(7));
 ///
 /// assert_eq!(ef.binsearch(7), Some(3));
+/// assert_eq!(ef.binsearch(4), None);
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
 ///
-/// // Need Ranker
-/// assert_eq!(ef.rank1(3), Some(1));
-/// assert_eq!(ef.rank1(4), Some(3));
-///
-/// // Need Predecessor
-/// assert_eq!(ef.predecessor1(4), Some(3));
-/// assert_eq!(ef.predecessor1(3), Some(3));
-///
-/// // Need Successor
-/// assert_eq!(ef.successor1(3), Some(3));
-/// assert_eq!(ef.successor1(4), Some(7));
+/// assert_eq!(ef.rank(3), Some(1));
+/// assert_eq!(ef.rank(4), Some(3));
+/// assert_eq!(ef.predecessor(4), Some(3));
+/// assert_eq!(ef.predecessor(3), Some(3));
+/// assert_eq!(ef.successor(3), Some(3));
+/// assert_eq!(ef.successor(4), Some(7));
 /// # Ok(())
 /// # }
 /// ```
@@ -265,7 +260,7 @@ impl EliasFano {
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
             let mi = (lo + hi) / 2;
-            let x = self.select1(mi).unwrap();
+            let x = self.select(mi).unwrap();
             if val == x {
                 return Some(mi);
             }
@@ -308,14 +303,14 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
-    /// assert_eq!(ef.rank1(3), Some(1));
-    /// assert_eq!(ef.rank1(4), Some(3));
-    /// assert_eq!(ef.rank1(8), Some(4));
-    /// assert_eq!(ef.rank1(9), None);
+    /// assert_eq!(ef.rank(3), Some(1));
+    /// assert_eq!(ef.rank(4), Some(3));
+    /// assert_eq!(ef.rank(8), Some(4));
+    /// assert_eq!(ef.rank(9), None);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn rank1(&self, pos: usize) -> Option<usize> {
+    pub fn rank(&self, pos: usize) -> Option<usize> {
         if self.universe() < pos {
             return None;
         }
@@ -360,15 +355,15 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
-    /// assert_eq!(ef.select1(0), Some(1));
-    /// assert_eq!(ef.select1(1), Some(3));
-    /// assert_eq!(ef.select1(2), Some(3));
-    /// assert_eq!(ef.select1(3), Some(7));
-    /// assert_eq!(ef.select1(4), None);
+    /// assert_eq!(ef.select(0), Some(1));
+    /// assert_eq!(ef.select(1), Some(3));
+    /// assert_eq!(ef.select(2), Some(3));
+    /// assert_eq!(ef.select(3), Some(7));
+    /// assert_eq!(ef.select(4), None);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn select1(&self, k: usize) -> Option<usize> {
+    pub fn select(&self, k: usize) -> Option<usize> {
         if self.len() <= k {
             None
         } else {
@@ -403,20 +398,20 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
-    /// assert_eq!(ef.predecessor1(4), Some(3));
-    /// assert_eq!(ef.predecessor1(3), Some(3));
-    /// assert_eq!(ef.predecessor1(2), Some(1));
-    /// assert_eq!(ef.predecessor1(0), None);
+    /// assert_eq!(ef.predecessor(4), Some(3));
+    /// assert_eq!(ef.predecessor(3), Some(3));
+    /// assert_eq!(ef.predecessor(2), Some(1));
+    /// assert_eq!(ef.predecessor(0), None);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
+    pub fn predecessor(&self, pos: usize) -> Option<usize> {
         if self.universe() <= pos {
             None
         } else {
-            Some(self.rank1(pos + 1).unwrap())
+            Some(self.rank(pos + 1).unwrap())
                 .filter(|&i| i > 0)
-                .map(|i| self.select1(i - 1).unwrap())
+                .map(|i| self.select(i - 1).unwrap())
         }
     }
 
@@ -441,20 +436,20 @@ impl EliasFano {
     /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
-    /// assert_eq!(ef.successor1(0), Some(1));
-    /// assert_eq!(ef.successor1(2), Some(3));
-    /// assert_eq!(ef.successor1(3), Some(3));
-    /// assert_eq!(ef.successor1(8), None);
+    /// assert_eq!(ef.successor(0), Some(1));
+    /// assert_eq!(ef.successor(2), Some(3));
+    /// assert_eq!(ef.successor(3), Some(3));
+    /// assert_eq!(ef.successor(8), None);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn successor1(&self, pos: usize) -> Option<usize> {
+    pub fn successor(&self, pos: usize) -> Option<usize> {
         if self.universe() <= pos {
             None
         } else {
-            Some(self.rank1(pos).unwrap())
+            Some(self.rank(pos).unwrap())
                 .filter(|&i| i < self.len())
-                .map(|i| self.select1(i).unwrap())
+                .map(|i| self.select(i).unwrap())
         }
     }
 
