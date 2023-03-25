@@ -8,10 +8,8 @@ use std::ops::Range;
 
 use anyhow::{anyhow, Result};
 
-use crate::bit_vectors::prelude::*;
-use crate::bit_vectors::{BitVector, DArray};
+use crate::bit_vectors::{BitGetter, BitVector, BitVectorStat, DArray, Selector};
 use crate::broadword;
-use crate::mii_sequences::{Predecessor, Successor};
 use crate::Serializable;
 use iter::Iter;
 
@@ -25,14 +23,14 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// indicating that a sparse sequence can be stored in a very compressed space.
 ///
 /// Another attraction of Elias-Fano is several search queries,
-/// such as [binary search](EliasFano::binsearch), [predecessor](EliasFano::predecessor1), and [successor](EliasFano::successor1),
+/// such as binary search, predecessor, and successor,
 /// over the compressed representation.
 ///
 /// # Example
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::mii_sequences::{EliasFanoBuilder, prelude::*};
+/// use sucds::mii_sequences::EliasFanoBuilder;
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
 /// efb.extend([1, 3, 3, 7])?;
@@ -41,28 +39,23 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// assert_eq!(ef.len(), 4);
 /// assert_eq!(ef.universe(), 8);
 ///
-/// // Need Selector
-/// assert_eq!(ef.select1(0), Some(1));
-/// assert_eq!(ef.select1(1), Some(3));
-/// assert_eq!(ef.select1(2), Some(3));
-/// assert_eq!(ef.select1(3), Some(7));
+/// assert_eq!(ef.select(0), Some(1));
+/// assert_eq!(ef.select(1), Some(3));
+/// assert_eq!(ef.select(2), Some(3));
+/// assert_eq!(ef.select(3), Some(7));
 ///
 /// assert_eq!(ef.binsearch(7), Some(3));
+/// assert_eq!(ef.binsearch(4), None);
 ///
 /// // Builds an index to enable rank, predecessor, and successor.
 /// let ef = ef.enable_rank();
 ///
-/// // Need Ranker
-/// assert_eq!(ef.rank1(3), Some(1));
-/// assert_eq!(ef.rank1(4), Some(3));
-///
-/// // Need Predecessor
-/// assert_eq!(ef.predecessor1(4), Some(3));
-/// assert_eq!(ef.predecessor1(3), Some(3));
-///
-/// // Need Successor
-/// assert_eq!(ef.successor1(3), Some(3));
-/// assert_eq!(ef.successor1(4), Some(7));
+/// assert_eq!(ef.rank(3), Some(1));
+/// assert_eq!(ef.rank(4), Some(3));
+/// assert_eq!(ef.predecessor(4), Some(3));
+/// assert_eq!(ef.predecessor(3), Some(3));
+/// assert_eq!(ef.successor(3), Some(3));
+/// assert_eq!(ef.successor(4), Some(7));
 /// # Ok(())
 /// # }
 /// ```
@@ -124,8 +117,8 @@ impl EliasFano {
         Ok(b.build())
     }
 
-    /// Builds an index to enable operations [`Self::rank1()`],
-    /// [`Self::predecessor1()`], and [`Self::successor1()`].
+    /// Builds an index to enable operations [`Self::rank()`],
+    /// [`Self::predecessor()`], and [`Self::successor()`].
     #[must_use]
     pub fn enable_rank(mut self) -> Self {
         self.high_bits = self.high_bits.enable_select0();
@@ -267,7 +260,7 @@ impl EliasFano {
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
             let mi = (lo + hi) / 2;
-            let x = self.select1(mi).unwrap();
+            let x = self.select(mi).unwrap();
             if val == x {
                 return Some(mi);
             }
@@ -287,6 +280,177 @@ impl EliasFano {
             }
         }
         None
+    }
+
+    /// Returns the number of integers less than `pos`, or
+    /// [`None`] if `self.universe() < pos`.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(\lg \frac{u}{n})`$
+    ///
+    /// # Panics
+    ///
+    /// It panics if the index is not built by [`Self::enable_rank()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::mii_sequences::EliasFanoBuilder;
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.rank(3), Some(1));
+    /// assert_eq!(ef.rank(4), Some(3));
+    /// assert_eq!(ef.rank(8), Some(4));
+    /// assert_eq!(ef.rank(9), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn rank(&self, pos: usize) -> Option<usize> {
+        if self.universe() < pos {
+            return None;
+        }
+        if self.universe() == pos {
+            return Some(self.len());
+        }
+
+        let h_rank = pos >> self.low_len;
+        let mut h_pos = self.high_bits.select0(h_rank).unwrap();
+        let mut rank = h_pos - h_rank;
+        let l_pos = pos & ((1 << self.low_len) - 1);
+
+        while h_pos > 0
+            && self.high_bits.get_bit(h_pos - 1).unwrap()
+            && self
+                .low_bits
+                .get_bits((rank - 1) * self.low_len, self.low_len)
+                .unwrap()
+                >= l_pos
+        {
+            rank -= 1;
+            h_pos -= 1;
+        }
+
+        Some(rank)
+    }
+
+    /// Returns the position of the `k`-th smallest integer, or
+    /// [`None`] if `self.len() <= k`.
+    ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::mii_sequences::EliasFanoBuilder;
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build();
+    ///
+    /// assert_eq!(ef.select(0), Some(1));
+    /// assert_eq!(ef.select(1), Some(3));
+    /// assert_eq!(ef.select(2), Some(3));
+    /// assert_eq!(ef.select(3), Some(7));
+    /// assert_eq!(ef.select(4), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn select(&self, k: usize) -> Option<usize> {
+        if self.len() <= k {
+            None
+        } else {
+            Some(
+                ((self.high_bits.select1(k).unwrap() - k) << self.low_len)
+                    | self
+                        .low_bits
+                        .get_bits(k * self.low_len, self.low_len)
+                        .unwrap(),
+            )
+        }
+    }
+
+    /// Gets the largest element `pred` such that `pred <= pos`, or
+    /// [`None`] if `self.universe() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Predecessor query.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(\lg \frac{u}{n})`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::mii_sequences::EliasFanoBuilder;
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.predecessor(4), Some(3));
+    /// assert_eq!(ef.predecessor(3), Some(3));
+    /// assert_eq!(ef.predecessor(2), Some(1));
+    /// assert_eq!(ef.predecessor(0), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn predecessor(&self, pos: usize) -> Option<usize> {
+        if self.universe() <= pos {
+            None
+        } else {
+            Some(self.rank(pos + 1).unwrap())
+                .filter(|&i| i > 0)
+                .map(|i| self.select(i - 1).unwrap())
+        }
+    }
+
+    /// Gets the smallest element `succ` such that `succ >= pos`, or
+    /// [`None`] if `self.universe() <= pos`.
+    ///
+    /// # Arguments
+    ///
+    /// - `pos`: Successor query.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(\lg \frac{u}{n})`$
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::mii_sequences::EliasFanoBuilder;
+    ///
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
+    /// let ef = efb.build().enable_rank();
+    ///
+    /// assert_eq!(ef.successor(0), Some(1));
+    /// assert_eq!(ef.successor(2), Some(3));
+    /// assert_eq!(ef.successor(3), Some(3));
+    /// assert_eq!(ef.successor(8), None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn successor(&self, pos: usize) -> Option<usize> {
+        if self.universe() <= pos {
+            None
+        } else {
+            Some(self.rank(pos).unwrap())
+                .filter(|&i| i < self.len())
+                .map(|i| self.select(i).unwrap())
+        }
     }
 
     /// Creates an iterator of [`Iter`] to enumerate integers from the `k`-th one.
@@ -333,205 +497,6 @@ impl EliasFano {
     #[inline(always)]
     pub const fn universe(&self) -> usize {
         self.universe
-    }
-}
-
-impl Ranker for EliasFano {
-    /// Returns the number of integers less than `pos`, or
-    /// [`None`] if `self.universe() < pos`.
-    ///
-    /// # Complexity
-    ///
-    /// $`O(\lg \frac{u}{n})`$
-    ///
-    /// # Panics
-    ///
-    /// It panics if the index is not built by [`Self::enable_rank()`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::mii_sequences::{EliasFanoBuilder, Ranker};
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build().enable_rank();
-    ///
-    /// assert_eq!(ef.rank1(3), Some(1));
-    /// assert_eq!(ef.rank1(4), Some(3));
-    /// assert_eq!(ef.rank1(8), Some(4));
-    /// assert_eq!(ef.rank1(9), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn rank1(&self, pos: usize) -> Option<usize> {
-        if self.universe() < pos {
-            return None;
-        }
-        if self.universe() == pos {
-            return Some(self.len());
-        }
-
-        let h_rank = pos >> self.low_len;
-        let mut h_pos = self.high_bits.select0(h_rank).unwrap();
-        let mut rank = h_pos - h_rank;
-        let l_pos = pos & ((1 << self.low_len) - 1);
-
-        while h_pos > 0
-            && self.high_bits.get_bit(h_pos - 1).unwrap()
-            && self
-                .low_bits
-                .get_bits((rank - 1) * self.low_len, self.low_len)
-                .unwrap()
-                >= l_pos
-        {
-            rank -= 1;
-            h_pos -= 1;
-        }
-
-        Some(rank)
-    }
-
-    /// Panics always because this operation is not supported.
-    fn rank0(&self, _i: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
-    }
-}
-
-impl Selector for EliasFano {
-    /// Returns the position of the `k`-th smallest integer, or
-    /// [`None`] if `self.len() <= k`.
-    ///
-    /// # Complexity
-    ///
-    /// Constant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::mii_sequences::{EliasFanoBuilder, Selector};
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build();
-    ///
-    /// assert_eq!(ef.select1(0), Some(1));
-    /// assert_eq!(ef.select1(1), Some(3));
-    /// assert_eq!(ef.select1(2), Some(3));
-    /// assert_eq!(ef.select1(3), Some(7));
-    /// assert_eq!(ef.select1(4), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn select1(&self, k: usize) -> Option<usize> {
-        if self.len() <= k {
-            None
-        } else {
-            Some(
-                ((self.high_bits.select1(k).unwrap() - k) << self.low_len)
-                    | self
-                        .low_bits
-                        .get_bits(k * self.low_len, self.low_len)
-                        .unwrap(),
-            )
-        }
-    }
-
-    /// Panics always because this operation is not supported.
-    fn select0(&self, _k: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
-    }
-}
-
-impl Predecessor for EliasFano {
-    /// Gets the largest element `pred` such that `pred <= pos`, or
-    /// [`None`] if `self.universe() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Predecessor query.
-    ///
-    /// # Complexity
-    ///
-    /// $`O(\lg \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::mii_sequences::{EliasFanoBuilder, Predecessor};
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build().enable_rank();
-    ///
-    /// assert_eq!(ef.predecessor1(4), Some(3));
-    /// assert_eq!(ef.predecessor1(3), Some(3));
-    /// assert_eq!(ef.predecessor1(2), Some(1));
-    /// assert_eq!(ef.predecessor1(0), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn predecessor1(&self, pos: usize) -> Option<usize> {
-        if self.universe() <= pos {
-            None
-        } else {
-            Some(self.rank1(pos + 1).unwrap())
-                .filter(|&i| i > 0)
-                .map(|i| self.select1(i - 1).unwrap())
-        }
-    }
-
-    /// Panics always because this operation is not supported.
-    fn predecessor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
-    }
-}
-
-impl Successor for EliasFano {
-    /// Gets the smallest element `succ` such that `succ >= pos`, or
-    /// [`None`] if `self.universe() <= pos`.
-    ///
-    /// # Arguments
-    ///
-    /// - `pos`: Successor query.
-    ///
-    /// # Complexity
-    ///
-    /// $`O(\lg \frac{u}{n})`$
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::mii_sequences::{EliasFanoBuilder, Successor};
-    ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
-    /// let ef = efb.build().enable_rank();
-    ///
-    /// assert_eq!(ef.successor1(0), Some(1));
-    /// assert_eq!(ef.successor1(2), Some(3));
-    /// assert_eq!(ef.successor1(3), Some(3));
-    /// assert_eq!(ef.successor1(8), None);
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn successor1(&self, pos: usize) -> Option<usize> {
-        if self.universe() <= pos {
-            None
-        } else {
-            Some(self.rank1(pos).unwrap())
-                .filter(|&i| i < self.len())
-                .map(|i| self.select1(i).unwrap())
-        }
-    }
-
-    /// Panics always because this operation is not supported.
-    fn successor0(&self, _pos: usize) -> Option<usize> {
-        panic!("This operation is not supported.");
     }
 }
 

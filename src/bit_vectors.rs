@@ -114,5 +114,30 @@ pub trait BitGetter {
     fn get_bit(&self, pos: usize) -> Option<bool>;
 }
 
-pub use crate::mii_sequences::Ranker;
-pub use crate::mii_sequences::Selector;
+/// Interface for rank queries on bit vectors.
+///
+/// Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
+/// at which bits are set in a bit vector of length $`u`$.
+pub trait Ranker {
+    /// Returns the cardinality of $`\{ x \in S \mid x < i \}`$,
+    /// or [`None`] if $`u < x`$.
+    fn rank1(&self, x: usize) -> Option<usize>;
+
+    /// Returns the cardinality of $`\{ x \not\in S \mid 0 \leq x < i \}`$,
+    /// or [`None`] if $`u < x`$.
+    fn rank0(&self, x: usize) -> Option<usize>;
+}
+
+/// Interface for select queries on bit vectors.
+///
+/// Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
+/// at which bits are set in a bit vector of length $`u`$.
+pub trait Selector {
+    /// Returns the $`k`$-th smallest position in $`S`$, or
+    /// [`None`] if out of bounds.
+    fn select1(&self, k: usize) -> Option<usize>;
+
+    /// Returns the $`k`$-th smallest integer $`x`$ such that $`x \not\in S`$ and $`0 \leq x < u`$, or
+    /// [`None`] if out of bounds.
+    fn select0(&self, k: usize) -> Option<usize>;
+}
