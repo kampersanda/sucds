@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
-use crate::int_vectors::IntGetter;
+use crate::int_vectors::prelude::*;
 use crate::{utils, Serializable};
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
@@ -20,7 +20,7 @@ use crate::{utils, Serializable};
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{CompactVector, IntGetter};
+/// use sucds::int_vectors::{CompactVector, Access};
 ///
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
@@ -29,10 +29,10 @@ use crate::{utils, Serializable};
 /// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
-/// assert_eq!(cv.get_int(0), Some(7));  // Need IntGetter
+/// assert_eq!(cv.access(0), Some(7));  // Need Access
 ///
 /// cv.set_int(0, 5)?;
-/// assert_eq!(cv.get_int(0), Some(5));  // Need IntGetter
+/// assert_eq!(cv.access(0), Some(5));  // Need Access
 /// # Ok(())
 /// # }
 /// ```
@@ -136,12 +136,12 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.get_int(0), Some(7));
+    /// assert_eq!(cv.access(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -179,12 +179,12 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.get_int(0), Some(7));
+    /// assert_eq!(cv.access(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -210,6 +210,33 @@ impl CompactVector {
         Ok(cv)
     }
 
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Position.
+    ///
+    /// # Complexity
+    ///
+    /// Constant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use sucds::int_vectors::CompactVector;
+    ///
+    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// assert_eq!(cv.get_int(0), Some(5));
+    /// assert_eq!(cv.get_int(1), Some(256));
+    /// assert_eq!(cv.get_int(2), Some(0));
+    /// assert_eq!(cv.get_int(3), None);
+    /// # Ok(())
+    /// # }
+    pub fn get_int(&self, pos: usize) -> Option<usize> {
+        self.chunks.get_bits(pos * self.width, self.width)
+    }
+
     /// Sets the `pos`-th integer to `val`.
     ///
     /// # Arguments
@@ -232,11 +259,11 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
     /// cv.set_int(1, 4)?;
-    /// assert_eq!(cv.get_int(1), Some(4));
+    /// assert_eq!(cv.access(1), Some(4));
     /// # Ok(())
     /// # }
     /// ```
@@ -360,7 +387,7 @@ impl CompactVector {
         Iter::new(self)
     }
 
-    /// Gets the number of ints.
+    /// Gets the number of integers.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
@@ -372,7 +399,7 @@ impl CompactVector {
         self.len() == 0
     }
 
-    /// Returns the total number of bits it can hold without reallocating.
+    /// Returns the total number of integers it can hold without reallocating.
     pub fn capacity(&self) -> usize {
         self.chunks.capacity() / self.width()
     }
@@ -384,8 +411,29 @@ impl CompactVector {
     }
 }
 
-impl IntGetter for CompactVector {
-    /// Returns the `pos`-th integer, or [`None`] if out of bounds.
+impl Build for CompactVector {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// This just calls [`Self::from_slice()`]. See the documentation.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized,
+    {
+        Self::from_slice(vals)
+    }
+}
+
+impl NumVals for CompactVector {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len()
+    }
+}
+
+impl Access for CompactVector {
+    /// Returns the `pos`-th integer, or [`None`] if out of bounds
+    /// (just wrapping [`Self::get_int()`]).
     ///
     /// # Arguments
     ///
@@ -399,17 +447,17 @@ impl IntGetter for CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, IntGetter};
+    /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
-    /// assert_eq!(cv.get_int(0), Some(5));
-    /// assert_eq!(cv.get_int(1), Some(256));
-    /// assert_eq!(cv.get_int(2), Some(0));
-    /// assert_eq!(cv.get_int(3), None);
+    /// assert_eq!(cv.access(0), Some(5));
+    /// assert_eq!(cv.access(1), Some(256));
+    /// assert_eq!(cv.access(2), Some(0));
+    /// assert_eq!(cv.access(3), None);
     /// # Ok(())
     /// # }
-    fn get_int(&self, pos: usize) -> Option<usize> {
-        self.chunks.get_bits(pos * self.width, self.width)
+    fn access(&self, pos: usize) -> Option<usize> {
+        self.get_int(pos)
     }
 }
 
@@ -432,7 +480,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.cv.len() {
-            let x = self.cv.get_int(self.pos).unwrap();
+            let x = self.cv.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -450,7 +498,7 @@ impl std::fmt::Debug for CompactVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ints = vec![0; self.len()];
         for (i, b) in ints.iter_mut().enumerate() {
-            *b = self.get_int(i).unwrap();
+            *b = self.access(i).unwrap();
         }
         f.debug_struct("CompactVector")
             .field("ints", &ints)

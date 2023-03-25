@@ -8,7 +8,7 @@
 //! Let $`A = (a_0, a_1, \dots, a_{n-1})`$ be a sequence of $`n`$ unsigned integers.
 //! Our integer vectors support the following queries:
 //!
-//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`IntGetter`]).
+//! - $`\textrm{Access}(i)`$ returns $`a_i`$ (implemented by [`Access`]).
 //! - $`\textrm{Update}(i, x)`$ modifies $`a_i \gets x`$.
 //!
 //! Note that they are not limited depending on data structures.
@@ -17,7 +17,7 @@
 //!
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementation | [Access](IntGetter) | Update | Memory (bits) |
+//! | Implementation | [Access](Access) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: |
 //! | [`CompactVector`] | $`O(1)`$ | $`O(1)`$  | $`n \lceil \lg u \rceil`$ |
 //! | [`PrefixSummedEliasFano`] | $`O(1)`$ | -- | $`n \lceil \lg \frac{N}{n} \rceil + 2n + o(n)`$ |
@@ -61,14 +61,41 @@ pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;
 pub mod prefix_summed_elias_fano;
+pub mod prelude;
 
 pub use compact_vector::CompactVector;
 pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 
-/// Interface for accessing elements on integer arrays.
-pub trait IntGetter {
+use anyhow::Result;
+use num_traits::ToPrimitive;
+
+/// Interface for building integer vectors.
+pub trait Build {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// # Arguments
+    ///
+    ///  - `vals`: Slice of integers to be stored.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized;
+}
+
+/// Interface for reporting basic statistics of integer vectors.
+pub trait NumVals {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize;
+}
+
+/// Interface for accessing elements on integer vectors.
+pub trait Access {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
-    fn get_int(&self, pos: usize) -> Option<usize>;
+    fn access(&self, pos: usize) -> Option<usize>;
 }

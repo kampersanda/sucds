@@ -7,8 +7,8 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::IntGetter;
+use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
+use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
 use crate::Serializable;
 
@@ -33,15 +33,15 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{DacsByte, IntGetter};
+/// use sucds::int_vectors::{DacsByte, Access};
 ///
 /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
-/// // Need IntGetter
-/// assert_eq!(seq.get_int(0), Some(5));
-/// assert_eq!(seq.get_int(1), Some(0));
-/// assert_eq!(seq.get_int(2), Some(100000));
-/// assert_eq!(seq.get_int(3), Some(334));
+/// // Need Access
+/// assert_eq!(seq.access(0), Some(5));
+/// assert_eq!(seq.access(1), Some(0));
+/// assert_eq!(seq.access(2), Some(100000));
+/// assert_eq!(seq.access(3), Some(334));
 ///
 /// assert_eq!(seq.len(), 4);
 /// assert_eq!(seq.num_levels(), 3);
@@ -145,7 +145,7 @@ impl DacsByte {
         Iter::new(self)
     }
 
-    /// Gets the number of bits.
+    /// Gets the number of integers.
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.data[0].len()
@@ -180,7 +180,27 @@ impl Default for DacsByte {
     }
 }
 
-impl IntGetter for DacsByte {
+impl Build for DacsByte {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// This just calls [`Self::from_slice()`]. See the documentation.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized,
+    {
+        Self::from_slice(vals)
+    }
+}
+
+impl NumVals for DacsByte {
+    /// Returns the number of integers stored.
+    fn num_vals(&self) -> usize {
+        self.len()
+    }
+}
+
+impl Access for DacsByte {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///
     /// # Complexity
@@ -192,25 +212,27 @@ impl IntGetter for DacsByte {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{DacsByte, IntGetter};
+    /// use sucds::int_vectors::{DacsByte, Access};
     ///
     /// let seq = DacsByte::from_slice(&[5, 999, 334])?;
     ///
-    /// assert_eq!(seq.get_int(0), Some(5));
-    /// assert_eq!(seq.get_int(1), Some(999));
-    /// assert_eq!(seq.get_int(2), Some(334));
-    /// assert_eq!(seq.get_int(3), None);
+    /// assert_eq!(seq.access(0), Some(5));
+    /// assert_eq!(seq.access(1), Some(999));
+    /// assert_eq!(seq.access(2), Some(334));
+    /// assert_eq!(seq.access(3), None);
     /// # Ok(())
     /// # }
     /// ```
-    fn get_int(&self, mut pos: usize) -> Option<usize> {
+    fn access(&self, mut pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
         let mut x = 0;
         for j in 0..self.num_levels() {
             x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].access(pos).unwrap() {
+            if j == self.num_levels() - 1
+                || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
+            {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();
@@ -238,7 +260,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.seq.len() {
-            let x = self.seq.get_int(self.pos).unwrap();
+            let x = self.seq.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -301,11 +323,11 @@ mod tests {
         assert_eq!(seq.num_levels(), 3);
         assert_eq!(seq.widths(), vec![LEVEL_WIDTH, LEVEL_WIDTH, LEVEL_WIDTH]);
 
-        assert_eq!(seq.get_int(0), Some(0xFFFF));
-        assert_eq!(seq.get_int(1), Some(0xFF));
-        assert_eq!(seq.get_int(2), Some(0xF));
-        assert_eq!(seq.get_int(3), Some(0xFFFFF));
-        assert_eq!(seq.get_int(4), Some(0xF));
+        assert_eq!(seq.access(0), Some(0xFFFF));
+        assert_eq!(seq.access(1), Some(0xFF));
+        assert_eq!(seq.access(2), Some(0xF));
+        assert_eq!(seq.access(3), Some(0xFFFFF));
+        assert_eq!(seq.access(4), Some(0xF));
     }
 
     #[test]
@@ -324,10 +346,10 @@ mod tests {
         assert_eq!(seq.len(), 4);
         assert_eq!(seq.num_levels(), 1);
         assert_eq!(seq.widths(), vec![LEVEL_WIDTH]);
-        assert_eq!(seq.get_int(0), Some(0));
-        assert_eq!(seq.get_int(1), Some(0));
-        assert_eq!(seq.get_int(2), Some(0));
-        assert_eq!(seq.get_int(3), Some(0));
+        assert_eq!(seq.access(0), Some(0));
+        assert_eq!(seq.access(1), Some(0));
+        assert_eq!(seq.access(2), Some(0));
+        assert_eq!(seq.access(3), Some(0));
     }
 
     #[test]
