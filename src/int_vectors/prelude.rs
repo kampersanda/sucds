@@ -6,4 +6,4 @@
 //! # #![allow(unused_imports)]
 //! use sucds::int_vectors::prelude::*;
 //! ```
-pub use crate::int_vectors::{IntGetter, IntVectorBuilder, IntVectorStat};
+pub use crate::int_vectors::{Build, IntGetter, IntVectorStat};

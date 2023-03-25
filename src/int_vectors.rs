@@ -72,7 +72,7 @@ use anyhow::Result;
 use num_traits::ToPrimitive;
 
 /// Interface for building integer vectors.
-pub trait IntVectorBuilder {
+pub trait Build {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// # Arguments

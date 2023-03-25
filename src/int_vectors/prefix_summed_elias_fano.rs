@@ -147,7 +147,7 @@ impl PrefixSummedEliasFano {
     }
 }
 
-impl IntVectorBuilder for PrefixSummedEliasFano {
+impl Build for PrefixSummedEliasFano {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.

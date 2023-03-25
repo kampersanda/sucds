@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{IntGetter, IntVectorBuilder, IntVectorStat};
+use crate::int_vectors::{Build, IntGetter, IntVectorStat};
 use crate::utils;
 use crate::Serializable;
 
@@ -180,7 +180,7 @@ impl Default for DacsByte {
     }
 }
 
-impl IntVectorBuilder for DacsByte {
+impl Build for DacsByte {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.

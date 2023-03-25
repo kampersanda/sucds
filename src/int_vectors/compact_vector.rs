@@ -384,7 +384,7 @@ impl CompactVector {
     }
 }
 
-impl IntVectorBuilder for CompactVector {
+impl Build for CompactVector {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.
