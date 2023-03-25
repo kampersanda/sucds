@@ -8,7 +8,7 @@
 //! at which bits are set in a bit vector of length $`u`$.
 //! Our bit vectors support the following queries:
 //!
-//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`BitGetter`]).
+//! - $`\textrm{Access}(i)`$ returns `true` if $`i \in S`$ or `false` otherwise (implemented by [`Access`]).
 //! - $`\textrm{Rank}(i)`$ returns the cardinality of $`\{ x \in S \mid x < i \}`$ (implemented by [`Rank`]).
 //! - $`\textrm{Select}(k)`$ returns the $`k`$-th smallest position in $`S`$ (implemented by [`Select`]).
 //! - $`\textrm{Update}(i)`$ inserts/removes $`i`$ to/from $`S`$.
@@ -20,7 +20,7 @@
 //! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementations | [Access](BitGetter) | [Rank](Rank) | [Select](Select) | Update | Memory (bits) |
+//! | Implementations | [Access](Access) | [Rank](Rank) | [Select](Select) | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |
@@ -109,9 +109,9 @@ pub trait BitVectorStat {
 }
 
 /// Interface for accessing elements on bit arrays.
-pub trait BitGetter {
+pub trait Access {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
-    fn get_bit(&self, pos: usize) -> Option<bool>;
+    fn access(&self, pos: usize) -> Option<bool>;
 }
 
 /// Interface for rank queries on bit vectors.

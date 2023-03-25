@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::bit_vectors::{BitGetter, BitVector, Rank, Rank9Sel};
+use crate::bit_vectors::{Access, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::IntGetter;
 use crate::utils;
 use crate::Serializable;
@@ -210,7 +210,7 @@ impl IntGetter for DacsByte {
         let mut x = 0;
         for j in 0..self.num_levels() {
             x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
-            if j == self.num_levels() - 1 || !self.flags[j].get_bit(pos).unwrap() {
+            if j == self.num_levels() - 1 || !self.flags[j].access(pos).unwrap() {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();

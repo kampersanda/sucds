@@ -33,7 +33,7 @@ use inner::DArrayIndex;
 /// let da = DArray::build_from_bits([true, false, false, true], true, true, true)?;
 ///
 /// assert_eq!(da.num_bits(), 4);
-/// assert_eq!(da.get_bit(1), Some(false));
+/// assert_eq!(da.access(1), Some(false));
 ///
 /// assert_eq!(da.rank1(1), Some(1));
 /// assert_eq!(da.rank0(1), Some(0));
@@ -175,23 +175,23 @@ impl BitVectorStat for DArray {
     }
 }
 
-impl BitGetter for DArray {
+impl Access for DArray {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{DArray, BitGetter};
+    /// use sucds::bit_vectors::{DArray, Access};
     ///
     /// let da = DArray::from_bits([true, false, false]);
     ///
-    /// assert_eq!(da.get_bit(0), Some(true));
-    /// assert_eq!(da.get_bit(1), Some(false));
-    /// assert_eq!(da.get_bit(2), Some(false));
-    /// assert_eq!(da.get_bit(3), None);
+    /// assert_eq!(da.access(0), Some(true));
+    /// assert_eq!(da.access(1), Some(false));
+    /// assert_eq!(da.access(2), Some(false));
+    /// assert_eq!(da.access(3), None);
     /// ```
-    fn get_bit(&self, pos: usize) -> Option<bool> {
-        self.bv.get_bit(pos)
+    fn access(&self, pos: usize) -> Option<bool> {
+        self.bv.access(pos)
     }
 }
 

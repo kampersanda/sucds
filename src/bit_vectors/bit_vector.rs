@@ -26,10 +26,10 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// bv.push_bit(false);
 ///
 /// assert_eq!(bv.num_bits(), 2);
-/// assert_eq!(bv.get_bit(0), Some(true));
+/// assert_eq!(bv.access(0), Some(true));
 ///
 /// bv.set_bit(0, false)?;
-/// assert_eq!(bv.get_bit(0), Some(false));
+/// assert_eq!(bv.access(0), Some(false));
 /// # Ok(())
 /// # }
 /// ```
@@ -91,11 +91,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, BitGetter, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, Access, BitVectorStat};
     ///
     /// let bv = BitVector::from_bit(false, 5);
     /// assert_eq!(bv.num_bits(), 5);
-    /// assert_eq!(bv.get_bit(0), Some(false));
+    /// assert_eq!(bv.access(0), Some(false));
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
         let word = if bit { usize::MAX } else { 0 };
@@ -117,11 +117,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, BitGetter, BitVectorStat};
+    /// use sucds::bit_vectors::{BitVector, Access, BitVectorStat};
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
     /// assert_eq!(bv.num_bits(), 3);
-    /// assert_eq!(bv.get_bit(1), Some(true));
+    /// assert_eq!(bv.access(1), Some(true));
     /// ```
     pub fn from_bits<I>(bits: I) -> Self
     where
@@ -147,11 +147,11 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::bit_vectors::{BitVector, BitGetter};
+    /// use sucds::bit_vectors::{BitVector, Access};
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
     /// bv.set_bit(1, false)?;
-    /// assert_eq!(bv.get_bit(1), Some(false));
+    /// assert_eq!(bv.access(1), Some(false));
     /// # Ok(())
     /// # }
     /// ```
@@ -679,7 +679,7 @@ impl BitVectorStat for BitVector {
     }
 }
 
-impl BitGetter for BitVector {
+impl Access for BitVector {
     /// Returns the `pos`-th bit, or [`None`] if out of bounds.
     ///
     /// # Arguments
@@ -689,15 +689,15 @@ impl BitGetter for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitGetter, BitVector};
+    /// use sucds::bit_vectors::{Access, BitVector};
     ///
     /// let bv = BitVector::from_bits([true, false, false]);
-    /// assert_eq!(bv.get_bit(0), Some(true));
-    /// assert_eq!(bv.get_bit(1), Some(false));
-    /// assert_eq!(bv.get_bit(2), Some(false));
-    /// assert_eq!(bv.get_bit(3), None);
+    /// assert_eq!(bv.access(0), Some(true));
+    /// assert_eq!(bv.access(1), Some(false));
+    /// assert_eq!(bv.access(2), Some(false));
+    /// assert_eq!(bv.access(3), None);
     /// ```
-    fn get_bit(&self, pos: usize) -> Option<bool> {
+    fn access(&self, pos: usize) -> Option<bool> {
         if pos < self.len {
             let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
             Some((self.words[block] >> shift) & 1 == 1)
@@ -861,7 +861,7 @@ impl<'a> Iterator for Iter<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.bv.num_bits() {
-            let x = self.bv.get_bit(self.pos).unwrap();
+            let x = self.bv.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -888,7 +888,7 @@ impl std::fmt::Debug for BitVector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut bits = vec![0u8; self.num_bits()];
         for (i, b) in bits.iter_mut().enumerate() {
-            *b = self.get_bit(i).unwrap() as u8;
+            *b = self.access(i).unwrap() as u8;
         }
         f.debug_struct("BitVector")
             .field("bits", &bits)
