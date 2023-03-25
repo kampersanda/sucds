@@ -17,7 +17,8 @@ use crate::Serializable;
 ///
 /// [`WaveletMatrix`] stores a sequence of integers and provides myriad operations on the sequence.
 /// When a sequence stores $`n`$ integers from $`[0, \sigma)`$,
-/// most of the operations run in $`O(\lg \sigma)`$ , using  $`n \lg \sigma + o (n \lg \sigma ) + O(\lg \sigma \lg n)`$ bits.
+/// most of the operations run in $`O(\lg \sigma)`$ time, using  $`O(n \lg \sigma )`$ bits of memory
+/// (assuming constant-time and linear-space implementation).
 ///
 /// # Examples
 ///

@@ -25,6 +25,8 @@
 //! | --- | :-: | :-: | :-: | :-: |
 //! | [`EliasFano`] | $`O(\lg \frac{u}{n})`$ | $`O(1)`$ | $`O(\lg \frac{u}{n})`$ | $`n \lceil \lg \frac{u}{n} \rceil + 2n + o(n)`$ |
 //!
+//! Since there is only one implementation, we do not provide traits for the queries.
+//!
 //! ## Elias-Fano encoding
 //!
 //! [`EliasFano`] is an efficient data structure for sparse sequences (i.e., $`n \ll u`$).
