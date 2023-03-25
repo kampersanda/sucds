@@ -67,7 +67,10 @@ where
     ///
     /// # Errors
     ///
-    /// An error is returned if `seq` is empty.
+    /// An error is returned if
+    ///
+    ///  - `seq` is empty, or
+    ///  - `B::build_from_bits` fails.
     pub fn new(seq: CompactVector) -> Result<Self> {
         if seq.is_empty() {
             return Err(anyhow!("seq must not be empty."));
