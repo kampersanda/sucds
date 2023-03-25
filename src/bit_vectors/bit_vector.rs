@@ -132,6 +132,32 @@ impl BitVector {
         this
     }
 
+    /// Returns the `pos`-th bit, or [`None`] if out of bounds.
+    ///
+    /// # Arguments
+    ///
+    ///  - `pos`: Bit position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sucds::bit_vectors::BitVector;
+    ///
+    /// let bv = BitVector::from_bits([true, false, false]);
+    /// assert_eq!(bv.get_bit(0), Some(true));
+    /// assert_eq!(bv.get_bit(1), Some(false));
+    /// assert_eq!(bv.get_bit(2), Some(false));
+    /// assert_eq!(bv.get_bit(3), None);
+    /// ```
+    pub fn get_bit(&self, pos: usize) -> Option<bool> {
+        if pos < self.len {
+            let (block, shift) = (pos / WORD_LEN, pos % WORD_LEN);
+            Some((self.words[block] >> shift) & 1 == 1)
+        } else {
+            None
+        }
+    }
+
     /// Updates the `pos`-th bit to `bit`.
     ///
     /// # Arguments
