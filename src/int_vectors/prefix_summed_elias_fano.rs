@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
-use crate::int_vectors::IntGetter;
+use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Serializable;
 
@@ -144,6 +144,19 @@ impl PrefixSummedEliasFano {
     /// Gets the sum of integers.
     pub const fn sum(&self) -> usize {
         self.ef.universe() - 1
+    }
+}
+
+impl IntVectorBuilder for PrefixSummedEliasFano {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// This just calls [`Self::from_slice()`]. See the documentation.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized,
+    {
+        Self::from_slice(vals)
     }
 }
 

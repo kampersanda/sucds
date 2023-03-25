@@ -61,13 +61,34 @@ pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;
 pub mod prefix_summed_elias_fano;
+pub mod prelude;
 
 pub use compact_vector::CompactVector;
 pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 
-/// Interface for accessing elements on integer arrays.
+use anyhow::Result;
+use num_traits::ToPrimitive;
+
+/// Interface for building integer vectors.
+pub trait IntVectorBuilder {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// # Arguments
+    ///
+    ///  - `vals`: Slice of integers to be stored.
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized;
+}
+
+/// Interface for accessing elements on integer vectors.
 pub trait IntGetter {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     fn get_int(&self, pos: usize) -> Option<usize>;

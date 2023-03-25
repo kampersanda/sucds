@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
-use crate::int_vectors::IntGetter;
+use crate::int_vectors::prelude::*;
 use crate::{utils, Serializable};
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
@@ -381,6 +381,19 @@ impl CompactVector {
     #[inline(always)]
     pub const fn width(&self) -> usize {
         self.width
+    }
+}
+
+impl IntVectorBuilder for CompactVector {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// This just calls [`Self::from_slice()`]. See the documentation.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized,
+    {
+        Self::from_slice(vals)
     }
 }
 

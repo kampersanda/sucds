@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{BitGetter, BitVector, Rank9Sel, Ranker};
-use crate::int_vectors::{CompactVector, IntGetter};
+use crate::int_vectors::{prelude::*, CompactVector};
 use crate::utils;
 use crate::Serializable;
 
@@ -284,6 +284,19 @@ impl Default for DacsOpt {
             data: vec![CompactVector::default()],
             flags: vec![],
         }
+    }
+}
+
+impl IntVectorBuilder for DacsOpt {
+    /// Creates a new vector from a slice of integers `vals`.
+    ///
+    /// This just calls [`Self::from_slice()`] with `max_levels == None`. See the documentation.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    where
+        T: ToPrimitive,
+        Self: Sized,
+    {
+        Self::from_slice(vals, None)
     }
 }
 
