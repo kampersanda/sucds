@@ -10,17 +10,19 @@
 //! for a wide range of applications.
 //! To handle them in a single crate, we set up several design policies:
 //!
-//! - **Keep interface:**
-//!   Sucds will follow a common interface to allow combining and replacing data structures.
+//! - **Maintain interface consistency:**
+//!   Sucds will adhere to a unified interface, facilitating the integration and replacement of data structures.
 //!
-//! - **Keep identity:**
-//!   Sucds does not aim to provide every succinct data structure, only those that are not competitive with others.
+//! - **Preserve identity:**
+//!   Rather than offering every possible succinct data structure,
+//!   Sucds will focus on providing only those that hold a competitive advantage over others.
 //!
-//! - **Keep safety:**
-//!   Sucds will not employ unsafe instructions used for very low-level programming.
+//! - **Ensure safety:**
+//!   To avoid potential risks, Sucds will refrain from using unsafe instructions
+//!   typically reserved for extremely low-level programming.
 //!
-//! - **Keep Rust:**
-//!   Sucds will stick to Pure Rust.
+//! - **Remain Rust-centric:**
+//!   Sucds will consistently utilize Pure Rust in its implementation.
 //!
 //! ## Data structures
 //!
