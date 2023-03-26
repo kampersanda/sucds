@@ -26,11 +26,11 @@ use crate::Serializable;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::bit_vectors::{SArray, prelude::*};
+/// use sucds::bit_vectors::{SArray, Access, Rank, Select};
 ///
-/// let sa = SArray::build_from_bits([true, false, false, true], true, true, false)?;
+/// let sa = SArray::from_bits([true, false, false, true]).enable_rank();
 ///
-/// assert_eq!(sa.num_bits(), 4);
+/// assert_eq!(sa.len(), 4);
 /// assert_eq!(sa.access(1), Some(false));
 ///
 /// assert_eq!(sa.rank1(1), Some(1));
@@ -63,7 +63,7 @@ impl SArray {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        let num_bits = bv.num_bits();
+        let num_bits = bv.len();
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {
@@ -100,7 +100,7 @@ impl SArray {
     }
 
     /// Returns the largest bit position `pred` such that `pred <= pos` and the `pred`-th bit is set, or
-    /// [`None`] if not found or `self.num_bits() <= pos`.
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///
@@ -135,7 +135,7 @@ impl SArray {
     }
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
-    /// [`None`] if not found or `self.num_bits() <= pos`.
+    /// [`None`] if not found or `self.len() <= pos`.
     ///
     /// # Arguments
     ///
@@ -259,7 +259,7 @@ impl Access for SArray {
 
 impl Rank for SArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -290,7 +290,7 @@ impl Rank for SArray {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///

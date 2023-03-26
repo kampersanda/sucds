@@ -20,7 +20,7 @@ use crate::{utils, Serializable};
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::int_vectors::{CompactVector, Access};
+/// use sucds::int_vectors::CompactVector;
 ///
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
@@ -29,10 +29,10 @@ use crate::{utils, Serializable};
 /// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
-/// assert_eq!(cv.access(0), Some(7));  // Need Access
+/// assert_eq!(cv.get_int(0), Some(7));
 ///
 /// cv.set_int(0, 5)?;
-/// assert_eq!(cv.access(0), Some(5));  // Need Access
+/// assert_eq!(cv.get_int(0), Some(5));
 /// # Ok(())
 /// # }
 /// ```
@@ -136,12 +136,12 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, Access};
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.access(0), Some(7));
+    /// assert_eq!(cv.get_int(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -179,12 +179,12 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, Access};
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_slice(&[7, 2])?;
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
-    /// assert_eq!(cv.access(0), Some(7));
+    /// assert_eq!(cv.get_int(0), Some(7));
     /// # Ok(())
     /// # }
     /// ```
@@ -259,11 +259,11 @@ impl CompactVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::int_vectors::{CompactVector, Access};
+    /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
     /// cv.set_int(1, 4)?;
-    /// assert_eq!(cv.access(1), Some(4));
+    /// assert_eq!(cv.get_int(1), Some(4));
     /// # Ok(())
     /// # }
     /// ```
@@ -425,7 +425,7 @@ impl Build for CompactVector {
 }
 
 impl NumVals for CompactVector {
-    /// Returns the number of integers stored.
+    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
     fn num_vals(&self) -> usize {
         self.len()
     }

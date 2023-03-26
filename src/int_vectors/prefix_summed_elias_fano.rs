@@ -30,7 +30,6 @@ use crate::Serializable;
 ///
 /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
 ///
-/// // Need Access
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(14));
 /// assert_eq!(seq.access(2), Some(334));
@@ -161,7 +160,7 @@ impl Build for PrefixSummedEliasFano {
 }
 
 impl NumVals for PrefixSummedEliasFano {
-    /// Returns the number of integers stored.
+    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
     fn num_vals(&self) -> usize {
         self.len()
     }

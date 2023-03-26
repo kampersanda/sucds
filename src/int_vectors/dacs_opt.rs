@@ -36,7 +36,6 @@ use crate::Serializable;
 /// // Specifies two for the maximum number of levels to control time efficiency.
 /// let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
 ///
-/// // Need Access
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
 /// assert_eq!(seq.access(2), Some(100000));
@@ -301,7 +300,7 @@ impl Build for DacsOpt {
 }
 
 impl NumVals for DacsOpt {
-    /// Returns the number of integers stored.
+    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
     fn num_vals(&self) -> usize {
         self.len()
     }

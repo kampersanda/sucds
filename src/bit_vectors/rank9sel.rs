@@ -19,17 +19,22 @@ use inner::Rank9SelIndex;
 /// - 25% overhead of space for the rank index, and
 /// - 3% overhead of space for the select index (together with the rank's overhead).
 ///
+/// # Notes
+///
+/// In the default configuration, it does not build the select index for faster queires.
+/// To accelerate the queries, set [`Self::select1_hints()`] and [`Self::select0_hints()`].
+///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::bit_vectors::{Rank9Sel, prelude::*};
+/// use sucds::bit_vectors::{Rank9Sel, Access, Rank, Select};
 ///
-/// let bv = Rank9Sel::build_from_bits([true, false, false, true], true, true, true)?;
+/// let bv = Rank9Sel::from_bits([true, false, false, true])
+///     .select1_hints()
+///     .select0_hints();
 ///
-/// assert_eq!(bv.num_bits(), 4);
-/// assert_eq!(bv.num_ones(), 2);
-///
+/// assert_eq!(bv.len(), 4);
 /// assert_eq!(bv.access(1), Some(false));
 ///
 /// assert_eq!(bv.rank1(1), Some(1));
@@ -178,7 +183,7 @@ impl Access for Rank9Sel {
 
 impl Rank for Rank9Sel {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -202,7 +207,7 @@ impl Rank for Rank9Sel {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
