@@ -26,6 +26,10 @@ harness = false
 name = "timing_intvec_access"
 harness = false
 
+[[bench]]
+name = "timing_chrseq_access"
+harness = false
+
 [[bin]]
 name = "gen_lcps"
 path = "src/gen_lcps.rs"
