@@ -47,8 +47,8 @@ fn show_memories(title: &str, text: &CompactVector) {
 
 fn show_data_stats(text: &CompactVector) {
     let nvals = text.len();
-    let max = text.iter().max().unwrap();
-    println!("Basic: n_vals={nvals}, max_val={max}");
+    let alph_size = text.iter().max().unwrap() + 1;
+    println!("Basic: n_vals={nvals}, alph_size={alph_size}");
 }
 
 fn print_memory(name: &str, bytes: usize, nvals: usize) {
