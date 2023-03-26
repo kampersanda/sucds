@@ -37,3 +37,7 @@ path = "src/mem_bitvec.rs"
 [[bin]]
 name = "mem_intvec"
 path = "src/mem_intvec.rs"
+
+[[bin]]
+name = "mem_chrseq"
+path = "src/mem_chrseq.rs"
