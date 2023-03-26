@@ -19,17 +19,17 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::bit_vectors::{BitVector, prelude::*};
+/// use sucds::bit_vectors::BitVector;
 ///
 /// let mut bv = BitVector::new();
 /// bv.push_bit(true);
 /// bv.push_bit(false);
 ///
-/// assert_eq!(bv.num_bits(), 2);
-/// assert_eq!(bv.access(0), Some(true));
+/// assert_eq!(bv.len(), 2);
+/// assert_eq!(bv.get_bit(0), Some(true));
 ///
 /// bv.set_bit(0, false)?;
-/// assert_eq!(bv.access(0), Some(false));
+/// assert_eq!(bv.get_bit(0), Some(false));
 /// # Ok(())
 /// # }
 /// ```
@@ -49,10 +49,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, NumBits};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::new();
-    /// assert_eq!(bv.num_bits(), 0);
+    /// assert_eq!(bv.len(), 0);
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -67,10 +67,10 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, NumBits};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::with_capacity(40);
-    /// assert_eq!(bv.num_bits(), 0);
+    /// assert_eq!(bv.len(), 0);
     /// assert_eq!(bv.capacity(), 64);
     /// ```
     pub fn with_capacity(capa: usize) -> Self {
@@ -91,11 +91,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Access, NumBits};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bit(false, 5);
-    /// assert_eq!(bv.num_bits(), 5);
-    /// assert_eq!(bv.access(0), Some(false));
+    /// assert_eq!(bv.len(), 5);
+    /// assert_eq!(bv.get_bit(0), Some(false));
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
         let word = if bit { usize::MAX } else { 0 };
@@ -117,11 +117,11 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, Access, NumBits};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let bv = BitVector::from_bits([false, true, false]);
-    /// assert_eq!(bv.num_bits(), 3);
-    /// assert_eq!(bv.access(1), Some(true));
+    /// assert_eq!(bv.len(), 3);
+    /// assert_eq!(bv.get_bit(1), Some(true));
     /// ```
     pub fn from_bits<I>(bits: I) -> Self
     where
@@ -173,11 +173,11 @@ impl BitVector {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use sucds::bit_vectors::{BitVector, Access};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
     /// bv.set_bit(1, false)?;
-    /// assert_eq!(bv.access(1), Some(false));
+    /// assert_eq!(bv.get_bit(1), Some(false));
     /// # Ok(())
     /// # }
     /// ```
@@ -205,12 +205,12 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{BitVector, NumBits};
+    /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::new();
     /// bv.push_bit(true);
     /// bv.push_bit(false);
-    /// assert_eq!(bv.num_bits(), 2);
+    /// assert_eq!(bv.len(), 2);
     /// ```
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
@@ -706,7 +706,7 @@ impl NumBits for BitVector {
 
     /// Returns the number of bits set.
     ///
-    /// # Notes
+    /// # Notes on complexity
     ///
     /// It is performed by linear scan in $`O(u)`$ time.
     fn num_ones(&self) -> usize {
@@ -724,7 +724,7 @@ impl Access for BitVector {
     /// # Examples
     ///
     /// ```
-    /// use sucds::bit_vectors::{Access, BitVector};
+    /// use sucds::bit_vectors::{BitVector, Access};
     ///
     /// let bv = BitVector::from_bits([true, false, false]);
     /// assert_eq!(bv.access(0), Some(true));
