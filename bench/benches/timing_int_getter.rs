@@ -16,9 +16,9 @@ const MEASURE_TIME: Duration = Duration::from_secs(10);
 const SEED_QUERIES: u64 = 114514;
 const NUM_QUERIES: usize = 1000;
 
-const DBLP_PSEF_STR: &str = include_str!("../lcps/dblp.1MiB.txt");
-const DNA_PSEF_STR: &str = include_str!("../lcps/dna.1MiB.txt");
-const PROTEINS_PSEF_STR: &str = include_str!("../lcps/proteins.1MiB.txt");
+const DBLP_PSEF_STR: &str = include_str!("../data/lcps/dblp.1MiB.txt");
+const DNA_PSEF_STR: &str = include_str!("../data/lcps/dna.1MiB.txt");
+const PROTEINS_PSEF_STR: &str = include_str!("../data/lcps/proteins.1MiB.txt");
 
 fn parse_ints_from_str(s: &str) -> Vec<u32> {
     let mut ints = vec![];
