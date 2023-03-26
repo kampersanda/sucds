@@ -37,7 +37,6 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 ///
 /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
 ///
-/// // Need Access
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
 /// assert_eq!(seq.access(2), Some(100000));
@@ -194,7 +193,7 @@ impl Build for DacsByte {
 }
 
 impl NumVals for DacsByte {
-    /// Returns the number of integers stored.
+    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
     fn num_vals(&self) -> usize {
         self.len()
     }
