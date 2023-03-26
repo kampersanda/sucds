@@ -36,7 +36,7 @@ fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> 
 }
 
 fn criterion_int_get_dblp(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_dblp_1MiB");
+    let mut group = c.benchmark_group("timing_intvec_access_dblp_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -47,7 +47,7 @@ fn criterion_int_get_dblp(c: &mut Criterion) {
 }
 
 fn criterion_int_get_dna(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_dna_1MiB");
+    let mut group = c.benchmark_group("timing_intvec_access_dna_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);
@@ -58,7 +58,7 @@ fn criterion_int_get_dna(c: &mut Criterion) {
 }
 
 fn criterion_int_get_proteins(c: &mut Criterion) {
-    let mut group = c.benchmark_group("timing_int_getter_proteins_1MiB");
+    let mut group = c.benchmark_group("timing_intvec_access_proteins_1MiB");
     group.sample_size(SAMPLE_SIZE);
     group.warm_up_time(WARM_UP_TIME);
     group.measurement_time(MEASURE_TIME);

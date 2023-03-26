@@ -67,7 +67,8 @@ fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: 
 macro_rules! criterion_common {
     ($name:ident, $dens:expr, $size:expr) => {
         fn $name(c: &mut Criterion) {
-            let mut group = c.benchmark_group(format!("timing_selector/p{}/n{}", $dens, $size));
+            let mut group =
+                c.benchmark_group(format!("timing_bitvec_select/p{}/n{}", $dens, $size));
             group.sample_size(SAMPLE_SIZE);
             group.warm_up_time(WARM_UP_TIME);
             group.measurement_time(MEASURE_TIME);
