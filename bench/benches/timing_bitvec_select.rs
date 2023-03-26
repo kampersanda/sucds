@@ -31,43 +31,43 @@ fn count_ones(bits: &[bool]) -> usize {
     bits.iter().filter(|&&b| b).count()
 }
 
-fn run_queries<S: Select>(selector: &S, queries: &[usize]) {
+fn run_queries<S: Select>(idx: &S, queries: &[usize]) {
     let mut sum = 0;
     for &q in queries {
-        sum += selector.select1(q).unwrap();
+        sum += idx.select1(q).unwrap();
     }
     if sum == 0 {
         panic!("Should not come.");
     }
 }
 
-fn perform_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
+fn perform_bitvec_select(group: &mut BenchmarkGroup<WallTime>, bits: &[bool], queries: &[usize]) {
     group.bench_function("sucds/BitVector", |b| {
-        let selector = sucds::bit_vectors::BitVector::from_bits(bits.iter().cloned());
-        b.iter(|| run_queries(&selector, &queries));
+        let idx = sucds::bit_vectors::BitVector::from_bits(bits.iter().cloned());
+        b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/Rank9Sel", |b| {
-        let selector =
-            sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned()).select1_hints();
-        b.iter(|| run_queries(&selector, &queries));
+        let idx = sucds::bit_vectors::Rank9Sel::from_bits(bits.iter().cloned()).select1_hints();
+        b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/DArray", |b| {
-        let selector = sucds::bit_vectors::DArray::from_bits(bits.iter().cloned());
-        b.iter(|| run_queries(&selector, &queries));
+        let idx = sucds::bit_vectors::DArray::from_bits(bits.iter().cloned());
+        b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/SArray", |b| {
-        let selector = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned());
-        b.iter(|| run_queries(&selector, &queries));
+        let idx = sucds::bit_vectors::SArray::from_bits(bits.iter().cloned());
+        b.iter(|| run_queries(&idx, &queries));
     });
 }
 
 macro_rules! criterion_common {
     ($name:ident, $dens:expr, $size:expr) => {
         fn $name(c: &mut Criterion) {
-            let mut group = c.benchmark_group(format!("timing_selector/p{}/n{}", $dens, $size));
+            let mut group =
+                c.benchmark_group(format!("timing_bitvec_select/p{}/n{}", $dens, $size));
             group.sample_size(SAMPLE_SIZE);
             group.warm_up_time(WARM_UP_TIME);
             group.measurement_time(MEASURE_TIME);
@@ -76,7 +76,7 @@ macro_rules! criterion_common {
             let bits = gen_random_bits($size, $dens as f64 / 100.0, SEED_BITS);
             let queries = gen_random_ints(NUM_QUERIES, 0, count_ones(&bits) - 1, SEED_QUERIES);
 
-            perform_select(&mut group, &bits, &queries);
+            perform_bitvec_select(&mut group, &bits, &queries);
         }
     };
 }

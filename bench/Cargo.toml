@@ -15,15 +15,19 @@ suffix = "1.3.0"
 criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bench]]
-name = "timing_ranker"
+name = "timing_bitvec_rank"
 harness = false
 
 [[bench]]
-name = "timing_selector"
+name = "timing_bitvec_select"
 harness = false
 
 [[bench]]
-name = "timing_int_getter"
+name = "timing_intvec_access"
+harness = false
+
+[[bench]]
+name = "timing_chrseq_access"
 harness = false
 
 [[bin]]
@@ -37,3 +41,7 @@ path = "src/mem_bitvec.rs"
 [[bin]]
 name = "mem_intvec"
 path = "src/mem_intvec.rs"
+
+[[bin]]
+name = "mem_chrseq"
+path = "src/mem_chrseq.rs"

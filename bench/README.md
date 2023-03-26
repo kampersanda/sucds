@@ -9,8 +9,8 @@ and different densities (p = 50\%, 10\%, and 1\%).
 You can measure time performances with the following commands.
 
 ```console
-cargo bench timing_ranker
-cargo bench timing_selector
+cargo bench timing_bitvec_rank
+cargo bench timing_bitvec_select
 ```
 
 You can also measure memory efficiency with the following command.
@@ -19,9 +19,9 @@ You can also measure memory efficiency with the following command.
 cargo run --release --bin mem_bitvec
 ```
 
-## Benchmark for integer arrays
+## Benchmark for integer vectors
 
-This crate provides benchmarks for integer arrays
+This crate provides benchmarks for integer vectors
 using LCP arrays computed from three texts
 in [Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl/texts.html),
 referencing to the experiments
@@ -39,13 +39,38 @@ The basic statistics of the LCP values are as follows.
 You can measure time performances with the following command.
 
 ```console
-cargo bench timing_int_getter
+cargo bench timing_intvec_access
 ```
 
 You can also measure memory efficiency with the following command.
 
 ```console
 cargo run --release --bin mem_intvec
+```
+
+## Benchmark for character sequences
+
+This crate provides benchmarks for character sequences
+using three texts in [Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl/texts.html).
+
+We use the head 1 MiB of each text, whose statistics are:
+
+| Data     | Number | Alphsize |
+| -------- | -----: | -------: |
+| dblp     |  1 MiB |       89 |
+| dna      |  1 MiB |        6 |
+| proteins |  1 MiB |       22 |
+
+You can measure time performances with the following command.
+
+```console
+cargo bench timing_chrseq_access
+```
+
+You can also measure memory efficiency with the following command.
+
+```console
+cargo run --release --bin mem_chrseq
 ```
 
 ## Native optimizations
@@ -58,4 +83,4 @@ RUSTFLAGS="-C target-cpu=native" cargo bench
 
 ## License
 
-The softwere under `lcps` are generated from [Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl/texts.html) and follow [LGPL License](https://www.gnu.org/licenses/lgpl-3.0.html).
+The softwere under `data` are generated from [Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl/texts.html) and follow [LGPL License](https://www.gnu.org/licenses/lgpl-3.0.html).
