@@ -9,8 +9,8 @@ and different densities (p = 50\%, 10\%, and 1\%).
 You can measure time performances with the following commands.
 
 ```console
-cargo bench timing_ranker
-cargo bench timing_selector
+cargo bench timing_bitvec_rank
+cargo bench timing_bitvec_select
 ```
 
 You can also measure memory efficiency with the following command.
@@ -39,7 +39,7 @@ The basic statistics of the LCP values are as follows.
 You can measure time performances with the following command.
 
 ```console
-cargo bench timing_int_getter
+cargo bench timing_intvec_access
 ```
 
 You can also measure memory efficiency with the following command.
