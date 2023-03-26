@@ -62,7 +62,7 @@
 //!
 //! This module provides several traits for essential behaviors,
 //! allowing to compare our integer vectors as components in your data structures.
-//! You can easily import them through [`prelude`].
+//! [`prelude`] allows you to import them easily.
 //!
 //! ```
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
