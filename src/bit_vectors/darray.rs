@@ -28,11 +28,13 @@ use inner::DArrayIndex;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use sucds::bit_vectors::{DArray, prelude::*};
+/// use sucds::bit_vectors::{DArray, Access, Rank, Select};
 ///
-/// let da = DArray::build_from_bits([true, false, false, true], true, true, true)?;
+/// let da = DArray::from_bits([true, false, false, true])
+///     .enable_rank()
+///     .enable_select0();
 ///
-/// assert_eq!(da.num_bits(), 4);
+/// assert_eq!(da.len(), 4);
 /// assert_eq!(da.access(1), Some(false));
 ///
 /// assert_eq!(da.rank1(1), Some(1));
@@ -207,7 +209,7 @@ impl Access for DArray {
 
 impl Rank for DArray {
     /// Returns the number of ones from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
@@ -236,7 +238,7 @@ impl Rank for DArray {
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
-    /// [`None`] if `self.num_bits() < pos`.
+    /// [`None`] if `self.len() < pos`.
     ///
     /// # Complexity
     ///
