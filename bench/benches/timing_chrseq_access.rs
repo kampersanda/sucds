@@ -46,7 +46,7 @@ fn criterion_chrseq_access_dblp(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Flat);
 
     let text = load_text(DBLP_PSEF_STR);
-    perform_access(&mut group, &text);
+    perform_chrseq_access(&mut group, &text);
 }
 
 fn criterion_chrseq_access_dna(c: &mut Criterion) {
@@ -57,7 +57,7 @@ fn criterion_chrseq_access_dna(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Flat);
 
     let text = load_text(DNA_PSEF_STR);
-    perform_access(&mut group, &text);
+    perform_chrseq_access(&mut group, &text);
 }
 
 fn criterion_chrseq_access_proteins(c: &mut Criterion) {
@@ -68,7 +68,7 @@ fn criterion_chrseq_access_proteins(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Flat);
 
     let text = load_text(PROTEINS_PSEF_STR);
-    perform_access(&mut group, &text);
+    perform_chrseq_access(&mut group, &text);
 }
 
 fn run_queries<B>(idx: &sucds::char_sequences::WaveletMatrix<B>, queries: &[usize])
@@ -84,7 +84,7 @@ where
     }
 }
 
-fn perform_access(group: &mut BenchmarkGroup<WallTime>, text: &CompactVector) {
+fn perform_chrseq_access(group: &mut BenchmarkGroup<WallTime>, text: &CompactVector) {
     let queries = gen_random_ints(NUM_QUERIES, 0, text.len(), SEED_QUERIES);
 
     group.bench_function("sucds/WaveletMatrix<Rank9Sel>", |b| {
