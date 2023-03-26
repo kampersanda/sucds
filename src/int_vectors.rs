@@ -57,6 +57,26 @@
 //!
 //! The complexities are as shown in the table.
 //! (For simplicity, we assume all levels have the same bit length $`b`$.)
+//!
+//! # Examples
+//!
+//! This module provides several traits for essential behaviors,
+//! allowing to compare our integer vectors as components in your data structures.
+//! [`prelude`] allows you to import them easily.
+//!
+//! ```
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use sucds::int_vectors::{DacsOpt, prelude::*};
+//!
+//! let seq = DacsOpt::build_from_slice(&[5, 0, 100000, 334])?;
+//!
+//! assert_eq!(seq.num_vals(), 4);
+//!
+//! assert_eq!(seq.access(3), Some(334));
+//! assert_eq!(seq.access(4), None);
+//! # Ok(())
+//! # }
+//! ```
 pub mod compact_vector;
 pub mod dacs_byte;
 pub mod dacs_opt;

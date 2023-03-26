@@ -337,14 +337,14 @@ impl Access for DacsOpt {
         let mut x = 0;
         let mut width = 0;
         for j in 0..self.num_levels() {
-            x |= self.data[j].access(pos).unwrap() << (j * width);
+            x |= self.data[j].access(pos).unwrap() << width;
             if j == self.num_levels() - 1
                 || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
             {
                 break;
             }
             pos = self.flags[j].rank1(pos).unwrap();
-            width = self.data[j].width();
+            width += self.data[j].width();
         }
         Some(x)
     }
@@ -437,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic() {
+    fn test_basic_1() {
         let seq = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
 
         assert_eq!(
@@ -462,6 +462,42 @@ mod tests {
         assert_eq!(seq.access(1), Some(0b1));
         assert_eq!(seq.access(2), Some(0b1111));
         assert_eq!(seq.access(3), Some(0b11));
+    }
+
+    #[test]
+    fn test_basic_2() {
+        //      5 = 0b101
+        //      0 = 0b0
+        // 100000 = 0b11000011010100000
+        //    334 = 0b101001110
+        let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], None).unwrap();
+
+        assert_eq!(
+            seq.data,
+            vec![
+                CompactVector::from_slice(&[0b101, 0b000, 0b000, 0b110]).unwrap(),
+                CompactVector::from_slice(&[0b010100, 0b101001]).unwrap(),
+                CompactVector::from_slice(&[0b11000011]).unwrap(),
+            ]
+        );
+
+        assert_eq!(
+            seq.flags,
+            vec![
+                Rank9Sel::from_bits([false, false, true, true]),
+                Rank9Sel::from_bits([true, false])
+            ]
+        );
+
+        assert!(!seq.is_empty());
+        assert_eq!(seq.len(), 4);
+        assert_eq!(seq.num_levels(), 3);
+        assert_eq!(seq.widths(), vec![3, 6, 8]);
+
+        assert_eq!(seq.access(0), Some(5));
+        assert_eq!(seq.access(1), Some(0));
+        assert_eq!(seq.access(2), Some(100000));
+        assert_eq!(seq.access(3), Some(334));
     }
 
     #[test]
