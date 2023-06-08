@@ -1,6 +1,6 @@
 [package]
 name = "sucds"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Shunsuke Kanda (kampersanda) <shnsk.knd@gmail.com>"]
 description = "Succinct data structures in Rust"
 license = "MIT OR Apache-2.0"
@@ -17,7 +17,7 @@ rust-version = "1.61.0"
 
 [dependencies]
 anyhow = "1.0"
-num-traits = "=0.2.15"
+num-traits = "0.2.15"
 
 [features]
 default = ["std"]
@@ -26,12 +26,7 @@ std = []
 intrinsics = []
 
 [package.metadata.docs.rs]
-rustdoc-args = [
-    "--html-in-header",
-    "katex.html",
-]
+rustdoc-args = ["--html-in-header", "katex.html"]
 
 [workspace]
-members = [
-    "bench",
-]
+members = ["bench"]
