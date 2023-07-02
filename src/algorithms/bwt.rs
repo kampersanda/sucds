@@ -1,6 +1,56 @@
 //!
 //!
 
+///
+pub fn compute_bwt(text: &[u8], chunk_size: usize) -> Vec<u8> {
+    assert_ne!(chunk_size, 0);
+    let cuts = CutGenerator::generate(text, chunk_size);
+    bwt_from_cuts(text, &cuts)
+}
+
+/// # Arguments
+///
+/// * `text` - The text to be transformed.
+/// * `cuts` - Minimal set of prefixes that each prefix starts no more than b suffixes of `text`.
+fn bwt_from_cuts(text: &[u8], cuts: &[Vec<u8>]) -> Vec<u8> {
+    assert!(cuts[0].is_empty(), "cuts[0] must be empty.");
+
+    let text = text.as_ref();
+    let mut bwt = Vec::with_capacity(text.len());
+    let mut chunks = vec![];
+
+    for q in 1..=cuts.len() {
+        if q < cuts.len() {
+            for j in 0..text.len() {
+                let cut_p = cuts[q - 1].as_slice();
+                let cut_q = cuts[q].as_slice();
+                if cut_p < &text[j..] && &text[j..] <= cut_q {
+                    chunks.push(j);
+                }
+            }
+        } else {
+            for j in 0..text.len() {
+                let cut_p = cuts[q - 1].as_slice();
+                if cut_p < &text[j..] {
+                    chunks.push(j);
+                }
+            }
+        }
+        chunks.sort_by(|&a, &b| text[a..].cmp(&text[b..]));
+        for &j in &chunks {
+            eprintln!("{}:\t{}", j, String::from_utf8_lossy(&text[j..]));
+            bwt.push(if j == 0 {
+                *text.last().unwrap()
+            } else {
+                text[j - 1]
+            });
+        }
+        chunks.clear();
+    }
+    bwt
+}
+
+///
 struct CutGenerator<'a> {
     text: &'a [u8],
     chunk_size: usize,
@@ -10,14 +60,14 @@ struct CutGenerator<'a> {
 
 impl<'a> CutGenerator<'a> {
     fn generate(text: &'a [u8], chunk_size: usize) -> Vec<Vec<u8>> {
-        let mut gen = Self {
-            text: text.as_ref(),
+        let mut builder = Self {
+            text,
             chunk_size,
             cuts: vec![vec![]],
             lens: vec![],
         };
-        gen.expand(vec![]);
-        gen.cuts
+        builder.expand(vec![]);
+        builder.cuts
     }
 
     fn expand(&mut self, mut cut: Vec<u8>) {
@@ -55,58 +105,24 @@ impl<'a> CutGenerator<'a> {
     }
 }
 
-/// # Arguments
-///
-/// * `text` - The text to be transformed.
-/// * `cuts` - Minimal set of prefixes that each prefix starts no more than b suffixes of `text`.
-fn bwt_from_cuts<S: AsRef<[u8]>>(text: S, cuts: &[S]) -> Vec<u8> {
-    assert!(cuts[0].as_ref().is_empty(), "cuts[0] must be empty.");
-
-    let text = text.as_ref();
-    let mut bwt = Vec::with_capacity(text.len());
-    let mut chunks = vec![];
-
-    for q in 1..=cuts.len() {
-        if q < cuts.len() {
-            for j in 0..text.len() {
-                let cut_p = cuts[q - 1].as_ref();
-                let cut_q = cuts[q].as_ref();
-                if cut_p < &text[j..] && &text[j..] <= cut_q {
-                    chunks.push(j);
-                }
-            }
-        } else {
-            for j in 0..text.len() {
-                let cut_p = cuts[q - 1].as_ref();
-                if cut_p < &text[j..] {
-                    chunks.push(j);
-                }
-            }
-        }
-        chunks.sort_by(|&a, &b| text[a..].cmp(&text[b..]));
-        for &j in &chunks {
-            eprintln!("{}:\t{}", j, String::from_utf8_lossy(&text[j..]));
-            bwt.push(if j == 0 {
-                *text.last().unwrap()
-            } else {
-                text[j - 1]
-            });
-        }
-        chunks.clear();
-    }
-
-    bwt
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_generate_cuts() {
+    fn test_bwt_builder_3() {
         let text = "abracadabra$";
-        let cuts = CutGenerator::generate(text.as_bytes(), 3);
-        println!("{:?}", cuts);
+        let bwt = compute_bwt(text.as_bytes(), 3);
+        let bwt_str = String::from_utf8_lossy(&bwt);
+        assert_eq!(bwt_str, "ard$rcaaaabb");
+    }
+
+    #[test]
+    fn test_bwt_builder_4() {
+        let text = "abracadabra$";
+        let bwt = compute_bwt(text.as_bytes(), 4);
+        let bwt_str = String::from_utf8_lossy(&bwt);
+        assert_eq!(bwt_str, "ard$rcaaaabb");
     }
 
     // #[test]
@@ -135,21 +151,21 @@ mod tests {
     //     assert_eq!(freqs, expected);
     // }
 
-    #[test]
-    fn test_bwt_from_cuts() {
-        let text = "abracadabra$";
-        let cuts = vec!["", "ab", "b", "r"];
-        let bwt = bwt_from_cuts(text, &cuts);
-        let bwt_str = String::from_utf8_lossy(&bwt);
-        assert_eq!(bwt_str, "ard$rcaaaabb");
-    }
+    // #[test]
+    // fn test_bwt_from_cuts() {
+    //     let text = "abracadabra$";
+    //     let cuts = vec!["", "ab", "b", "r"];
+    //     let bwt = bwt_from_cuts(text, &cuts);
+    //     let bwt_str = String::from_utf8_lossy(&bwt);
+    //     assert_eq!(bwt_str, "ard$rcaaaabb");
+    // }
 
-    #[test]
-    fn test_bwt_from_cuts_2() {
-        let text = "abracadabra$";
-        let cuts = vec!["", "a$", "ac", "b", "d", "r"];
-        let bwt = bwt_from_cuts(text, &cuts);
-        let bwt_str = String::from_utf8_lossy(&bwt);
-        assert_eq!(bwt_str, "ard$rcaaaabb");
-    }
+    // #[test]
+    // fn test_bwt_from_cuts_2() {
+    //     let text = "abracadabra$";
+    //     let cuts = vec!["", "a$", "ac", "b", "d", "r"];
+    //     let bwt = bwt_from_cuts(text, &cuts);
+    //     let bwt_str = String::from_utf8_lossy(&bwt);
+    //     assert_eq!(bwt_str, "ard$rcaaaabb");
+    // }
 }
