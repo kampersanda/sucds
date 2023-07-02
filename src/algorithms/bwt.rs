@@ -71,7 +71,7 @@ impl<'a> CutGenerator<'a> {
     }
 
     fn expand(&mut self, mut cut: Vec<u8>) {
-        let freqs = self.symbol_freqs(&cut);
+        let freqs = Self::symbol_freqs(self.text, &cut);
         cut.push(0); // dummy last symbol
         for (symbol, &freq) in freqs.iter().enumerate() {
             if freq == 0 {
@@ -92,13 +92,13 @@ impl<'a> CutGenerator<'a> {
     }
 
     /// Computes the frequencies of symbols following cut in text.
-    fn symbol_freqs(&self, cut: &[u8]) -> Vec<usize> {
+    fn symbol_freqs(text: &[u8], cut: &[u8]) -> Vec<usize> {
         let cut = cut.as_ref();
         let mut freqs = vec![0; 256];
-        for j in cut.len()..self.text.len() {
+        for j in cut.len()..text.len() {
             let i = j - cut.len();
-            if cut == &self.text[i..j] {
-                freqs[self.text[j] as usize] += 1;
+            if cut == &text[i..j] {
+                freqs[text[j] as usize] += 1;
             }
         }
         freqs
@@ -125,47 +125,54 @@ mod tests {
         assert_eq!(bwt_str, "ard$rcaaaabb");
     }
 
-    // #[test]
-    // fn test_symbol_freqs() {
-    //     let text = "abracadabra$";
-    //     let cut = "ra";
-    //     let freqs = symbol_freqs(text, cut);
-    //     let mut expected = vec![0; 256];
-    //     expected[b'$' as usize] = 1;
-    //     expected[b'c' as usize] = 1;
-    //     assert_eq!(freqs, expected);
-    // }
+    #[test]
+    fn test_bwt_from_cuts_3() {
+        let text = b"abracadabra$";
+        let cuts = &[
+            b"".to_vec(),
+            b"a$".to_vec(),
+            b"ac".to_vec(),
+            b"b".to_vec(),
+            b"d".to_vec(),
+            b"r".to_vec(),
+        ];
+        let bwt = bwt_from_cuts(text, cuts);
+        let bwt_str = String::from_utf8_lossy(&bwt);
+        assert_eq!(bwt_str, "ard$rcaaaabb");
+    }
 
-    // #[test]
-    // fn test_symbol_freqs_2() {
-    //     let text = "abracadabra$";
-    //     let cut = "";
-    //     let freqs = symbol_freqs(text, cut);
-    //     let mut expected = vec![0; 256];
-    //     expected[b'$' as usize] = 1;
-    //     expected[b'a' as usize] = 5;
-    //     expected[b'b' as usize] = 2;
-    //     expected[b'c' as usize] = 1;
-    //     expected[b'd' as usize] = 1;
-    //     expected[b'r' as usize] = 2;
-    //     assert_eq!(freqs, expected);
-    // }
+    #[test]
+    fn test_bwt_from_cuts_4() {
+        let text = b"abracadabra$";
+        let cuts = &[b"".to_vec(), b"ab".to_vec(), b"b".to_vec(), b"r".to_vec()];
+        let bwt = bwt_from_cuts(text, cuts);
+        let bwt_str = String::from_utf8_lossy(&bwt);
+        assert_eq!(bwt_str, "ard$rcaaaabb");
+    }
 
-    // #[test]
-    // fn test_bwt_from_cuts() {
-    //     let text = "abracadabra$";
-    //     let cuts = vec!["", "ab", "b", "r"];
-    //     let bwt = bwt_from_cuts(text, &cuts);
-    //     let bwt_str = String::from_utf8_lossy(&bwt);
-    //     assert_eq!(bwt_str, "ard$rcaaaabb");
-    // }
+    #[test]
+    fn test_symbol_freqs() {
+        let text = b"abracadabra$";
+        let cut = b"ra";
+        let freqs = CutGenerator::symbol_freqs(text, cut);
+        let mut expected = vec![0; 256];
+        expected[b'$' as usize] = 1;
+        expected[b'c' as usize] = 1;
+        assert_eq!(freqs, expected);
+    }
 
-    // #[test]
-    // fn test_bwt_from_cuts_2() {
-    //     let text = "abracadabra$";
-    //     let cuts = vec!["", "a$", "ac", "b", "d", "r"];
-    //     let bwt = bwt_from_cuts(text, &cuts);
-    //     let bwt_str = String::from_utf8_lossy(&bwt);
-    //     assert_eq!(bwt_str, "ard$rcaaaabb");
-    // }
+    #[test]
+    fn test_symbol_freqs_empty() {
+        let text = b"abracadabra$";
+        let cut = b"";
+        let freqs = CutGenerator::symbol_freqs(text, cut);
+        let mut expected = vec![0; 256];
+        expected[b'$' as usize] = 1;
+        expected[b'a' as usize] = 5;
+        expected[b'b' as usize] = 2;
+        expected[b'c' as usize] = 1;
+        expected[b'd' as usize] = 1;
+        expected[b'r' as usize] = 2;
+        assert_eq!(freqs, expected);
+    }
 }
