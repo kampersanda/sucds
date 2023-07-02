@@ -50,6 +50,7 @@
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("`target_pointer_width` must be 64");
 
+pub mod algorithms;
 pub mod bit_vectors;
 pub mod broadword;
 pub mod char_sequences;
