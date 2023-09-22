@@ -149,7 +149,7 @@ impl CompactVector {
         if !(1..=64).contains(&width) {
             return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
-        if val >> width != 0 {
+        if width < 64 && val >> width != 0 {
             return Err(anyhow!(
                 "val must fit in width={width} bits, but got {val}."
             ));
