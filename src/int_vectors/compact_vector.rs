@@ -275,7 +275,7 @@ impl CompactVector {
                 self.len()
             ));
         }
-        if val >> self.width() != 0 {
+        if self.width() != 64 && val >> self.width() != 0 {
             return Err(anyhow!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
@@ -317,7 +317,7 @@ impl CompactVector {
     /// ```
     #[inline(always)]
     pub fn push_int(&mut self, val: usize) -> Result<()> {
-        if val >> self.width() != 0 {
+        if self.width() != 64 && val >> self.width() != 0 {
             return Err(anyhow!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
@@ -642,6 +642,21 @@ mod tests {
             e.err().map(|x| x.to_string()),
             Some("val must fit in self.width()=2 bits, but got 4.".to_string())
         );
+    }
+
+    #[test]
+    fn test_64b() {
+        let mut cv = CompactVector::new(64).unwrap();
+        cv.push_int(42).unwrap();
+        assert_eq!(cv.get_int(0), Some(42));
+        cv.set_int(0, 334).unwrap();
+        assert_eq!(cv.get_int(0), Some(334));
+    }
+
+    #[test]
+    fn test_64b_from_int() {
+        let cv = CompactVector::from_int(42, 1, 64).unwrap();
+        assert_eq!(cv.get_int(0), Some(42));
     }
 
     #[test]
