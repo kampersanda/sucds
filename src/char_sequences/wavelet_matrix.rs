@@ -541,7 +541,7 @@ where
     /// Returns the number of values stored.
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.layers.get(0).map(|l| l.num_bits()).unwrap_or(0)
+        self.layers.first().map(|l| l.num_bits()).unwrap_or(0)
     }
 
     /// Checks if the sequence is empty.
