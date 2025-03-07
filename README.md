@@ -6,8 +6,6 @@
 
 Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
 
-hoge
-
 ## Documentation
 
 https://docs.rs/sucds/
