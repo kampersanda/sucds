@@ -256,13 +256,13 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                std::usize::MAX
+                usize::MAX
             }
         };
         let bits = if shift + len <= WORD_LEN {
-            self.words[block] >> shift & mask
+            (self.words[block] >> shift) & mask
         } else {
-            (self.words[block] >> shift) | (self.words[block + 1] << (WORD_LEN - shift) & mask)
+            (self.words[block] >> shift) | ((self.words[block + 1] << (WORD_LEN - shift)) & mask)
         };
         Some(bits)
     }
@@ -320,7 +320,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                std::usize::MAX
+                usize::MAX
             }
         };
         let bits = bits & mask;
@@ -385,7 +385,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                std::usize::MAX
+                usize::MAX
             }
         };
         let bits = bits & mask;
@@ -890,7 +890,7 @@ impl<'a> Iter<'a> {
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl Iterator for Iter<'_> {
     type Item = bool;
 
     #[inline(always)]

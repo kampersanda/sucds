@@ -8,11 +8,11 @@ use crate::intrinsics;
 pub(crate) const ONES_STEP_4: usize = 0x1111111111111111;
 pub(crate) const ONES_STEP_8: usize = 0x0101010101010101;
 pub(crate) const ONES_STEP_9: usize =
-    1 << 0 | 1 << 9 | 1 << 18 | 1 << 27 | 1 << 36 | 1 << 45 | 1 << 54;
+    (1 << 0) | (1 << 9) | (1 << 18) | (1 << 27) | (1 << 36) | (1 << 45) | (1 << 54);
 pub(crate) const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
 pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
 pub(crate) const INV_COUNT_STEP_9: usize =
-    1 << 54 | 2 << 45 | 3 << 36 | 4 << 27 | 5 << 18 | 6 << 9 | 7;
+    (1 << 54) | (2 << 45) | (3 << 36) | (4 << 27) | (5 << 18) | (6 << 9) | 7;
 
 #[inline(always)]
 pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
@@ -124,7 +124,7 @@ pub fn lsb(x: usize) -> Option<usize> {
         if x == 0 {
             None
         } else {
-            Some(bit_position(x & std::usize::MAX.wrapping_mul(x)))
+            Some(bit_position(x & usize::MAX.wrapping_mul(x)))
         }
     }
     #[cfg(feature = "intrinsics")]

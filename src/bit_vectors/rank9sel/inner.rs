@@ -145,7 +145,7 @@ impl Rank9SelIndex {
     #[inline(always)]
     fn sub_block_rank(&self, sub_bpos: usize) -> usize {
         let (block, left) = (sub_bpos / BLOCK_LEN, sub_bpos % BLOCK_LEN);
-        self.block_rank(block) + (self.sub_block_ranks(block) >> ((7 - left) * 9) & 0x1FF)
+        self.block_rank(block) + ((self.sub_block_ranks(block) >> ((7 - left) * 9)) & 0x1FF)
     }
 
     #[inline(always)]
@@ -304,11 +304,11 @@ impl Rank9SelIndex {
 
         let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
         let sub_ranks = self.sub_block_ranks(block);
-        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+        let sub_block_offset = (broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
-            >> 54
+            >> 54)
             & 0x7;
-        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
+        cur_rank += (sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF;
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
@@ -380,11 +380,11 @@ impl Rank9SelIndex {
 
         let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
         let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
-        let sub_block_offset = broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+        let sub_block_offset = (broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
-            >> 54
+            >> 54)
             & 0x7;
-        cur_rank += sub_ranks >> (7 - sub_block_offset).wrapping_mul(9) & 0x1FF;
+        cur_rank += (sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF;
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
