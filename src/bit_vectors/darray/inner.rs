@@ -110,7 +110,7 @@ impl DArrayIndex {
 
             let mut word_idx = start_pos / 64;
             let word_shift = start_pos % 64;
-            let mut word = w(bv, word_idx) & (std::usize::MAX << word_shift);
+            let mut word = w(bv, word_idx) & (usize::MAX << word_shift);
 
             loop {
                 let popcnt = broadword::popcount(word);
@@ -216,7 +216,7 @@ impl DArrayIndex {
                 overflow_positions.push(x);
             }
             for _ in (0..cur_block_positions.len()).step_by(SUBBLOCK_LEN) {
-                subblock_inventory.push(std::u16::MAX);
+                subblock_inventory.push(u16::MAX);
             }
         }
         cur_block_positions.clear();

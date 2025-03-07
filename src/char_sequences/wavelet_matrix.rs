@@ -576,7 +576,7 @@ impl<'a, B> Iter<'a, B> {
     }
 }
 
-impl<'a, B> Iterator for Iter<'a, B>
+impl<B> Iterator for Iter<'_, B>
 where
     B: Access + Build + NumBits + Rank + Select,
 {
