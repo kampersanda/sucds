@@ -68,7 +68,7 @@ impl<'a, T: std::fmt::Debug> std::fmt::Debug for MatrixView<'a, T> {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{:?}", item)?;
+                    write!(f, "{item:?}")?;
                 }
                 writeln!(f, ",")?;
             }
