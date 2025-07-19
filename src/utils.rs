@@ -75,7 +75,7 @@ impl<'a, T: std::fmt::Debug> std::fmt::Debug for MatrixView<'a, T> {
             write!(f, "]")
         } else {
             // For a compact view (e.g., `{:?}`), just show a summary
-            write!(f, "[... {} items ...]", self.data.len())
+            write!(f, "[{} items]", self.data.len())
         }
     }
 }
