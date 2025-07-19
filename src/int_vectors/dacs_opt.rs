@@ -64,9 +64,9 @@ impl DacsOpt {
     ///
     /// - `vals`: Slice of integers to be stored.
     /// - `max_levels`: Maximum number of levels. The resulting number of levels is related to
-    ///                 the access time. The smaller this value is, the faster operations can be,
-    ///                 but the larger the memory can be. If [`None`], it computes configuration
-    ///                 without limitation in the number of levels.
+    ///   the access time. The smaller this value is, the faster operations can be,
+    ///   but the larger the memory can be. If [`None`], it computes configuration
+    ///   without limitation in the number of levels.
     ///
     /// # Complexity
     ///
