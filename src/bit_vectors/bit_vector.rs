@@ -927,7 +927,7 @@ impl std::fmt::Debug for BitVector {
             *b = self.access(i).unwrap() as u8;
         }
         f.debug_struct("BitVector")
-            .field("bits", &MatrixView::new(&bits, 32))
+            .field("bits", &MatrixView::new(&bits, 16))
             .field("len", &self.len)
             .finish()
     }
