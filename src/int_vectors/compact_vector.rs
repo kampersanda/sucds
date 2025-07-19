@@ -410,7 +410,10 @@ impl CompactVector {
         self.width
     }
 
-    /// Returns the internal bit vector.
+    /// Returns the internal representation.
+    ///
+    /// Note that this method is for development purposes and
+    /// the returned value may change implicitly in future versions.
     pub const fn bit_vector(&self) -> &BitVector {
         &self.chunks
     }
