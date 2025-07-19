@@ -10,17 +10,15 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 https://docs.rs/sucds/
 
-## Limitation
-
-This library is designed to run on 64-bit machines.
-
-## Build docs
-
-The document can be compiled with the following command:
+Or, the document can be compiled with the following command:
 
 ```console
 RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
 ```
+
+## Limitation
+
+This library is designed to run on 64-bit machines.
 
 ## Licensing
 
