@@ -409,6 +409,11 @@ impl CompactVector {
     pub const fn width(&self) -> usize {
         self.width
     }
+
+    /// Returns the internal bit vector.
+    pub const fn bit_vector(&self) -> &BitVector {
+        &self.chunks
+    }
 }
 
 impl Build for CompactVector {
