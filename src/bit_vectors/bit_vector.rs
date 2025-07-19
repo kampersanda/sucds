@@ -7,6 +7,7 @@ use anyhow::{anyhow, Result};
 
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
+use crate::utils::MatrixView;
 use crate::Serializable;
 use unary::UnaryIter;
 
@@ -926,7 +927,7 @@ impl std::fmt::Debug for BitVector {
             *b = self.access(i).unwrap() as u8;
         }
         f.debug_struct("BitVector")
-            .field("bits", &bits)
+            .field("bits", &MatrixView::new(&bits, 32))
             .field("len", &self.len)
             .finish()
     }
