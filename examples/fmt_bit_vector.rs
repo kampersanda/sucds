@@ -11,7 +11,7 @@ fn main() {
     ]);
 
     // Print the BitVector using the default debug format.
-    // The output will be "BitVector { bits: [... 40 items ...], len: 40 }".
+    // The output will be "BitVector { bits: [40 items], len: 40 }".
     println!("{:?}", bv);
 
     // For a more detailed view, use the debug format.
