@@ -108,10 +108,10 @@ impl EliasFano {
         if m == 0 {
             return Err(anyhow!("bits must contains one set bit at least."));
         }
-        let mut b = EliasFanoBuilder::new(n, m)?;
+        let mut b = EliasFanoBuilder::new(n, m);
         for i in 0..n {
             if bv.access(i).unwrap() {
-                b.push(i)?;
+                b.push(i).unwrap();
             }
         }
         Ok(b.build())
@@ -571,15 +571,20 @@ impl EliasFanoBuilder {
     /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
     /// - `num_vals`: The number of integers that will be pushed (> 0).
     ///
-    /// # Errors
-    ///
-    /// An error is returned if `num_vals == 0`.
-    pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
+    pub fn new(universe: usize, num_vals: usize) -> Self {
         if num_vals == 0 {
-            return Err(anyhow!("num_vals must not be zero."));
+            return Self {
+                high_bits: BitVector::new(),
+                low_bits: BitVector::new(),
+                universe,
+                num_vals,
+                pos: 0,
+                last: 0,
+                low_len: 0,
+            };
         }
         let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
-        Ok(Self {
+        Self {
             high_bits: BitVector::from_bit(false, (num_vals + 1) + (universe >> low_len) + 1),
             low_bits: BitVector::new(),
             universe,
@@ -587,7 +592,7 @@ impl EliasFanoBuilder {
             pos: 0,
             last: 0,
             low_len,
-        })
+        }
     }
 
     /// Pushes integer `val` at the end.
@@ -691,10 +696,6 @@ mod tests {
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("bits must not be empty.".to_string())
-        );
     }
 
     #[test]
@@ -722,15 +723,11 @@ mod tests {
     #[test]
     fn test_builder_new_zero_size() {
         let e = EliasFanoBuilder::new(3, 0);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("num_vals must not be zero.".to_string())
-        );
     }
 
     #[test]
     fn test_builder_push_decrease() {
-        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        let mut b = EliasFanoBuilder::new(3, 2);
         b.push(2).unwrap();
         let e = b.push(1);
         assert_eq!(
@@ -741,7 +738,7 @@ mod tests {
 
     #[test]
     fn test_builder_overflow_universe() {
-        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
+        let mut b = EliasFanoBuilder::new(3, 2);
         let e = b.push(3);
         assert_eq!(
             e.err().map(|x| x.to_string()),
@@ -751,7 +748,7 @@ mod tests {
 
     #[test]
     fn test_builder_overflow_num_vals() {
-        let mut b = EliasFanoBuilder::new(3, 1).unwrap();
+        let mut b = EliasFanoBuilder::new(3, 1);
         b.push(1).unwrap();
         let e = b.push(2);
         assert_eq!(

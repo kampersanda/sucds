@@ -4,7 +4,6 @@
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
-use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, CompactVector, NumVals};
@@ -34,7 +33,7 @@ use crate::Serializable;
 /// use sucds::int_vectors::{DacsOpt, Access};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
-/// let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
+/// let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], Some(2));
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
@@ -76,11 +75,10 @@ impl DacsOpt {
     ///
     /// An error is returned if
     ///
-    /// - `vals` contains an integer that cannot be cast to `usize`, or
     /// - `max_levels` is not within `1..=64` if it is [`Some`].
     pub fn from_slice<T>(vals: &[T], max_levels: Option<usize>) -> Result<Self>
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
     {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
@@ -92,10 +90,6 @@ impl DacsOpt {
         if vals.is_empty() {
             return Ok(Self::default());
         }
-        for x in vals {
-            x.to_usize()
-                .ok_or_else(|| anyhow!("vals must consist only of values castable into usize."))?;
-        }
 
         let widths = Self::compute_opt_widths(vals, max_levels);
         Self::build(vals, &widths)
@@ -104,7 +98,7 @@ impl DacsOpt {
     // A modified implementation of Algorithm 3.5 in Navarro's book.
     fn compute_opt_widths<T>(vals: &[T], max_levels: usize) -> Vec<usize>
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
     {
         assert!(!vals.is_empty());
         assert_ne!(max_levels, 0);
@@ -112,7 +106,7 @@ impl DacsOpt {
         // Computes the number of bits needed to represent an integer at least.
         let mut maxv = 0;
         for x in vals {
-            maxv = maxv.max(x.to_usize().unwrap());
+            maxv = maxv.max((*x).into());
         }
         let num_bits = utils::needed_bits(maxv);
         let max_levels = max_levels.min(num_bits);
@@ -121,7 +115,7 @@ impl DacsOpt {
         let nums_ints = {
             let mut nums_ints = vec![0; num_bits + 1];
             for x in vals {
-                nums_ints[utils::needed_bits(x.to_usize().unwrap()) - 1] += 1;
+                nums_ints[utils::needed_bits((*x).into()) - 1] += 1;
             }
             for j in (0..num_bits).rev() {
                 nums_ints[j] += nums_ints[j + 1];
@@ -187,7 +181,7 @@ impl DacsOpt {
 
     fn build<T>(vals: &[T], widths: &[usize]) -> Result<Self>
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
     {
         assert!(!vals.is_empty());
         assert!(!widths.is_empty());
@@ -195,7 +189,7 @@ impl DacsOpt {
         if widths.len() == 1 {
             let mut data = CompactVector::with_capacity(vals.len(), widths[0]).unwrap();
             vals.iter()
-                .for_each(|x| data.push_int(x.to_usize().unwrap()).unwrap());
+                .for_each(|x| data.push_int((*x).into()).unwrap());
             return Ok(Self {
                 data: vec![data],
                 flags: vec![],
@@ -209,7 +203,7 @@ impl DacsOpt {
         let mut flags = vec![BitVector::default(); widths.len() - 1];
 
         for x in vals {
-            let mut x = x.to_usize().unwrap();
+            let mut x = (*x).into();
             for (j, &width) in widths.iter().enumerate() {
                 let mask = (1 << width) - 1;
                 data[j].push_int(x & mask).unwrap();
@@ -237,7 +231,7 @@ impl DacsOpt {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::DacsOpt;
     ///
-    /// let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], Some(2))?;
+    /// let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], Some(2));
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -290,12 +284,12 @@ impl Build for DacsOpt {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`] with `max_levels == None`. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
         Self: Sized,
     {
-        Self::from_slice(vals, None)
+        Self::from_slice(vals, None).unwrap()
     }
 }
 
@@ -320,7 +314,7 @@ impl Access for DacsOpt {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{DacsOpt, Access};
     ///
-    /// let seq = DacsOpt::from_slice(&[5, 999, 334], None)?;
+    /// let seq = DacsOpt::from_slice(&[5usize, 999, 334], None);
     ///
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(999));
@@ -407,43 +401,43 @@ mod tests {
 
     #[test]
     fn test_opt_witdhs_0() {
-        let widths = DacsOpt::compute_opt_widths(&[0b0, 0b0, 0b0, 0b0], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b0u8, 0b0, 0b0, 0b0], 3);
         assert_eq!(widths, vec![1]);
     }
 
     #[test]
     fn test_opt_witdhs_1() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 1);
+        let widths = DacsOpt::compute_opt_widths(&[0b11u8, 0b1, 0b1111, 0b11], 1);
         assert_eq!(widths, vec![4]);
     }
 
     #[test]
     fn test_opt_witdhs_2() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 2);
+        let widths = DacsOpt::compute_opt_widths(&[0b11u8, 0b1, 0b1111, 0b11], 2);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_3() {
-        let widths = DacsOpt::compute_opt_widths(&[0b11, 0b1, 0b1111, 0b11], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b11u8, 0b1, 0b1111, 0b11], 3);
         assert_eq!(widths, vec![2, 2]);
     }
 
     #[test]
     fn test_opt_witdhs_4() {
-        let widths = DacsOpt::compute_opt_widths(&[0b1111, 0b1111, 0b1111, 0b1111], 3);
+        let widths = DacsOpt::compute_opt_widths(&[0b1111u8, 0b1111, 0b1111, 0b1111], 3);
         assert_eq!(widths, vec![4]);
     }
 
     #[test]
     fn test_basic_1() {
-        let seq = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
+        let seq = DacsOpt::from_slice(&[0b11u8, 0b1, 0b1111, 0b11], None).unwrap();
 
         assert_eq!(
             seq.data,
             vec![
-                CompactVector::from_slice(&[0b11, 0b1, 0b11, 0b11]).unwrap(),
-                CompactVector::from_slice(&[0b11]).unwrap(),
+                CompactVector::from_slice(&[0b11u8, 0b1, 0b11, 0b11]),
+                CompactVector::from_slice(&[0b11u8]),
             ]
         );
 
@@ -469,14 +463,14 @@ mod tests {
         //      0 = 0b0
         // 100000 = 0b11000011010100000
         //    334 = 0b101001110
-        let seq = DacsOpt::from_slice(&[5, 0, 100000, 334], None).unwrap();
+        let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], None).unwrap();
 
         assert_eq!(
             seq.data,
             vec![
-                CompactVector::from_slice(&[0b101, 0b000, 0b000, 0b110]).unwrap(),
-                CompactVector::from_slice(&[0b010100, 0b101001]).unwrap(),
-                CompactVector::from_slice(&[0b11000011]).unwrap(),
+                CompactVector::from_slice(&[0b101u8, 0b000, 0b000, 0b110]),
+                CompactVector::from_slice(&[0b010100u8, 0b101001]),
+                CompactVector::from_slice(&[0b11000011u8]),
             ]
         );
 
@@ -510,7 +504,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let seq = DacsOpt::from_slice(&[0, 0, 0, 0], None).unwrap();
+        let seq = DacsOpt::from_slice(&[0u8, 0, 0, 0], None).unwrap();
         assert!(!seq.is_empty());
         assert_eq!(seq.len(), 4);
         assert_eq!(seq.num_levels(), 1);
@@ -522,18 +516,9 @@ mod tests {
     }
 
     #[test]
-    fn test_from_slice_uncastable() {
-        let e = DacsOpt::from_slice(&[u128::MAX], None);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("vals must consist only of values castable into usize.".to_string())
-        );
-    }
-
-    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let seq = DacsOpt::from_slice(&[0b11, 0b1, 0b1111, 0b11], None).unwrap();
+        let seq = DacsOpt::from_slice(&[0b11u8, 0b1, 0b1111, 0b11], None).unwrap();
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = DacsOpt::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);

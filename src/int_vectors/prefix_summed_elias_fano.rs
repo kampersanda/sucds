@@ -3,8 +3,7 @@
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
-use num_traits::ToPrimitive;
+use anyhow::Result;
 
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
@@ -28,7 +27,7 @@ use crate::Serializable;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
-/// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+/// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]);
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(14));
@@ -65,46 +64,34 @@ impl PrefixSummedEliasFano {
     ///
     /// - `vals`: Slice of integers to be stored.
     ///
-    /// # Errors
-    ///
-    /// An error is returned if
-    ///
-    /// - `vals` contains an integer that cannot be cast to [`usize`], or
-    /// - `vals` is empty.
-    ///
     /// # Examples
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]);
     ///
     /// assert_eq!(seq.len(), 4);
     /// assert_eq!(seq.sum(), 363);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
     {
-        if vals.is_empty() {
-            return Err(anyhow!("vals must not be empty."));
-        }
         let mut universe = 0;
         for x in vals {
-            universe += x
-                .to_usize()
-                .ok_or_else(|| anyhow!("vals must consist only of values castable into usize."))?;
+            universe += (*x).into()
         }
-        let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
+        let mut b = EliasFanoBuilder::new(universe + 1, vals.len());
         let mut cur = 0;
         for x in vals {
-            cur += x.to_usize().unwrap();
-            b.push(cur)?;
+            cur += (*x).into();
+            b.push(cur).unwrap();
         }
-        Ok(Self { ef: b.build() })
+        Self { ef: b.build() }
     }
 
     /// Creates an iterator for enumerating integers.
@@ -150,9 +137,9 @@ impl Build for PrefixSummedEliasFano {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<usize> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)
@@ -179,7 +166,7 @@ impl Access for PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334]);
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(14));
     /// assert_eq!(seq.access(2), Some(334));
@@ -245,18 +232,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_slice_uncastable() {
-        let e = PrefixSummedEliasFano::from_slice(&[u128::MAX]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("vals must consist only of values castable into usize.".to_string())
-        );
-    }
-
-    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]).unwrap();
+        let seq = PrefixSummedEliasFano::from_slice(&[5u16, 14, 334, 10]);
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);
