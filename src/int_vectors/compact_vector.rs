@@ -144,7 +144,7 @@ impl CompactVector {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
+    pub fn from_int(val: u64, len: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
             return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
@@ -170,10 +170,6 @@ impl CompactVector {
     ///
     ///  - `vals`: Slice of integers to be stored.
     ///
-    /// # Errors
-    ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
-    ///
     /// # Examples
     ///
     /// ```
@@ -189,12 +185,12 @@ impl CompactVector {
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         if vals.is_empty() {
             return Self::default();
         }
-        let mut max_int: usize = 1;
+        let mut max_int = 0u64;
         for x in vals {
             max_int = max_int.max((*x).into());
         }
@@ -312,7 +308,7 @@ impl CompactVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn push_int(&mut self, val: usize) -> Result<()> {
+    pub fn push_int(&mut self, val: u64) -> Result<()> {
         if self.width() != 64 && val >> self.width() != 0 {
             return Err(anyhow!(
                 "val must fit in self.width()={} bits, but got {val}.",
@@ -353,7 +349,7 @@ impl CompactVector {
     /// ```
     pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
-        I: IntoIterator<Item = usize>,
+        I: IntoIterator<Item = u64>,
     {
         for x in vals {
             self.push_int(x)?;
@@ -429,7 +425,7 @@ impl Build for CompactVector {
     /// This just calls [`Self::from_slice()`]. See the documentation.
     fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)
@@ -487,7 +483,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {

@@ -40,7 +40,7 @@ use crate::Serializable;
 /// assert_eq!(wm.alph_size(), 'n' as usize + 1);
 /// assert_eq!(wm.alph_width(), 7);
 ///
-/// assert_eq!(wm.access(2), Some('n' as usize));
+/// assert_eq!(wm.access(2), Some('n' as usize ));
 /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
 /// assert_eq!(wm.select(1, 'n' as usize), Some(4));
 /// # Ok(())
@@ -57,7 +57,7 @@ use crate::Serializable;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix<B> {
     layers: Vec<B>,
-    alph_size: usize,
+    alph_size: u64,
 }
 
 impl<B> WaveletMatrix<B>
@@ -552,7 +552,7 @@ where
 
     /// Returns the maximum value + 1 in the sequence, i.e., $`\sigma`$.
     #[inline(always)]
-    pub const fn alph_size(&self) -> usize {
+    pub const fn alph_size(&self) -> u64 {
         self.alph_size
     }
 
@@ -612,7 +612,7 @@ where
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
-        let alph_size = usize::deserialize_from(&mut reader)?;
+        let alph_size = u64::deserialize_from(&mut reader)?;
         Ok(Self { layers, alph_size })
     }
 

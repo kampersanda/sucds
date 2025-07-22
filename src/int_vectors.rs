@@ -98,7 +98,7 @@ pub trait Build {
     ///
     fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
         Self: Sized;
 }
 

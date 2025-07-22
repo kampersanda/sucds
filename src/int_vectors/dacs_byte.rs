@@ -66,7 +66,7 @@ impl DacsByte {
     ///
     pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         if vals.is_empty() {
             return Self::default();
@@ -178,7 +178,7 @@ impl Build for DacsByte {
     /// This just calls [`Self::from_slice()`]. See the documentation.
     fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)

@@ -78,7 +78,7 @@ impl DacsOpt {
     /// - `max_levels` is not within `1..=64` if it is [`Some`].
     pub fn from_slice<T>(vals: &[T], max_levels: Option<usize>) -> Result<Self>
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
@@ -98,7 +98,7 @@ impl DacsOpt {
     // A modified implementation of Algorithm 3.5 in Navarro's book.
     fn compute_opt_widths<T>(vals: &[T], max_levels: usize) -> Vec<usize>
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         assert!(!vals.is_empty());
         assert_ne!(max_levels, 0);
@@ -181,7 +181,7 @@ impl DacsOpt {
 
     fn build<T>(vals: &[T], widths: &[usize]) -> Result<Self>
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         assert!(!vals.is_empty());
         assert!(!widths.is_empty());
@@ -286,7 +286,7 @@ impl Build for DacsOpt {
     /// This just calls [`Self::from_slice()`] with `max_levels == None`. See the documentation.
     fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals, None).unwrap()

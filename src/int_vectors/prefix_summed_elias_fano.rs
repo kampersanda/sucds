@@ -79,7 +79,7 @@ impl PrefixSummedEliasFano {
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
     {
         let mut universe = 0;
         for x in vals {
@@ -139,7 +139,7 @@ impl Build for PrefixSummedEliasFano {
     /// This just calls [`Self::from_slice()`]. See the documentation.
     fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: Into<usize> + Copy,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)

@@ -40,7 +40,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
-    words: Vec<usize>,
+    words: Vec<u64>,
     len: usize,
 }
 
@@ -99,7 +99,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bit(0), Some(false));
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
-        let word = if bit { usize::MAX } else { 0 };
+        let word = if bit { u64::MAX } else { 0 };
         let mut words = vec![word; Self::words_for(len)];
         let shift = len % WORD_LEN;
         if shift != 0 {
@@ -193,7 +193,7 @@ impl BitVector {
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
         self.words[word] &= !(1 << pos_in_word);
-        self.words[word] |= (bit as usize) << pos_in_word;
+        self.words[word] |= (bit as u64) << pos_in_word;
         Ok(())
     }
 
@@ -217,10 +217,10 @@ impl BitVector {
     pub fn push_bit(&mut self, bit: bool) {
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
-            self.words.push(bit as usize);
+            self.words.push(bit as u64);
         } else {
             let cur_word = self.words.last_mut().unwrap();
-            *cur_word |= (bit as usize) << pos_in_word;
+            *cur_word |= (bit as u64) << pos_in_word;
         }
         self.len += 1;
     }
@@ -245,7 +245,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(2, 3), None);
     /// ```
     #[inline(always)]
-    pub fn get_bits(&self, pos: usize, len: usize) -> Option<usize> {
+    pub fn get_bits(&self, pos: usize, len: usize) -> Option<u64> {
         if WORD_LEN < len || self.len() < pos + len {
             return None;
         }
@@ -257,7 +257,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = if shift + len <= WORD_LEN {
@@ -301,7 +301,7 @@ impl BitVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
+    pub fn set_bits(&mut self, pos: usize, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
             return Err(anyhow!(
                 "len must be no greater than {WORD_LEN}, but got {len}."
@@ -321,7 +321,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = bits & mask;
@@ -372,7 +372,7 @@ impl BitVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
+    pub fn push_bits(&mut self, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
             return Err(anyhow!(
                 "len must be no greater than {WORD_LEN}, but got {len}."
@@ -386,7 +386,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = bits & mask;
@@ -427,7 +427,7 @@ impl BitVector {
     /// assert_eq!(bv.predecessor1(1), Some(1));
     /// assert_eq!(bv.predecessor1(0), None);
     /// ```
-    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
+    pub fn predecessor1(&self, pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -467,7 +467,7 @@ impl BitVector {
     /// assert_eq!(bv.predecessor0(1), Some(1));
     /// assert_eq!(bv.predecessor0(0), None);
     /// ```
-    pub fn predecessor0(&self, pos: usize) -> Option<usize> {
+    pub fn predecessor0(&self, pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -507,7 +507,7 @@ impl BitVector {
     /// assert_eq!(bv.successor1(2), Some(2));
     /// assert_eq!(bv.successor1(3), None);
     /// ```
-    pub fn successor1(&self, pos: usize) -> Option<usize> {
+    pub fn successor1(&self, pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -548,7 +548,7 @@ impl BitVector {
     /// assert_eq!(bv.successor0(2), Some(2));
     /// assert_eq!(bv.successor0(3), None);
     /// ```
-    pub fn successor0(&self, pos: usize) -> Option<usize> {
+    pub fn successor0(&self, pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -623,7 +623,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(1, 64), None);  // out of bounds
     /// ```
     #[inline(always)]
-    pub fn get_word64(&self, pos: usize) -> Option<usize> {
+    pub fn get_word64(&self, pos: usize) -> Option<u64> {
         if self.len <= pos {
             return None;
         }
@@ -768,7 +768,7 @@ impl Rank for BitVector {
     /// assert_eq!(bv.rank1(4), Some(2));
     /// assert_eq!(bv.rank1(5), None);
     /// ```
-    fn rank1(&self, pos: usize) -> Option<usize> {
+    fn rank1(&self, pos: usize) -> Option<u64> {
         if self.len() < pos {
             return None;
         }
@@ -802,7 +802,7 @@ impl Rank for BitVector {
     /// assert_eq!(bv.rank0(4), Some(2));
     /// assert_eq!(bv.rank0(5), None);
     /// ```
-    fn rank0(&self, pos: usize) -> Option<usize> {
+    fn rank0(&self, pos: usize) -> Option<u64> {
         Some(pos - self.rank1(pos)?)
     }
 }
@@ -825,7 +825,7 @@ impl Select for BitVector {
     /// assert_eq!(bv.select1(1), Some(3));
     /// assert_eq!(bv.select1(2), None);
     /// ```
-    fn select1(&self, k: usize) -> Option<usize> {
+    fn select1(&self, k: usize) -> Option<u64> {
         let mut wpos = 0;
         let mut cur_rank = 0;
         while wpos < self.words.len() {
@@ -861,7 +861,7 @@ impl Select for BitVector {
     /// assert_eq!(bv.select0(1), Some(2));
     /// assert_eq!(bv.select0(2), None);
     /// ```
-    fn select0(&self, k: usize) -> Option<usize> {
+    fn select0(&self, k: usize) -> Option<u64> {
         let mut wpos = 0;
         let mut cur_rank = 0;
         while wpos < self.words.len() {
@@ -911,7 +911,7 @@ impl Iterator for Iter<'_> {
     }
 
     #[inline(always)]
-    fn size_hint(&self) -> (usize, Option<usize>) {
+    fn size_hint(&self) -> (usize, Option<u64>) {
         (self.bv.len(), Some(self.bv.len()))
     }
 }

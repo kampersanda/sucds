@@ -145,7 +145,7 @@ pub fn lsb(x: usize) -> Option<usize> {
 /// ```
 #[allow(clippy::missing_const_for_fn)]
 #[inline(always)]
-pub fn msb(x: usize) -> Option<usize> {
+pub fn msb(x: u64) -> Option<u64> {
     #[cfg(not(feature = "intrinsics"))]
     {
         if x == 0 {
