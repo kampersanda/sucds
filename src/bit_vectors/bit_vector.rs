@@ -650,6 +650,11 @@ impl BitVector {
         &self.words
     }
 
+    /// Converts into the slice of raw words.
+    pub fn into_words(self) -> Vec<usize> {
+        self.words
+    }
+
     /// Returns the total number of bits it can hold without reallocating.
     pub fn capacity(&self) -> usize {
         self.words.capacity() * WORD_LEN
