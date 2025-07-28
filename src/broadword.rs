@@ -90,7 +90,7 @@ pub const fn select_in_word(x: u64, k: usize) -> Option<usize> {
     let place = {
         #[cfg(feature = "intrinsics")]
         {
-            popcount(geq_k_step_8) * 8
+            popcount(geq_k_step_8 as u64) * 8
         }
         #[cfg(not(feature = "intrinsics"))]
         {
