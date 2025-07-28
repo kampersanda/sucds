@@ -76,7 +76,7 @@ impl DacsByte {
         for x in vals {
             maxv = maxv.max((*x).into());
         }
-        let num_bits = utils::needed_bits(maxv.into());
+        let num_bits = utils::needed_bits(maxv);
         let num_levels = utils::ceiled_divide(num_bits, LEVEL_WIDTH);
         assert_ne!(num_levels, 0);
 

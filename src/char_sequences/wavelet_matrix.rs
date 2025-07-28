@@ -78,7 +78,7 @@ where
         }
 
         let alph_size = seq.iter().max().unwrap() + 1;
-        let alph_width = utils::needed_bits(alph_size as u64);
+        let alph_width = utils::needed_bits(alph_size);
 
         let mut zeros = seq;
         let mut ones = CompactVector::new(alph_width).unwrap();

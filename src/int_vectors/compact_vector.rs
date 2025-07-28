@@ -193,10 +193,10 @@ impl CompactVector {
         for x in vals {
             max_int = max_int.max((*x).into());
         }
-        // unwrap should be safe
+        // unwraps should be safe
         let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int)).unwrap();
         for x in vals {
-            cv.push_int((*x).into());
+            cv.push_int((*x).into()).unwrap();
         }
         cv
     }

@@ -664,7 +664,7 @@ impl EliasFanoBuilder {
         I: IntoIterator<Item = u64>,
     {
         for x in vals {
-            self.push(x);
+            self.push(x)?;
         }
         Ok(())
     }
