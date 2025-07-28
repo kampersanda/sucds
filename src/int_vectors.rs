@@ -111,5 +111,5 @@ pub trait NumVals {
 /// Interface for accessing elements on integer vectors.
 pub trait Access {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
-    fn access(&self, pos: usize) -> Option<usize>;
+    fn access(&self, pos: usize) -> Option<u64>;
 }

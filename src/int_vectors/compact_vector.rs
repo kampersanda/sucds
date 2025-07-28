@@ -225,7 +225,7 @@ impl CompactVector {
     /// assert_eq!(cv.get_int(3), None);
     /// # Ok(())
     /// # }
-    pub fn get_int(&self, pos: usize) -> Option<usize> {
+    pub fn get_int(&self, pos: usize) -> Option<u64> {
         self.chunks.get_bits(pos * self.width, self.width)
     }
 
@@ -260,7 +260,7 @@ impl CompactVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
+    pub fn set_int(&mut self, pos: usize, val: u64) -> Result<()> {
         if self.len() <= pos {
             return Err(anyhow!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
@@ -464,7 +464,7 @@ impl Access for CompactVector {
     /// assert_eq!(cv.access(3), None);
     /// # Ok(())
     /// # }
-    fn access(&self, pos: usize) -> Option<usize> {
+    fn access(&self, pos: usize) -> Option<u64> {
         self.get_int(pos)
     }
 }
@@ -661,7 +661,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let cv = CompactVector::from_slice(&[7usize, 334, 1, 2]);
+        let cv = CompactVector::from_slice(&[7u64, 334, 1, 2]);
         let size = cv.serialize_into(&mut bytes).unwrap();
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);

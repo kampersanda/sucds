@@ -427,7 +427,7 @@ impl BitVector {
     /// assert_eq!(bv.predecessor1(1), Some(1));
     /// assert_eq!(bv.predecessor1(0), None);
     /// ```
-    pub fn predecessor1(&self, pos: usize) -> Option<u64> {
+    pub fn predecessor1(&self, pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
@@ -467,7 +467,7 @@ impl BitVector {
     /// assert_eq!(bv.predecessor0(1), Some(1));
     /// assert_eq!(bv.predecessor0(0), None);
     /// ```
-    pub fn predecessor0(&self, pos: usize) -> Option<u64> {
+    pub fn predecessor0(&self, pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
@@ -507,7 +507,7 @@ impl BitVector {
     /// assert_eq!(bv.successor1(2), Some(2));
     /// assert_eq!(bv.successor1(3), None);
     /// ```
-    pub fn successor1(&self, pos: usize) -> Option<u64> {
+    pub fn successor1(&self, pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
@@ -548,7 +548,7 @@ impl BitVector {
     /// assert_eq!(bv.successor0(2), Some(2));
     /// assert_eq!(bv.successor0(3), None);
     /// ```
-    pub fn successor0(&self, pos: usize) -> Option<u64> {
+    pub fn successor0(&self, pos: usize) -> Option<usize> {
         if self.len() <= pos {
             return None;
         }
@@ -646,12 +646,12 @@ impl BitVector {
     }
 
     /// Gets the slice of raw words.
-    pub fn words(&self) -> &[usize] {
+    pub fn words(&self) -> &[u64] {
         &self.words
     }
 
     /// Converts into the slice of raw words.
-    pub fn into_words(self) -> Vec<usize> {
+    pub fn into_words(self) -> Vec<u64> {
         self.words
     }
 
@@ -768,7 +768,7 @@ impl Rank for BitVector {
     /// assert_eq!(bv.rank1(4), Some(2));
     /// assert_eq!(bv.rank1(5), None);
     /// ```
-    fn rank1(&self, pos: usize) -> Option<u64> {
+    fn rank1(&self, pos: usize) -> Option<usize> {
         if self.len() < pos {
             return None;
         }
@@ -802,7 +802,7 @@ impl Rank for BitVector {
     /// assert_eq!(bv.rank0(4), Some(2));
     /// assert_eq!(bv.rank0(5), None);
     /// ```
-    fn rank0(&self, pos: usize) -> Option<u64> {
+    fn rank0(&self, pos: usize) -> Option<usize> {
         Some(pos - self.rank1(pos)?)
     }
 }
@@ -825,7 +825,7 @@ impl Select for BitVector {
     /// assert_eq!(bv.select1(1), Some(3));
     /// assert_eq!(bv.select1(2), None);
     /// ```
-    fn select1(&self, k: usize) -> Option<u64> {
+    fn select1(&self, k: usize) -> Option<usize> {
         let mut wpos = 0;
         let mut cur_rank = 0;
         while wpos < self.words.len() {
@@ -861,7 +861,7 @@ impl Select for BitVector {
     /// assert_eq!(bv.select0(1), Some(2));
     /// assert_eq!(bv.select0(2), None);
     /// ```
-    fn select0(&self, k: usize) -> Option<u64> {
+    fn select0(&self, k: usize) -> Option<usize> {
         let mut wpos = 0;
         let mut cur_rank = 0;
         while wpos < self.words.len() {
@@ -911,7 +911,7 @@ impl Iterator for Iter<'_> {
     }
 
     #[inline(always)]
-    fn size_hint(&self) -> (usize, Option<u64>) {
+    fn size_hint(&self) -> (usize, Option<usize>) {
         (self.bv.len(), Some(self.bv.len()))
     }
 }
@@ -946,7 +946,7 @@ impl Serializable for BitVector {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = Vec::<usize>::deserialize_from(&mut reader)?;
+        let words = Vec::<u64>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
         Ok(Self { words, len })
     }

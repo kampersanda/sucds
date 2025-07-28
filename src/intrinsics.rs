@@ -7,18 +7,18 @@ pub const fn popcount(x: usize) -> usize {
 }
 
 #[inline(always)]
-pub const fn bsf64(mask: usize) -> Option<usize> {
+pub const fn bsf64(mask: u64) -> Option<usize> {
     if mask != 0 {
-        Some(mask.trailing_zeros() as usize)
+        Some(mask.trailing_zeros())
     } else {
         None
     }
 }
 
 #[inline(always)]
-pub const fn bsr64(mask: usize) -> Option<usize> {
+pub const fn bsr64(mask: u64) -> Option<usize> {
     if mask != 0 {
-        Some(63 - mask.leading_zeros() as usize)
+        Some(63 - mask.leading_zeros())
     } else {
         None
     }

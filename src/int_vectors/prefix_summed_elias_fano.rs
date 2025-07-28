@@ -128,7 +128,7 @@ impl PrefixSummedEliasFano {
     }
 
     /// Gets the sum of integers.
-    pub const fn sum(&self) -> usize {
+    pub const fn sum(&self) -> u64 {
         self.ef.universe() - 1
     }
 }
@@ -174,7 +174,7 @@ impl Access for PrefixSummedEliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    fn access(&self, pos: usize) -> Option<usize> {
+    fn access(&self, pos: usize) -> Option<u64> {
         self.ef.delta(pos)
     }
 }
@@ -208,7 +208,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {

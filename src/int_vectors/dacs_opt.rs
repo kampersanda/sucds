@@ -323,7 +323,7 @@ impl Access for DacsOpt {
     /// # Ok(())
     /// # }
     /// ```
-    fn access(&self, mut pos: usize) -> Option<usize> {
+    fn access(&self, mut pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -357,7 +357,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -463,7 +463,7 @@ mod tests {
         //      0 = 0b0
         // 100000 = 0b11000011010100000
         //    334 = 0b101001110
-        let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], None).unwrap();
+        let seq = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None).unwrap();
 
         assert_eq!(
             seq.data,
@@ -495,7 +495,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let seq = DacsOpt::from_slice::<usize>(&[], None).unwrap();
+        let seq = DacsOpt::from_slice::<u64>(&[], None).unwrap();
         assert!(seq.is_empty());
         assert_eq!(seq.len(), 0);
         assert_eq!(seq.num_levels(), 1);

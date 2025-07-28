@@ -12,7 +12,7 @@ use crate::utils;
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
-const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
+const LEVEL_MASK: u64 = (1 << LEVEL_WIDTH) - 1;
 
 /// Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 ///
@@ -215,13 +215,13 @@ impl Access for DacsByte {
     /// # Ok(())
     /// # }
     /// ```
-    fn access(&self, mut pos: usize) -> Option<usize> {
+    fn access(&self, mut pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
         let mut x = 0;
         for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
+            x |= u64::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
             if j == self.num_levels() - 1
                 || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
             {
@@ -247,7 +247,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let seq = DacsByte::from_slice(&[0xFFFFusize, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let seq = DacsByte::from_slice(&[0xFFFFu64, 0xFF, 0xF, 0xFFFFF, 0xF]);
 
         assert_eq!(
             seq.data,
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let seq = DacsByte::from_slice::<usize>(&[]);
+        let seq = DacsByte::from_slice::<u64>(&[]);
         assert!(seq.is_empty());
         assert_eq!(seq.len(), 0);
         assert_eq!(seq.num_levels(), 1);
@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let seq = DacsByte::from_slice(&[0usize, 0, 0, 0]);
+        let seq = DacsByte::from_slice(&[0u64, 0, 0, 0]);
         assert!(!seq.is_empty());
         assert_eq!(seq.len(), 4);
         assert_eq!(seq.num_levels(), 1);

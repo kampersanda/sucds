@@ -8,13 +8,13 @@ use crate::broadword;
 pub struct UnaryIter<'a> {
     bv: &'a BitVector,
     pos: usize,
-    buf: usize,
+    buf: u64,
 }
 
 impl<'a> UnaryIter<'a> {
     /// Creates the iterator from the given bit position.
     pub fn new(bv: &'a BitVector, pos: usize) -> Self {
-        let buf = bv.words()[pos / WORD_LEN] & (usize::MAX.wrapping_shl((pos % WORD_LEN) as u32));
+        let buf = bv.words()[pos / WORD_LEN] & (u64::MAX.wrapping_shl((pos % WORD_LEN) as u32));
         Self { bv, pos, buf }
     }
 
@@ -57,7 +57,7 @@ impl<'a> UnaryIter<'a> {
         }
         debug_assert!(buf != 0);
         let pos_in_word = broadword::select_in_word(buf, k - skipped).unwrap();
-        self.buf = buf & usize::MAX.wrapping_shl(pos_in_word as u32);
+        self.buf = buf & u64::MAX.wrapping_shl(pos_in_word as u32);
         self.pos = (self.pos & !(WORD_LEN - 1)) + pos_in_word;
         Some(self.pos)
     }
@@ -80,7 +80,7 @@ impl<'a> UnaryIter<'a> {
     pub fn skip0(&mut self, k: usize) -> Option<usize> {
         let mut skipped = 0;
         let pos_in_word = self.pos % WORD_LEN;
-        let mut buf = !self.buf & usize::MAX.wrapping_shl(pos_in_word as u32);
+        let mut buf = !self.buf & u64::MAX.wrapping_shl(pos_in_word as u32);
         loop {
             let w = broadword::popcount(buf);
             if skipped + w > k {
@@ -96,7 +96,7 @@ impl<'a> UnaryIter<'a> {
         }
         debug_assert!(buf != 0);
         let pos_in_word = broadword::select_in_word(buf, k - skipped).unwrap();
-        self.buf = !buf & usize::MAX.wrapping_shl(pos_in_word as u32);
+        self.buf = !buf & u64::MAX.wrapping_shl(pos_in_word as u32);
         self.pos = (self.pos & !(WORD_LEN - 1)) + pos_in_word;
         Some(self.pos).filter(|&x| x < self.bv.num_bits())
     }
