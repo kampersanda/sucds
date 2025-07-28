@@ -51,7 +51,7 @@ pub(crate) const fn bytes_sum(x: u64) -> usize {
 /// use sucds::broadword::popcount;
 ///
 /// assert_eq!(popcount(0), 0);
-/// assert_eq!(popcount(usize::MAX), 64);
+/// assert_eq!(popcount(u64::MAX), 64);
 /// assert_eq!(popcount(0b1010110011), 6);
 /// ```
 #[inline(always)]

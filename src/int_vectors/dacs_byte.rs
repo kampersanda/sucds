@@ -34,7 +34,7 @@ const LEVEL_MASK: u64 = (1 << LEVEL_WIDTH) - 1;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{DacsByte, Access};
 ///
-/// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+/// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
@@ -122,7 +122,7 @@ impl DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::DacsByte;
     ///
-    /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+    /// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -206,7 +206,7 @@ impl Access for DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{DacsByte, Access};
     ///
-    /// let seq = DacsByte::from_slice(&[5, 999, 334]);
+    /// let seq = DacsByte::from_slice(&[5u64, 999, 334]);
     ///
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(999));

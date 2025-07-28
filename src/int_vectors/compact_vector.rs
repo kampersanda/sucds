@@ -24,13 +24,13 @@ use crate::{utils, Serializable};
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
 ///
-/// cv.push_int(7)?;
-/// cv.push_int(2)?;
+/// cv.push_int(7);
+/// cv.push_int(2);
 ///
 /// assert_eq!(cv.len(), 2);
 /// assert_eq!(cv.get_int(0), Some(7));
 ///
-/// cv.set_int(0, 5)?;
+/// cv.set_int(0, 5);
 /// assert_eq!(cv.get_int(0), Some(5));
 /// # Ok(())
 /// # }
@@ -176,11 +176,10 @@ impl CompactVector {
     /// # fn main() {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let mut cv = CompactVector::from_slice(&[7, 2]);
+    /// let mut cv = CompactVector::from_slice(&[7u64, 2]);
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
-    /// # Ok(())
     /// # }
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Self
@@ -218,7 +217,7 @@ impl CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// assert_eq!(cv.get_int(0), Some(5));
     /// assert_eq!(cv.get_int(1), Some(256));
     /// assert_eq!(cv.get_int(2), Some(0));
@@ -254,7 +253,7 @@ impl CompactVector {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
-    /// cv.set_int(1, 4)?;
+    /// cv.set_int(1, 4);
     /// assert_eq!(cv.get_int(1), Some(4));
     /// # Ok(())
     /// # }
@@ -365,7 +364,7 @@ impl CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// let mut it = cv.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -457,7 +456,7 @@ impl Access for CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{CompactVector, Access};
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// assert_eq!(cv.access(0), Some(5));
     /// assert_eq!(cv.access(1), Some(256));
     /// assert_eq!(cv.access(2), Some(0));

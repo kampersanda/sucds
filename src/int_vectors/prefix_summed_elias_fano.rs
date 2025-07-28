@@ -27,7 +27,7 @@ use crate::Serializable;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
-/// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]);
+/// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(14));
@@ -70,7 +70,7 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]);
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
     ///
     /// assert_eq!(seq.len(), 4);
     /// assert_eq!(seq.sum(), 363);
@@ -102,7 +102,7 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -166,7 +166,7 @@ impl Access for PrefixSummedEliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334]);
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334]);
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(14));
     /// assert_eq!(seq.access(2), Some(334));

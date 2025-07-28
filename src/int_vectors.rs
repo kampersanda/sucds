@@ -68,7 +68,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use sucds::int_vectors::{DacsOpt, prelude::*};
 //!
-//! let seq = DacsOpt::build_from_slice(&[5, 0, 100000, 334])?;
+//! let seq = DacsOpt::build_from_slice(&[5u64, 0, 100000, 334]);
 //!
 //! assert_eq!(seq.num_vals(), 4);
 //!

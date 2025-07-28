@@ -40,9 +40,9 @@ use crate::Serializable;
 /// assert_eq!(wm.alph_size(), 'n' as u64 + 1);
 /// assert_eq!(wm.alph_width(), 7);
 ///
-/// assert_eq!(wm.access(2), Some('n' as u64));
-/// assert_eq!(wm.rank(3, 'a' as u64), Some(1));
-/// assert_eq!(wm.select(1, 'n' as u64), Some(4));
+/// assert_eq!(wm.access(2), Some('n' as usize));
+/// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
+/// assert_eq!(wm.select(1, 'n' as usize), Some(4));
 /// # Ok(())
 /// # }
 /// ```
@@ -150,8 +150,8 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.access(2), Some('n' as u64));
-    /// assert_eq!(wm.access(5), Some('a' as u64));
+    /// assert_eq!(wm.access(2), Some('n' as usize));
+    /// assert_eq!(wm.access(5), Some('a' as usize));
     /// assert_eq!(wm.access(6), None);
     /// # Ok(())
     /// # }
@@ -200,9 +200,9 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.rank(3, 'a' as u64), Some(1));
-    /// assert_eq!(wm.rank(5, 'c' as u64), Some(0));
-    /// assert_eq!(wm.rank(7, 'b' as u64), None);
+    /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
+    /// assert_eq!(wm.rank(5, 'c' as usize), Some(0));
+    /// assert_eq!(wm.rank(7, 'b' as usize), None);
     /// # Ok(())
     /// # }
     /// ```
@@ -235,9 +235,9 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.rank_range(1..4, 'a' as u64), Some(2));
-    /// assert_eq!(wm.rank_range(2..4, 'c' as u64), Some(0));
-    /// assert_eq!(wm.rank_range(4..7, 'b' as u64), None);
+    /// assert_eq!(wm.rank_range(1..4, 'a' as usize), Some(2));
+    /// assert_eq!(wm.rank_range(2..4, 'c' as usize), Some(0));
+    /// assert_eq!(wm.rank_range(4..7, 'b' as usize), None);
     /// # Ok(())
     /// # }
     /// ```
@@ -291,8 +291,8 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.select(1, 'a' as u64), Some(3));
-    /// assert_eq!(wm.select(0, 'c' as u64), None);
+    /// assert_eq!(wm.select(1, 'a' as usize), Some(3));
+    /// assert_eq!(wm.select(0, 'c' as usize), None);
     /// # Ok(())
     /// # }
     /// ```
@@ -423,15 +423,15 @@ where
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 0),
-    ///     Some(vec!['a' as u64, 'b' as u64, 'n' as u64])
+    ///     Some(vec!['a' as usize, 'b' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 1),
-    ///     Some(vec!['a' as u64, 'n' as u64])
+    ///     Some(vec!['a' as usize, 'n' as usize])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 2),
-    ///     Some(vec!['a' as u64])
+    ///     Some(vec!['a' as usize])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 3),
@@ -527,9 +527,9 @@ where
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// let mut it = wm.iter();
-    /// assert_eq!(it.next(), Some('b' as u64));
-    /// assert_eq!(it.next(), Some('a' as u64));
-    /// assert_eq!(it.next(), Some('n' as u64));
+    /// assert_eq!(it.next(), Some('b' as usize));
+    /// assert_eq!(it.next(), Some('a' as usize));
+    /// assert_eq!(it.next(), Some('n' as usize));
     /// assert_eq!(it.next(), None);
     /// # Ok(())
     /// # }

@@ -33,7 +33,7 @@ use crate::Serializable;
 /// use sucds::int_vectors::{DacsOpt, Access};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
-/// let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], Some(2));
+/// let seq = DacsOpt::from_slice(&[5u64, 0, 100000, 334], Some(2))?;
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
@@ -231,7 +231,7 @@ impl DacsOpt {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::DacsOpt;
     ///
-    /// let seq = DacsOpt::from_slice(&[5usize, 0, 100000, 334], Some(2));
+    /// let seq = DacsOpt::from_slice(&[5u64, 0, 100000, 334], Some(2))?;
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -314,7 +314,7 @@ impl Access for DacsOpt {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{DacsOpt, Access};
     ///
-    /// let seq = DacsOpt::from_slice(&[5usize, 999, 334], None);
+    /// let seq = DacsOpt::from_slice(&[5u64, 999, 334], None)?;
     ///
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(999));

@@ -32,8 +32,8 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
-/// let mut efb = EliasFanoBuilder::new(8, 4)?;
-/// efb.extend([1, 3, 3, 7])?;
+/// let mut efb = EliasFanoBuilder::new(8, 4);
+/// efb.extend([1, 3, 3, 7]);
 /// let ef = efb.build();
 ///
 /// assert_eq!(ef.len(), 4);
@@ -144,8 +144,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.delta(0), Some(1));
@@ -204,8 +204,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
-    /// efb.extend([1, 3, 3, 6, 7, 10])?;
+    /// let mut efb = EliasFanoBuilder::new(11, 6);
+    /// efb.extend([1, 3, 3, 6, 7, 10]);
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.binsearch(6), Some(3));
@@ -239,8 +239,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
-    /// efb.extend([1, 3, 3, 6, 7, 10])?;
+    /// let mut efb = EliasFanoBuilder::new(11, 6);
+    /// efb.extend([1, 3, 3, 6, 7, 10]);
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.binsearch_range(1..4, 6), Some(3));
@@ -299,8 +299,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.rank(3), Some(1));
@@ -351,8 +351,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.select(0), Some(1));
@@ -394,8 +394,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.predecessor(4), Some(3));
@@ -432,8 +432,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.successor(0), Some(1));
@@ -465,8 +465,8 @@ impl EliasFano {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
-    /// efb.extend([1, 3, 3, 7])?;
+    /// let mut efb = EliasFanoBuilder::new(8, 4);
+    /// efb.extend([1, 3, 3, 7]);
     /// let ef = efb.build();
     ///
     /// let mut it = ef.iter(1);
@@ -538,14 +538,14 @@ impl Serializable for EliasFano {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
-/// let mut efb = EliasFanoBuilder::new(8, 5)?;
+/// let mut efb = EliasFanoBuilder::new(8, 5);
 ///
 /// assert_eq!(efb.universe(), 8);
 /// assert_eq!(efb.num_vals(), 5);
 ///
-/// efb.push(1)?;
-/// efb.push(3)?;
-/// efb.extend([3, 5, 7])?;
+/// efb.push(1);
+/// efb.push(3);
+/// efb.extend([3, 5, 7]);
 ///
 /// let ef = efb.build();
 /// assert_eq!(ef.len(), 5);
@@ -664,7 +664,7 @@ impl EliasFanoBuilder {
         I: IntoIterator<Item = u64>,
     {
         for x in vals {
-            self.push(x)?;
+            self.push(x);
         }
         Ok(())
     }
