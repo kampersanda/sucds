@@ -16,7 +16,7 @@ use crate::broadword;
 /// assert_eq!(needed_bits(255), 8);
 /// assert_eq!(needed_bits(256), 9);
 /// ```
-pub fn needed_bits(x: usize) -> usize {
+pub fn needed_bits(x: u64) -> usize {
     broadword::msb(x).map_or(1, |n| n + 1)
 }
 

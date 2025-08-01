@@ -4,8 +4,7 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
-use num_traits::ToPrimitive;
+use anyhow::Result;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, NumVals};
@@ -13,7 +12,7 @@ use crate::utils;
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
-const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
+const LEVEL_MASK: u64 = (1 << LEVEL_WIDTH) - 1;
 
 /// Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 ///
@@ -35,7 +34,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use sucds::int_vectors::{DacsByte, Access};
 ///
-/// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+/// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(0));
@@ -65,23 +64,17 @@ impl DacsByte {
     ///
     /// - `vals`: Slice of integers to be stored.
     ///
-    /// # Errors
-    ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
-    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
     {
         if vals.is_empty() {
-            return Ok(Self::default());
+            return Self::default();
         }
 
         let mut maxv = 0;
         for x in vals {
-            maxv =
-                maxv.max(x.to_usize().ok_or_else(|| {
-                    anyhow!("vals must consist only of values castable into usize.")
-                })?);
+            maxv = maxv.max((*x).into());
         }
         let num_bits = utils::needed_bits(maxv);
         let num_levels = utils::ceiled_divide(num_bits, LEVEL_WIDTH);
@@ -90,19 +83,19 @@ impl DacsByte {
         if num_levels == 1 {
             let data: Vec<_> = vals
                 .iter()
-                .map(|x| u8::try_from(x.to_usize().unwrap()).unwrap())
+                .map(|x| u8::try_from((*x).into()).unwrap())
                 .collect();
-            return Ok(Self {
+            return Self {
                 data: vec![data],
                 flags: vec![],
-            });
+            };
         }
 
         let mut data = vec![vec![]; num_levels];
         let mut flags = vec![BitVector::default(); num_levels - 1];
 
         for x in vals {
-            let mut x = x.to_usize().unwrap();
+            let mut x = (*x).into();
             for j in 0..num_levels {
                 data[j].push(u8::try_from(x & LEVEL_MASK).unwrap());
                 x >>= LEVEL_WIDTH;
@@ -118,7 +111,7 @@ impl DacsByte {
         }
 
         let flags = flags.into_iter().map(Rank9Sel::new).collect();
-        Ok(Self { data, flags })
+        Self { data, flags }
     }
 
     /// Creates an iterator for enumerating integers.
@@ -129,7 +122,7 @@ impl DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::DacsByte;
     ///
-    /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
+    /// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -183,9 +176,9 @@ impl Build for DacsByte {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)
@@ -213,7 +206,7 @@ impl Access for DacsByte {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{DacsByte, Access};
     ///
-    /// let seq = DacsByte::from_slice(&[5, 999, 334])?;
+    /// let seq = DacsByte::from_slice(&[5u64, 999, 334]);
     ///
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(999));
@@ -222,13 +215,13 @@ impl Access for DacsByte {
     /// # Ok(())
     /// # }
     /// ```
-    fn access(&self, mut pos: usize) -> Option<usize> {
+    fn access(&self, mut pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
         let mut x = 0;
         for j in 0..self.num_levels() {
-            x |= usize::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
+            x |= u64::from(self.data[j][pos]) << (j * LEVEL_WIDTH);
             if j == self.num_levels() - 1
                 || !bit_vectors::Access::access(&self.flags[j], pos).unwrap()
             {
@@ -254,7 +247,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -298,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let seq = DacsByte::from_slice(&[0xFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
+        let seq = DacsByte::from_slice(&[0xFFFFu64, 0xFF, 0xF, 0xFFFFF, 0xF]);
 
         assert_eq!(
             seq.data,
@@ -331,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let seq = DacsByte::from_slice::<usize>(&[]).unwrap();
+        let seq = DacsByte::from_slice::<u64>(&[]);
         assert!(seq.is_empty());
         assert_eq!(seq.len(), 0);
         assert_eq!(seq.num_levels(), 1);
@@ -340,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_all_zeros() {
-        let seq = DacsByte::from_slice(&[0, 0, 0, 0]).unwrap();
+        let seq = DacsByte::from_slice(&[0u64, 0, 0, 0]);
         assert!(!seq.is_empty());
         assert_eq!(seq.len(), 4);
         assert_eq!(seq.num_levels(), 1);
@@ -352,18 +345,9 @@ mod tests {
     }
 
     #[test]
-    fn test_from_slice_uncastable() {
-        let e = DacsByte::from_slice(&[u128::MAX]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("vals must consist only of values castable into usize.".to_string())
-        );
-    }
-
-    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let seq = DacsByte::from_slice(&[0xFFFFF, 0xFF, 0xF, 0xFFFFF, 0xF]).unwrap();
+        let seq = DacsByte::from_slice(&[0xFFFFFu32, 0xFF, 0xF, 0xFFFFF, 0xF]);
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);
