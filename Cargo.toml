@@ -1,6 +1,6 @@
 [package]
 name = "sucds"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["Shunsuke Kanda (kampersanda) <shnsk.knd@gmail.com>"]
 description = "Succinct data structures in Rust"
 license = "MIT OR Apache-2.0"
