@@ -699,6 +699,10 @@ mod tests {
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("bits must not be empty.".to_string())
+        );
     }
 
     #[test]
