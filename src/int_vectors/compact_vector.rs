@@ -30,7 +30,7 @@ use crate::{utils, Serializable};
 /// assert_eq!(cv.len(), 2);
 /// assert_eq!(cv.get_int(0), Some(7));
 ///
-/// cv.set_int(0, 5);
+/// cv.set_int(0, 5)?;
 /// assert_eq!(cv.get_int(0), Some(5));
 /// # Ok(())
 /// # }
