@@ -67,9 +67,9 @@ impl SArray {
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {
-            let mut b = EliasFanoBuilder::new(num_bits, num_ones).unwrap();
+            let mut b = EliasFanoBuilder::new(num_bits as u64, num_ones);
             for i in bv.unary_iter(0) {
-                b.push(i).unwrap();
+                b.push(i as u64).unwrap();
             }
             Some(b.build())
         } else {
@@ -253,7 +253,7 @@ impl Access for SArray {
         }
         self.ef
             .as_ref()
-            .map_or(Some(false), |ef| Some(ef.binsearch(pos).is_some()))
+            .map_or(Some(false), |ef| Some(ef.binsearch(pos as u64).is_some()))
     }
 }
 

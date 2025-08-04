@@ -10,8 +10,8 @@ pub struct Iter<'a> {
     ef: &'a EliasFano,
     k: usize,
     high_iter: Option<UnaryIter<'a>>,
-    low_buf: usize,
-    low_mask: usize,
+    low_buf: u64,
+    low_mask: u64,
     chunks_in_word: usize,
     chunks_avail: usize,
 }
@@ -51,7 +51,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -69,9 +69,9 @@ impl Iterator for Iter<'_> {
             } else {
                 self.chunks_avail -= 1;
             }
-            let high = high_iter.next().unwrap();
+            let high = high_iter.next().unwrap() as u64;
             let low = self.low_buf & self.low_mask;
-            let ret = ((high - self.k) << self.ef.low_len) | low;
+            let ret = ((high - self.k as u64) << self.ef.low_len) | low;
             self.k += 1;
             self.low_buf >>= self.ef.low_len;
             Some(ret)

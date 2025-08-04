@@ -33,11 +33,11 @@ use crate::Serializable;
 ///
 /// // It accepts an integer representable in 8 bits.
 /// let mut seq = CompactVector::new(8)?;
-/// seq.extend(text.chars().map(|c| c as usize))?;
+/// seq.extend(text.chars().map(|c| c as u64 ))?;
 /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
 ///
 /// assert_eq!(wm.len(), len);
-/// assert_eq!(wm.alph_size(), 'n' as usize + 1);
+/// assert_eq!(wm.alph_size(), 'n' as u64 + 1);
 /// assert_eq!(wm.alph_width(), 7);
 ///
 /// assert_eq!(wm.access(2), Some('n' as usize));
@@ -57,7 +57,7 @@ use crate::Serializable;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix<B> {
     layers: Vec<B>,
-    alph_size: usize,
+    alph_size: u64,
 }
 
 impl<B> WaveletMatrix<B>
@@ -147,7 +147,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.access(2), Some('n' as usize));
@@ -197,7 +197,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
@@ -232,7 +232,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.rank_range(1..4, 'a' as usize), Some(2));
@@ -288,7 +288,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.select(1, 'a' as usize), Some(3));
@@ -349,7 +349,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// assert_eq!(wm.quantile(1..4, 0), Some('a' as usize)); // The 0th in "ana" should be "a"
@@ -417,7 +417,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("banana".chars().map(|c| c as usize))?;
+    /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// // Intersections among "ana", "na", and "ba".
@@ -523,7 +523,7 @@ where
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut seq = CompactVector::new(8)?;
-    /// seq.extend("ban".chars().map(|c| c as usize))?;
+    /// seq.extend("ban".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// let mut it = wm.iter();
@@ -552,7 +552,7 @@ where
 
     /// Returns the maximum value + 1 in the sequence, i.e., $`\sigma`$.
     #[inline(always)]
-    pub const fn alph_size(&self) -> usize {
+    pub const fn alph_size(&self) -> u64 {
         self.alph_size
     }
 
@@ -612,7 +612,7 @@ where
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
-        let alph_size = usize::deserialize_from(&mut reader)?;
+        let alph_size = u64::deserialize_from(&mut reader)?;
         Ok(Self { layers, alph_size })
     }
 
@@ -643,11 +643,11 @@ mod test {
         let len = text.chars().count();
 
         let mut seq = CompactVector::new(8).unwrap();
-        seq.extend(text.chars().map(|c| c as usize)).unwrap();
+        seq.extend(text.chars().map(|c| c as u64)).unwrap();
         let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
 
         assert_eq!(wm.len(), len);
-        assert_eq!(wm.alph_size(), ('u' as usize) + 1);
+        assert_eq!(wm.alph_size(), ('u' as u64) + 1);
         assert_eq!(wm.alph_width(), 7);
 
         assert_eq!(wm.access(20), Some('h' as usize));
@@ -667,7 +667,7 @@ mod test {
     fn test_serialize() {
         let text = "tobeornottobethatisthequestion";
         let mut seq = CompactVector::new(8).unwrap();
-        seq.extend(text.chars().map(|c| c as usize)).unwrap();
+        seq.extend(text.chars().map(|c| c as u64)).unwrap();
         let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
 
         let mut bytes = vec![];

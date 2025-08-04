@@ -110,7 +110,7 @@ impl DArrayIndex {
 
             let mut word_idx = start_pos / 64;
             let word_shift = start_pos % 64;
-            let mut word = w(bv, word_idx) & (usize::MAX << word_shift);
+            let mut word = w(bv, word_idx) & (u64::MAX << word_shift);
 
             loop {
                 let popcnt = broadword::popcount(word);
@@ -222,11 +222,11 @@ impl DArrayIndex {
         cur_block_positions.clear();
     }
 
-    fn get_word_over_one(bv: &BitVector, word_idx: usize) -> usize {
+    fn get_word_over_one(bv: &BitVector, word_idx: usize) -> u64 {
         bv.words()[word_idx]
     }
 
-    fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> usize {
+    fn get_word_over_zero(bv: &BitVector, word_idx: usize) -> u64 {
         !bv.words()[word_idx]
     }
 }

@@ -68,7 +68,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use sucds::int_vectors::{DacsOpt, prelude::*};
 //!
-//! let seq = DacsOpt::build_from_slice(&[5, 0, 100000, 334])?;
+//! let seq = DacsOpt::build_from_slice(&[5u64, 0, 100000, 334]);
 //!
 //! assert_eq!(seq.num_vals(), 4);
 //!
@@ -88,9 +88,6 @@ pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 
-use anyhow::Result;
-use num_traits::ToPrimitive;
-
 /// Interface for building integer vectors.
 pub trait Build {
     /// Creates a new vector from a slice of integers `vals`.
@@ -99,12 +96,9 @@ pub trait Build {
     ///
     ///  - `vals`: Slice of integers to be stored.
     ///
-    /// # Errors
-    ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
         Self: Sized;
 }
 
@@ -117,5 +111,5 @@ pub trait NumVals {
 /// Interface for accessing elements on integer vectors.
 pub trait Access {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
-    fn access(&self, pos: usize) -> Option<usize>;
+    fn access(&self, pos: usize) -> Option<u64>;
 }

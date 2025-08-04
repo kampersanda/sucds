@@ -4,7 +4,6 @@
 use std::io::{Read, Write};
 
 use anyhow::{anyhow, Result};
-use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
@@ -145,7 +144,7 @@ impl CompactVector {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_int(val: usize, len: usize, width: usize) -> Result<Self> {
+    pub fn from_int(val: u64, len: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
             return Err(anyhow!("width must be in 1..=64, but got {width}."));
         }
@@ -171,43 +170,35 @@ impl CompactVector {
     ///
     ///  - `vals`: Slice of integers to be stored.
     ///
-    /// # Errors
-    ///
-    /// An error is returned if `vals` contains an integer that cannot be cast to [`usize`].
-    ///
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let mut cv = CompactVector::from_slice(&[7, 2])?;
+    /// let mut cv = CompactVector::from_slice(&[7u64, 2]);
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
-    /// # Ok(())
     /// # }
     /// ```
-    pub fn from_slice<T>(vals: &[T]) -> Result<Self>
+    pub fn from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
     {
         if vals.is_empty() {
-            return Ok(Self::default());
+            return Self::default();
         }
-        let mut max_int = 0;
+        let mut max_int = 0u64;
         for x in vals {
-            max_int =
-                max_int.max(x.to_usize().ok_or_else(|| {
-                    anyhow!("vals must consist only of values castable into usize.")
-                })?);
+            max_int = max_int.max((*x).into());
         }
-        let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int))?;
+        // unwraps should be safe
+        let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int)).unwrap();
         for x in vals {
-            // Casting and pushing should be safe.
-            cv.push_int(x.to_usize().unwrap()).unwrap();
+            cv.push_int((*x).into()).unwrap();
         }
-        Ok(cv)
+        cv
     }
 
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
@@ -226,14 +217,14 @@ impl CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// assert_eq!(cv.get_int(0), Some(5));
     /// assert_eq!(cv.get_int(1), Some(256));
     /// assert_eq!(cv.get_int(2), Some(0));
     /// assert_eq!(cv.get_int(3), None);
     /// # Ok(())
     /// # }
-    pub fn get_int(&self, pos: usize) -> Option<usize> {
+    pub fn get_int(&self, pos: usize) -> Option<u64> {
         self.chunks.get_bits(pos * self.width, self.width)
     }
 
@@ -262,13 +253,13 @@ impl CompactVector {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
-    /// cv.set_int(1, 4)?;
+    /// cv.set_int(1, 4);
     /// assert_eq!(cv.get_int(1), Some(4));
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
-    pub fn set_int(&mut self, pos: usize, val: usize) -> Result<()> {
+    pub fn set_int(&mut self, pos: usize, val: u64) -> Result<()> {
         if self.len() <= pos {
             return Err(anyhow!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
@@ -316,7 +307,7 @@ impl CompactVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn push_int(&mut self, val: usize) -> Result<()> {
+    pub fn push_int(&mut self, val: u64) -> Result<()> {
         if self.width() != 64 && val >> self.width() != 0 {
             return Err(anyhow!(
                 "val must fit in self.width()={} bits, but got {val}.",
@@ -357,7 +348,7 @@ impl CompactVector {
     /// ```
     pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
-        I: IntoIterator<Item = usize>,
+        I: IntoIterator<Item = u64>,
     {
         for x in vals {
             self.push_int(x)?;
@@ -373,7 +364,7 @@ impl CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::CompactVector;
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// let mut it = cv.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -431,9 +422,9 @@ impl Build for CompactVector {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
+    fn build_from_slice<T>(vals: &[T]) -> Self
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)
@@ -465,14 +456,14 @@ impl Access for CompactVector {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use sucds::int_vectors::{CompactVector, Access};
     ///
-    /// let cv = CompactVector::from_slice(&[5, 256, 0])?;
+    /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
     /// assert_eq!(cv.access(0), Some(5));
     /// assert_eq!(cv.access(1), Some(256));
     /// assert_eq!(cv.access(2), Some(0));
     /// assert_eq!(cv.access(3), None);
     /// # Ok(())
     /// # }
-    fn access(&self, pos: usize) -> Option<usize> {
+    fn access(&self, pos: usize) -> Option<u64> {
         self.get_int(pos)
     }
 }
@@ -491,7 +482,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -612,15 +603,6 @@ mod tests {
     }
 
     #[test]
-    fn test_from_slice_uncastable() {
-        let e = CompactVector::from_slice(&[u128::MAX]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("vals must consist only of values castable into usize.".to_string())
-        );
-    }
-
-    #[test]
     fn test_set_int_oob() {
         let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
         let e = cv.set_int(1, 1);
@@ -678,7 +660,7 @@ mod tests {
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let cv = CompactVector::from_slice(&[7, 334, 1, 2]).unwrap();
+        let cv = CompactVector::from_slice(&[7u64, 334, 1, 2]);
         let size = cv.serialize_into(&mut bytes).unwrap();
         let other = CompactVector::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(cv, other);
