@@ -24,8 +24,8 @@ use crate::{utils, Serializable};
 /// // Can store integers within 3 bits each.
 /// let mut cv = CompactVector::new(3)?;
 ///
-/// cv.push_int(7);
-/// cv.push_int(2);
+/// cv.push_int(7)?;
+/// cv.push_int(2)?;
 ///
 /// assert_eq!(cv.len(), 2);
 /// assert_eq!(cv.get_int(0), Some(7));
