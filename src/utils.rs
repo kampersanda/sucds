@@ -57,7 +57,7 @@ impl<'a, T> MatrixView<'a, T> {
     }
 }
 
-impl<'a, T: std::fmt::Debug> std::fmt::Debug for MatrixView<'a, T> {
+impl<T: std::fmt::Debug> std::fmt::Debug for MatrixView<'_, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Use the "pretty" format specifier '#' to decide whether to format nicely
         if f.alternate() {
