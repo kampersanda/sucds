@@ -879,7 +879,7 @@ impl Select for BitVector {
             wpos * WORD_LEN + broadword::select_in_word(!self.words[wpos], k - cur_rank).unwrap();
         // NOTE(kampersanda): sel can be no less than self.len() because overflowed bits are
         // initialized by zero and can be considered by select0.
-        (sel < self.len()).then(|| sel)
+        (sel < self.len()).then_some(sel)
     }
 }
 
