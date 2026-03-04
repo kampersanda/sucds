@@ -534,7 +534,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter<B> {
+    pub const fn iter(&self) -> Iter<'_, B> {
         Iter::new(self)
     }
 

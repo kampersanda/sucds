@@ -581,7 +581,7 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(false));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -602,7 +602,7 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn unary_iter(&self, pos: usize) -> UnaryIter {
+    pub fn unary_iter(&self, pos: usize) -> UnaryIter<'_> {
         UnaryIter::new(self, pos)
     }
 
