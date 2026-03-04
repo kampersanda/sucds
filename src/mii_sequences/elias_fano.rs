@@ -477,7 +477,7 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn iter(&self, k: usize) -> Iter {
+    pub fn iter(&self, k: usize) -> Iter<'_> {
         Iter::new(self, k)
     }
 

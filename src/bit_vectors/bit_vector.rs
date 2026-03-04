@@ -581,7 +581,7 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(false));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -602,7 +602,7 @@ impl BitVector {
     /// assert_eq!(it.next(), Some(3));
     /// assert_eq!(it.next(), None);
     /// ```
-    pub fn unary_iter(&self, pos: usize) -> UnaryIter {
+    pub fn unary_iter(&self, pos: usize) -> UnaryIter<'_> {
         UnaryIter::new(self, pos)
     }
 
@@ -879,7 +879,7 @@ impl Select for BitVector {
             wpos * WORD_LEN + broadword::select_in_word(!self.words[wpos], k - cur_rank).unwrap();
         // NOTE(kampersanda): sel can be no less than self.len() because overflowed bits are
         // initialized by zero and can be considered by select0.
-        (sel < self.len()).then(|| sel)
+        (sel < self.len()).then_some(sel)
     }
 }
 
