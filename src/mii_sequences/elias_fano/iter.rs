@@ -26,7 +26,7 @@ impl<'a> Iter<'a> {
         let low_mask = (1 << ef.low_len) - 1;
 
         let (chunks_in_word, chunks_avail) = if ef.low_len != 0 {
-            (64 / ef.low_len, 0)
+            (64usize.checked_div(ef.low_len).unwrap(), 0)
         } else {
             (0, ef.len())
         };
