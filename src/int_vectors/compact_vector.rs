@@ -195,10 +195,10 @@ impl CompactVector {
         }
         let mut max_int = 0;
         for x in vals {
-            max_int =
-                max_int.max(x.to_usize().ok_or_else(|| {
-                    format!("vals must consist only of values castable into usize.")
-                })?);
+            max_int = max_int.max(
+                x.to_usize()
+                    .ok_or("vals must consist only of values castable into usize.")?,
+            );
         }
         let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int))?;
         for x in vals {

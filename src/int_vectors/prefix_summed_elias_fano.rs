@@ -90,13 +90,13 @@ impl PrefixSummedEliasFano {
         T: ToPrimitive,
     {
         if vals.is_empty() {
-            return Err(format!("vals must not be empty.").into());
+            return Err("vals must not be empty.".into());
         }
         let mut universe = 0;
         for x in vals {
             universe += x
                 .to_usize()
-                .ok_or_else(|| format!("vals must consist only of values castable into usize."))?;
+                .ok_or("vals must consist only of values castable into usize.")?;
         }
         let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
         let mut cur = 0;

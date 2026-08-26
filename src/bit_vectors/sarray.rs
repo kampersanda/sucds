@@ -203,7 +203,7 @@ impl Build for SArray {
         Self: Sized,
     {
         if with_select0 {
-            return Err(format!("select0 is not supported for SArray.").into());
+            return Err("select0 is not supported for SArray.".into());
         }
         let mut rsbv = Self::from_bits(bits);
         if with_rank {

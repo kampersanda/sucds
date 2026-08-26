@@ -73,7 +73,7 @@ where
     ///  - `B::build_from_bits` fails.
     pub fn new(seq: CompactVector) -> Result<Self> {
         if seq.is_empty() {
-            return Err(format!("seq must not be empty.").into());
+            return Err("seq must not be empty.".into());
         }
 
         let alph_size = seq.iter().max().unwrap() + 1;

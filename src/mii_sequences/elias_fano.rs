@@ -100,12 +100,12 @@ impl EliasFano {
     {
         let bv = BitVector::from_bits(bits);
         if bv.num_bits() == 0 {
-            return Err(format!("bits must not be empty.").into());
+            return Err("bits must not be empty.".to_string().into());
         }
         let n = bv.num_bits();
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         if m == 0 {
-            return Err(format!("bits must contains one set bit at least.").into());
+            return Err("bits must contains one set bit at least.".into());
         }
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
@@ -575,7 +575,7 @@ impl EliasFanoBuilder {
     /// An error is returned if `num_vals == 0`.
     pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
         if num_vals == 0 {
-            return Err(format!("num_vals must not be zero.").into());
+            return Err("num_vals must not be zero.".into());
         }
         let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
         Ok(Self {

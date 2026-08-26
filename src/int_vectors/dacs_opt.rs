@@ -92,7 +92,7 @@ impl DacsOpt {
         }
         for x in vals {
             x.to_usize()
-                .ok_or_else(|| format!("vals must consist only of values castable into usize."))?;
+                .ok_or("vals must consist only of values castable into usize.")?;
         }
 
         let widths = Self::compute_opt_widths(vals, max_levels);
