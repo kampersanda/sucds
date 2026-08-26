@@ -3,11 +3,10 @@ pub mod unary;
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
-
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
 use crate::utils::MatrixView;
+use crate::Result;
 use crate::Serializable;
 use unary::UnaryIter;
 
@@ -19,7 +18,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::bit_vectors::BitVector;
 ///
 /// let mut bv = BitVector::new();
@@ -173,7 +172,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::from_bits([false, true, false]);
@@ -185,10 +184,11 @@ impl BitVector {
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
         if self.len() <= pos {
-            return Err(anyhow!(
+            return Err(format!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
                 self.len()
-            ));
+            )
+            .into());
         }
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
@@ -291,7 +291,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::from_bit(false, 4);
@@ -303,16 +303,15 @@ impl BitVector {
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(anyhow!(
-                "len must be no greater than {WORD_LEN}, but got {len}."
-            ));
+            return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
         }
         if self.len() < pos + len {
-            return Err(anyhow!(
+            return Err(format!(
                 "pos+len must be no greater than self.len()={}, but got {}.",
                 self.len(),
                 pos + len
-            ));
+            )
+            .into());
         }
         if len == 0 {
             return Ok(());
@@ -361,7 +360,7 @@ impl BitVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::BitVector;
     ///
     /// let mut bv = BitVector::new();
@@ -374,9 +373,7 @@ impl BitVector {
     #[inline(always)]
     pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(anyhow!(
-                "len must be no greater than {WORD_LEN}, but got {len}."
-            ));
+            return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
         }
         if len == 0 {
             return Ok(());

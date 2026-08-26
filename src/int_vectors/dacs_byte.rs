@@ -4,12 +4,12 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
+use crate::Result;
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
@@ -32,7 +32,7 @@ const LEVEL_MASK: usize = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{DacsByte, Access};
 ///
 /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
@@ -80,7 +80,7 @@ impl DacsByte {
         for x in vals {
             maxv =
                 maxv.max(x.to_usize().ok_or_else(|| {
-                    anyhow!("vals must consist only of values castable into usize.")
+                    format!("vals must consist only of values castable into usize.")
                 })?);
         }
         let num_bits = utils::needed_bits(maxv);
@@ -126,7 +126,7 @@ impl DacsByte {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::DacsByte;
     ///
     /// let seq = DacsByte::from_slice(&[5, 0, 100000, 334])?;
@@ -210,7 +210,7 @@ impl Access for DacsByte {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{DacsByte, Access};
     ///
     /// let seq = DacsByte::from_slice(&[5, 999, 334])?;

@@ -5,11 +5,10 @@ pub mod inner;
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
-
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::rank9sel::inner::Rank9SelIndex;
 use crate::bit_vectors::BitVector;
+use crate::Result;
 use crate::Serializable;
 use inner::DArrayIndex;
 
