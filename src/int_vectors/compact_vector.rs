@@ -219,6 +219,7 @@ impl CompactVector {
     /// assert_eq!(cv.get_int(3), None);
     /// # Ok(())
     /// # }
+    /// ```
     pub fn get_int(&self, pos: usize) -> Option<u64> {
         self.chunks.get_bits(pos * self.width, self.width)
     }
@@ -461,6 +462,7 @@ impl Access for CompactVector {
     /// assert_eq!(cv.access(3), None);
     /// # Ok(())
     /// # }
+    /// ```
     fn access(&self, pos: usize) -> Option<u64> {
         self.get_int(pos)
     }
