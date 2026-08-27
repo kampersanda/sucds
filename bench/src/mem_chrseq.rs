@@ -18,8 +18,8 @@ fn load_text(s: &str) -> CompactVector {
     let mut alphabet = BitVector::from_bit(false, 256);
     text.iter()
         .for_each(|&c| alphabet.set_bit(usize::from(c), true).unwrap());
-    for i in 0..text.len() {
-        text[i] = alphabet.rank1(usize::from(text[i])).unwrap() as u8;
+    for c in &mut text {
+        *c = alphabet.rank1(usize::from(*c)).unwrap() as u8;
     }
     CompactVector::from_slice(&text)
 }
