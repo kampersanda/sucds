@@ -41,15 +41,12 @@ jobs:
   test:
     name: Test on ${{ matrix.rust }}
     runs-on: ubuntu-latest
-    # Nightly is informational only; do not let it block the workflow.
-    continue-on-error: ${{ matrix.rust == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
         rust:
           - 1.62.0 # MSRV
           - stable
-          - nightly
     steps:
       - uses: actions/checkout@v5
       - name: Install ${{ matrix.rust }}
