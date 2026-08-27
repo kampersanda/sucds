@@ -68,7 +68,7 @@
 //! # fn main() -> sucds::Result<()> {
 //! use sucds::int_vectors::{DacsOpt, prelude::*};
 //!
-//! let seq = DacsOpt::build_from_slice(&[5u64, 0, 100000, 334]);
+//! let seq = DacsOpt::build_from_slice(&[5u64, 0, 100000, 334])?;
 //!
 //! assert_eq!(seq.num_vals(), 4);
 //!
@@ -88,6 +88,8 @@ pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 
+use crate::Result;
+
 /// Interface for building integer vectors.
 pub trait Build {
     /// Creates a new vector from a slice of integers `vals`.
@@ -96,7 +98,11 @@ pub trait Build {
     ///
     ///  - `vals`: Slice of integers to be stored.
     ///
-    fn build_from_slice<T>(vals: &[T]) -> Self
+    /// # Errors
+    ///
+    /// An error is returned if the implementation cannot store `vals`.
+    /// See the documentation of each implementation for the details.
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: Into<u64> + Copy,
         Self: Sized;

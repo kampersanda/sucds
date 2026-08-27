@@ -420,12 +420,12 @@ impl Build for CompactVector {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`]. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Self
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: Into<u64> + Copy,
         Self: Sized,
     {
-        Self::from_slice(vals)
+        Ok(Self::from_slice(vals))
     }
 }
 

@@ -281,13 +281,12 @@ impl Build for DacsOpt {
     /// Creates a new vector from a slice of integers `vals`.
     ///
     /// This just calls [`Self::from_slice()`] with `max_levels == None`. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Self
+    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
     where
         T: Into<u64> + Copy,
         Self: Sized,
     {
-        // `max_levels == None` is always valid, so this never fails.
-        Self::from_slice(vals, None).expect("max_levels == None must not cause an error.")
+        Self::from_slice(vals, None)
     }
 }
 

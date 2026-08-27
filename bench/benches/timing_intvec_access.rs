@@ -87,7 +87,7 @@ fn perform_intvec_access(group: &mut BenchmarkGroup<WallTime>, vals: &[u32]) {
     });
 
     group.bench_function("sucds/PrefixSummedEliasFano", |b| {
-        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals);
+        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals).unwrap();
         b.iter(|| run_queries(&idx, &queries));
     });
 

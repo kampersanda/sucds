@@ -43,7 +43,7 @@ fn show_memories(title: &str, vals: &[u32]) {
     print_memory("CompactVector", bytes, vals.len());
 
     let bytes = {
-        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals);
+        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals).unwrap();
         idx.size_in_bytes()
     };
     print_memory("PrefixSummedEliasFano", bytes, vals.len());
