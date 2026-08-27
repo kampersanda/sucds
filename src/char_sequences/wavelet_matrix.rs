@@ -36,7 +36,7 @@ use crate::Serializable;
 /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
 ///
 /// assert_eq!(wm.len(), len);
-/// assert_eq!(wm.alph_size(), 'n' as u64 + 1);
+/// assert_eq!(wm.max_value(), 'n' as u64);
 /// assert_eq!(wm.alph_width(), 7);
 ///
 /// assert_eq!(wm.access(2), Some('n' as u64));
@@ -56,7 +56,7 @@ use crate::Serializable;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix<B> {
     layers: Vec<B>,
-    alph_size: u64,
+    max_value: u64,
 }
 
 impl<B> WaveletMatrix<B>
@@ -76,8 +76,8 @@ where
             return Err("seq must not be empty.".into());
         }
 
-        let alph_size = seq.iter().max().unwrap() + 1;
-        let alph_width = utils::needed_bits(alph_size);
+        let max_value = seq.iter().max().unwrap();
+        let alph_width = utils::needed_bits(max_value);
 
         let mut zeros = seq;
         let mut ones = CompactVector::new(alph_width).unwrap();
@@ -106,7 +106,7 @@ where
             layers.push(B::build_from_bits(bv.iter(), true, true, true)?);
         }
 
-        Ok(Self { layers, alph_size })
+        Ok(Self { layers, max_value })
     }
 
     fn filter(
@@ -543,10 +543,23 @@ where
         self.len() == 0
     }
 
+    /// Returns the maximum value in the sequence.
+    #[inline(always)]
+    pub const fn max_value(&self) -> u64 {
+        self.max_value
+    }
+
     /// Returns the maximum value + 1 in the sequence, i.e., $`\sigma`$.
+    ///
+    /// Note that the returned value saturates at [`u64::MAX`] when the sequence contains
+    /// [`u64::MAX`], since $`\sigma = 2^{64}`$ is not representable in [`u64`].
+    #[deprecated(
+        since = "0.9.0",
+        note = "`alph_size()` cannot represent sigma = 2^64 and saturates at u64::MAX. Use `max_value()` instead."
+    )]
     #[inline(always)]
     pub const fn alph_size(&self) -> u64 {
-        self.alph_size
+        self.max_value.saturating_add(1)
     }
 
     /// Returns $`\lceil \log_2{\sigma} \rceil`$, which is the number of layers in the matrix.
@@ -599,18 +612,18 @@ where
 {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
-        mem += self.alph_size.serialize_into(&mut writer)?;
+        mem += self.max_value.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
-        let alph_size = u64::deserialize_from(&mut reader)?;
-        Ok(Self { layers, alph_size })
+        let max_value = u64::deserialize_from(&mut reader)?;
+        Ok(Self { layers, max_value })
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.layers.size_in_bytes() + usize::size_of().unwrap()
+        self.layers.size_in_bytes() + u64::size_of().unwrap()
     }
 }
 
@@ -630,6 +643,55 @@ mod test {
     }
 
     #[test]
+    fn test_max_value() {
+        let mut seq = CompactVector::new(64).unwrap();
+        seq.extend([0, u64::MAX, 42, u64::MAX]).unwrap();
+        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+
+        assert_eq!(wm.len(), 4);
+        assert_eq!(wm.alph_width(), 64);
+        assert_eq!(wm.max_value(), u64::MAX);
+        #[allow(deprecated)]
+        {
+            // Saturated because sigma = 2^64 is not representable in u64.
+            assert_eq!(wm.alph_size(), u64::MAX);
+        }
+
+        assert_eq!(wm.access(0), Some(0));
+        assert_eq!(wm.access(1), Some(u64::MAX));
+        assert_eq!(wm.access(2), Some(42));
+        assert_eq!(wm.access(3), Some(u64::MAX));
+
+        assert_eq!(wm.rank(4, u64::MAX), Some(2));
+        assert_eq!(wm.rank(2, u64::MAX), Some(1));
+        assert_eq!(wm.select(1, u64::MAX), Some(3));
+        assert_eq!(wm.select(0, 42), Some(2));
+
+        assert_eq!(wm.quantile(0..4, 0), Some(0));
+        assert_eq!(wm.quantile(0..4, 1), Some(42));
+        assert_eq!(wm.quantile(0..4, 3), Some(u64::MAX));
+
+        assert_eq!(wm.intersect(&[0..2, 2..4], 1), Some(vec![u64::MAX]));
+    }
+
+    #[test]
+    fn test_pow2_alph_size() {
+        // The maximum value 255 fits in 8 bits, i.e., sigma = 256 needs 8 layers.
+        let mut seq = CompactVector::new(8).unwrap();
+        seq.extend([255, 0, 128]).unwrap();
+        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+
+        assert_eq!(wm.max_value(), 255);
+        assert_eq!(wm.alph_width(), 8);
+
+        assert_eq!(wm.access(0), Some(255));
+        assert_eq!(wm.access(1), Some(0));
+        assert_eq!(wm.access(2), Some(128));
+        assert_eq!(wm.rank(3, 128), Some(1));
+        assert_eq!(wm.select(0, 255), Some(0));
+    }
+
+    #[test]
     fn test_navarro_book() {
         // This test example is from G. Navarro's "Compact Data Structures" P130
         let text = "tobeornottobethatisthequestion";
@@ -640,7 +702,7 @@ mod test {
         let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
 
         assert_eq!(wm.len(), len);
-        assert_eq!(wm.alph_size(), ('u' as u64) + 1);
+        assert_eq!(wm.max_value(), 'u' as u64);
         assert_eq!(wm.alph_width(), 7);
 
         assert_eq!(wm.access(20), Some('h' as u64));
