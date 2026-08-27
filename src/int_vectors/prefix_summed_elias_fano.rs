@@ -53,7 +53,7 @@ use crate::Serializable;
 ///    In ALENEX, 2007.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct PrefixSummedEliasFano {
-    ef: EliasFano,
+    ef: Option<EliasFano>,
 }
 
 impl PrefixSummedEliasFano {
@@ -80,17 +80,23 @@ impl PrefixSummedEliasFano {
     where
         T: Into<u64> + Copy,
     {
+        if vals.is_empty() {
+            return Self { ef: None };
+        }
+
         let mut universe = 0;
         for x in vals {
             universe += (*x).into();
         }
-        let mut b = EliasFanoBuilder::new(universe + 1, vals.len());
+        let mut b = EliasFanoBuilder::new(universe + 1, vals.len()).unwrap();
         let mut cur = 0;
         for x in vals {
             cur += (*x).into();
             b.push(cur).unwrap();
         }
-        Self { ef: b.build() }
+        Self {
+            ef: Some(b.build()),
+        }
     }
 
     /// Creates an iterator for enumerating integers.
@@ -118,7 +124,7 @@ impl PrefixSummedEliasFano {
 
     /// Gets the number of integers.
     pub fn len(&self) -> usize {
-        self.ef.len()
+        self.ef.as_ref().map_or(0, EliasFano::len)
     }
 
     /// Checks if the sequence is empty.
@@ -128,7 +134,10 @@ impl PrefixSummedEliasFano {
 
     /// Gets the sum of integers.
     pub const fn sum(&self) -> u64 {
-        self.ef.universe() - 1
+        match &self.ef {
+            Some(ef) => ef.universe() - 1,
+            None => 0,
+        }
     }
 }
 
@@ -174,7 +183,7 @@ impl Access for PrefixSummedEliasFano {
     /// # }
     /// ```
     fn access(&self, pos: usize) -> Option<u64> {
-        self.ef.delta(pos)
+        self.ef.as_ref()?.delta(pos)
     }
 }
 
@@ -184,7 +193,7 @@ impl Serializable for PrefixSummedEliasFano {
     }
 
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let ef = EliasFano::deserialize_from(reader)?;
+        let ef = Option::<EliasFano>::deserialize_from(reader)?;
         Ok(Self { ef })
     }
 
@@ -231,9 +240,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_empty() {
+        let seq = PrefixSummedEliasFano::from_slice::<u64>(&[]);
+        assert!(seq.is_empty());
+        assert_eq!(seq.len(), 0);
+        assert_eq!(seq.sum(), 0);
+        assert_eq!(seq.access(0), None);
+        assert_eq!(seq.iter().next(), None);
+    }
+
+    #[test]
     fn test_serialize() {
         let mut bytes = vec![];
         let seq = PrefixSummedEliasFano::from_slice(&[5u16, 14, 334, 10]);
+        let size = seq.serialize_into(&mut bytes).unwrap();
+        let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(seq, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, seq.size_in_bytes());
+    }
+
+    #[test]
+    fn test_serialize_empty() {
+        let mut bytes = vec![];
+        let seq = PrefixSummedEliasFano::default();
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);

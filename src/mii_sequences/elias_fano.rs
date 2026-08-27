@@ -31,8 +31,8 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # fn main() -> sucds::Result<()> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
-/// let mut efb = EliasFanoBuilder::new(8, 4);
-/// efb.extend([1, 3, 3, 7]);
+/// let mut efb = EliasFanoBuilder::new(8, 4)?;
+/// efb.extend([1, 3, 3, 7])?;
 /// let ef = efb.build();
 ///
 /// assert_eq!(ef.len(), 4);
@@ -107,10 +107,10 @@ impl EliasFano {
         if m == 0 {
             return Err("bits must contains one set bit at least.".into());
         }
-        let mut b = EliasFanoBuilder::new(n as u64, m);
+        let mut b = EliasFanoBuilder::new(n as u64, m)?;
         for i in 0..n {
             if bv.access(i).unwrap() {
-                b.push(i as u64).unwrap();
+                b.push(i as u64)?;
             }
         }
         Ok(b.build())
@@ -143,8 +143,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.delta(0), Some(1));
@@ -203,8 +203,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(11, 6);
-    /// efb.extend([1, 3, 3, 6, 7, 10]);
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.binsearch(6), Some(3));
@@ -238,8 +238,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(11, 6);
-    /// efb.extend([1, 3, 3, 6, 7, 10]);
+    /// let mut efb = EliasFanoBuilder::new(11, 6)?;
+    /// efb.extend([1, 3, 3, 6, 7, 10])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.binsearch_range(1..4, 6), Some(3));
@@ -298,8 +298,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.rank(3), Some(1));
@@ -350,8 +350,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// assert_eq!(ef.select(0), Some(1));
@@ -393,8 +393,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.predecessor(4), Some(3));
@@ -431,8 +431,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build().enable_rank();
     ///
     /// assert_eq!(ef.successor(0), Some(1));
@@ -464,8 +464,8 @@ impl EliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
-    /// let mut efb = EliasFanoBuilder::new(8, 4);
-    /// efb.extend([1, 3, 3, 7]);
+    /// let mut efb = EliasFanoBuilder::new(8, 4)?;
+    /// efb.extend([1, 3, 3, 7])?;
     /// let ef = efb.build();
     ///
     /// let mut it = ef.iter(1);
@@ -537,14 +537,14 @@ impl Serializable for EliasFano {
 /// # fn main() -> sucds::Result<()> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
-/// let mut efb = EliasFanoBuilder::new(8, 5);
+/// let mut efb = EliasFanoBuilder::new(8, 5)?;
 ///
 /// assert_eq!(efb.universe(), 8);
 /// assert_eq!(efb.num_vals(), 5);
 ///
-/// efb.push(1);
-/// efb.push(3);
-/// efb.extend([3, 5, 7]);
+/// efb.push(1)?;
+/// efb.push(3)?;
+/// efb.extend([3, 5, 7])?;
 ///
 /// let ef = efb.build();
 /// assert_eq!(ef.len(), 5);
@@ -570,20 +570,15 @@ impl EliasFanoBuilder {
     /// - `universe`: The (exclusive) upper bound of integers to be stored, i.e., an integer in `[0..universe - 1]`.
     /// - `num_vals`: The number of integers that will be pushed (> 0).
     ///
-    pub fn new(universe: u64, num_vals: usize) -> Self {
+    /// # Errors
+    ///
+    /// An error is returned if `num_vals == 0`.
+    pub fn new(universe: u64, num_vals: usize) -> Result<Self> {
         if num_vals == 0 {
-            return Self {
-                high_bits: BitVector::new(),
-                low_bits: BitVector::new(),
-                universe,
-                num_vals,
-                pos: 0,
-                last: 0,
-                low_len: 0,
-            };
+            return Err("num_vals must not be zero.".into());
         }
         let low_len = broadword::msb(universe / num_vals as u64).unwrap_or(0);
-        Self {
+        Ok(Self {
             high_bits: BitVector::from_bit(
                 false,
                 (num_vals + 1) + (universe >> low_len) as usize + 1,
@@ -594,7 +589,7 @@ impl EliasFanoBuilder {
             pos: 0,
             last: 0,
             low_len,
-        }
+        })
     }
 
     /// Pushes integer `val` at the end.
@@ -731,15 +726,16 @@ mod tests {
 
     #[test]
     fn test_builder_new_zero_size() {
-        let b = EliasFanoBuilder::new(3, 0);
-        assert_eq!(b.universe(), 3);
-        assert_eq!(b.num_vals(), 0);
-        assert_eq!(b.build().len(), 0);
+        let e = EliasFanoBuilder::new(3, 0);
+        assert_eq!(
+            e.err().map(|x| x.to_string()),
+            Some("num_vals must not be zero.".to_string())
+        );
     }
 
     #[test]
     fn test_builder_push_decrease() {
-        let mut b = EliasFanoBuilder::new(3, 2);
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         b.push(2).unwrap();
         let e = b.push(1);
         assert_eq!(
@@ -750,7 +746,7 @@ mod tests {
 
     #[test]
     fn test_builder_overflow_universe() {
-        let mut b = EliasFanoBuilder::new(3, 2);
+        let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         let e = b.push(3);
         assert_eq!(
             e.err().map(|x| x.to_string()),
@@ -760,7 +756,7 @@ mod tests {
 
     #[test]
     fn test_builder_overflow_num_vals() {
-        let mut b = EliasFanoBuilder::new(3, 1);
+        let mut b = EliasFanoBuilder::new(3, 1).unwrap();
         b.push(1).unwrap();
         let e = b.push(2);
         assert_eq!(

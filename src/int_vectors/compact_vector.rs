@@ -170,15 +170,12 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_slice(&[7u64, 2]);
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
-    /// # Ok(())
-    /// # }
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Self
     where

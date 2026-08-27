@@ -66,7 +66,7 @@ impl SArray {
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {
-            let mut b = EliasFanoBuilder::new(num_bits as u64, num_ones);
+            let mut b = EliasFanoBuilder::new(num_bits as u64, num_ones).unwrap();
             for i in bv.unary_iter(0) {
                 b.push(i as u64).unwrap();
             }
