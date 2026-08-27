@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC.
+    - cron: '0 0 * * 1'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Run cargo fmt
+        run: cargo fmt --all --check
+      - name: Run cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings -W clippy::nursery
+
+  test:
+    name: Test on ${{ matrix.rust }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust:
+          - 1.62.0 # MSRV
+          - stable
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install ${{ matrix.rust }}
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal
+          rustup default ${{ matrix.rust }}
+      - name: Run cargo test
+        run: cargo test --release
+      - name: Run cargo test (intrinsics)
+        run: cargo test --release --features intrinsics
+        env:
+          RUSTFLAGS: '-C target-cpu=native'
+
+  doc:
+    name: Doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Run cargo doc
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: '--html-in-header katex.html -D warnings'
