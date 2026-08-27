@@ -7,11 +7,9 @@ use crate::intrinsics;
 
 pub(crate) const ONES_STEP_4: u64 = 0x1111111111111111;
 pub(crate) const ONES_STEP_8: usize = 0x0101010101010101;
-pub(crate) const ONES_STEP_8_U64: u64 = 0x0101010101010101;
 pub(crate) const ONES_STEP_9: usize =
     (1 << 0) | (1 << 9) | (1 << 18) | (1 << 27) | (1 << 36) | (1 << 45) | (1 << 54);
 pub(crate) const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
-pub(crate) const MSBS_STEP_8_U64: u64 = 0x80 * ONES_STEP_8_U64;
 pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
 pub(crate) const INV_COUNT_STEP_9: usize =
     (1 << 54) | (2 << 45) | (3 << 36) | (4 << 27) | (5 << 18) | (6 << 9) | 7;
@@ -35,12 +33,12 @@ pub(crate) const fn uleq_step_9(x: usize, y: usize) -> usize {
 pub(crate) const fn byte_counts(mut x: u64) -> usize {
     x = x - ((x & (0xa * ONES_STEP_4)) >> 1);
     x = (x & (3 * ONES_STEP_4)) + ((x >> 2) & (3 * ONES_STEP_4));
-    ((x + (x >> 4)) & (0x0f * ONES_STEP_8_U64)) as usize
+    ((x + (x >> 4)) & (0x0f * ONES_STEP_8 as u64)) as usize
 }
 
 #[inline(always)]
 pub(crate) const fn bytes_sum(x: u64) -> usize {
-    (ONES_STEP_8_U64.wrapping_mul(x) >> 56) as usize
+    ((ONES_STEP_8 as u64).wrapping_mul(x) >> 56) as usize
 }
 
 /// Counts the number of set bits.
