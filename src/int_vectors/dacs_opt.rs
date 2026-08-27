@@ -286,7 +286,8 @@ impl Build for DacsOpt {
         T: Into<u64> + Copy,
         Self: Sized,
     {
-        Self::from_slice(vals, None).unwrap()
+        // `max_levels == None` is always valid, so this never fails.
+        Self::from_slice(vals, None).expect("max_levels == None must not cause an error.")
     }
 }
 

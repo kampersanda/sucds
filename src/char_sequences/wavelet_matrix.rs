@@ -32,16 +32,16 @@ use crate::Serializable;
 ///
 /// // It accepts an integer representable in 8 bits.
 /// let mut seq = CompactVector::new(8)?;
-/// seq.extend(text.chars().map(|c| c as u64 ))?;
+/// seq.extend(text.chars().map(|c| c as u64))?;
 /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
 ///
 /// assert_eq!(wm.len(), len);
 /// assert_eq!(wm.alph_size(), 'n' as u64 + 1);
 /// assert_eq!(wm.alph_width(), 7);
 ///
-/// assert_eq!(wm.access(2), Some('n' as usize));
-/// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
-/// assert_eq!(wm.select(1, 'n' as usize), Some(4));
+/// assert_eq!(wm.access(2), Some('n' as u64));
+/// assert_eq!(wm.rank(3, 'a' as u64), Some(1));
+/// assert_eq!(wm.select(1, 'n' as u64), Some(4));
 /// # Ok(())
 /// # }
 /// ```
@@ -149,8 +149,8 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.access(2), Some('n' as usize));
-    /// assert_eq!(wm.access(5), Some('a' as usize));
+    /// assert_eq!(wm.access(2), Some('n' as u64));
+    /// assert_eq!(wm.access(5), Some('a' as u64));
     /// assert_eq!(wm.access(6), None);
     /// # Ok(())
     /// # }
@@ -158,7 +158,7 @@ where
     // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
     // containers with different type annotations.
     #[inline(always)]
-    pub fn access(&self, mut pos: usize) -> Option<usize> {
+    pub fn access(&self, mut pos: usize) -> Option<u64> {
         if self.len() <= pos {
             return None;
         }
@@ -199,14 +199,14 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.rank(3, 'a' as usize), Some(1));
-    /// assert_eq!(wm.rank(5, 'c' as usize), Some(0));
-    /// assert_eq!(wm.rank(7, 'b' as usize), None);
+    /// assert_eq!(wm.rank(3, 'a' as u64), Some(1));
+    /// assert_eq!(wm.rank(5, 'c' as u64), Some(0));
+    /// assert_eq!(wm.rank(7, 'b' as u64), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
-    pub fn rank(&self, pos: usize, val: usize) -> Option<usize> {
+    pub fn rank(&self, pos: usize, val: u64) -> Option<usize> {
         self.rank_range(0..pos, val)
     }
 
@@ -234,14 +234,14 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.rank_range(1..4, 'a' as usize), Some(2));
-    /// assert_eq!(wm.rank_range(2..4, 'c' as usize), Some(0));
-    /// assert_eq!(wm.rank_range(4..7, 'b' as usize), None);
+    /// assert_eq!(wm.rank_range(1..4, 'a' as u64), Some(2));
+    /// assert_eq!(wm.rank_range(2..4, 'c' as u64), Some(0));
+    /// assert_eq!(wm.rank_range(4..7, 'b' as u64), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn rank_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+    pub fn rank_range(&self, range: Range<usize>, val: u64) -> Option<usize> {
         if range.is_empty() {
             return Some(0);
         }
@@ -290,24 +290,18 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.select(1, 'a' as usize), Some(3));
-    /// assert_eq!(wm.select(0, 'c' as usize), None);
+    /// assert_eq!(wm.select(1, 'a' as u64), Some(3));
+    /// assert_eq!(wm.select(0, 'c' as u64), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
-    pub fn select(&self, k: usize, val: usize) -> Option<usize> {
+    pub fn select(&self, k: usize, val: u64) -> Option<usize> {
         self.select_helper(k, val, 0, 0)
     }
 
     #[inline]
-    fn select_helper(
-        &self,
-        mut k: usize,
-        val: usize,
-        mut pos: usize,
-        depth: usize,
-    ) -> Option<usize> {
+    fn select_helper(&self, mut k: usize, val: u64, mut pos: usize, depth: usize) -> Option<usize> {
         if depth == self.alph_width() {
             return Some(pos + k);
         }
@@ -351,15 +345,15 @@ where
     /// seq.extend("banana".chars().map(|c| c as u64))?;
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
-    /// assert_eq!(wm.quantile(1..4, 0), Some('a' as usize)); // The 0th in "ana" should be "a"
-    /// assert_eq!(wm.quantile(1..4, 1), Some('a' as usize)); // The 1st in "ana" should be "a"
-    /// assert_eq!(wm.quantile(1..4, 2), Some('n' as usize)); // The 1st in "ana" should be "n"
+    /// assert_eq!(wm.quantile(1..4, 0), Some('a' as u64)); // The 0th in "ana" should be "a"
+    /// assert_eq!(wm.quantile(1..4, 1), Some('a' as u64)); // The 1st in "ana" should be "a"
+    /// assert_eq!(wm.quantile(1..4, 2), Some('n' as u64)); // The 1st in "ana" should be "n"
     /// assert_eq!(wm.quantile(1..4, 3), None);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn quantile(&self, range: Range<usize>, mut k: usize) -> Option<usize> {
+    pub fn quantile(&self, range: Range<usize>, mut k: usize) -> Option<u64> {
         if range.len() <= k {
             return None;
         }
@@ -422,15 +416,15 @@ where
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 0),
-    ///     Some(vec!['a' as usize, 'b' as usize, 'n' as usize])
+    ///     Some(vec!['a' as u64, 'b' as u64, 'n' as u64])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 1),
-    ///     Some(vec!['a' as usize, 'n' as usize])
+    ///     Some(vec!['a' as u64, 'n' as u64])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 2),
-    ///     Some(vec!['a' as usize])
+    ///     Some(vec!['a' as u64])
     /// );
     /// assert_eq!(
     ///     wm.intersect(&[1..4, 4..6, 0..2], 3),
@@ -440,7 +434,7 @@ where
     /// # }
     /// ```
     #[inline(always)]
-    pub fn intersect(&self, ranges: &[Range<usize>], k: usize) -> Option<Vec<usize>> {
+    pub fn intersect(&self, ranges: &[Range<usize>], k: usize) -> Option<Vec<u64>> {
         self.intersect_helper(ranges, k, 0, 0)
     }
 
@@ -450,8 +444,8 @@ where
         ranges: &[Range<usize>],
         k: usize,
         depth: usize,
-        prefix: usize,
-    ) -> Option<Vec<usize>> {
+        prefix: u64,
+    ) -> Option<Vec<u64>> {
         if depth == self.alph_width() {
             return Some(vec![prefix]);
         }
@@ -507,7 +501,7 @@ where
     }
 
     #[inline(always)]
-    const fn get_msb(val: usize, pos: usize, width: usize) -> bool {
+    const fn get_msb(val: u64, pos: usize, width: usize) -> bool {
         ((val >> (width - pos - 1)) & 1) == 1
     }
 
@@ -526,9 +520,9 @@ where
     /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
     ///
     /// let mut it = wm.iter();
-    /// assert_eq!(it.next(), Some('b' as usize));
-    /// assert_eq!(it.next(), Some('a' as usize));
-    /// assert_eq!(it.next(), Some('n' as usize));
+    /// assert_eq!(it.next(), Some('b' as u64));
+    /// assert_eq!(it.next(), Some('a' as u64));
+    /// assert_eq!(it.next(), Some('n' as u64));
     /// assert_eq!(it.next(), None);
     /// # Ok(())
     /// # }
@@ -579,7 +573,7 @@ impl<B> Iterator for Iter<'_, B>
 where
     B: Access + Build + NumBits + Rank + Select,
 {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -649,17 +643,17 @@ mod test {
         assert_eq!(wm.alph_size(), ('u' as u64) + 1);
         assert_eq!(wm.alph_width(), 7);
 
-        assert_eq!(wm.access(20), Some('h' as usize));
-        assert_eq!(wm.rank(22, 'o' as usize), Some(4));
-        assert_eq!(wm.select(2, 't' as usize), Some(9));
+        assert_eq!(wm.access(20), Some('h' as u64));
+        assert_eq!(wm.rank(22, 'o' as u64), Some(4));
+        assert_eq!(wm.select(2, 't' as u64), Some(9));
 
-        assert_eq!(wm.quantile(0..len, 0), Some('a' as usize)); // min
-        assert_eq!(wm.quantile(0..len, len / 2), Some('o' as usize)); // median
-        assert_eq!(wm.quantile(0..len, len - 1), Some('u' as usize)); // max
-        assert_eq!(wm.quantile(0..3, 0), Some('b' as usize)); // zero-th in "tob" should be "b"
+        assert_eq!(wm.quantile(0..len, 0), Some('a' as u64)); // min
+        assert_eq!(wm.quantile(0..len, len / 2), Some('o' as u64)); // median
+        assert_eq!(wm.quantile(0..len, len - 1), Some('u' as u64)); // max
+        assert_eq!(wm.quantile(0..3, 0), Some('b' as u64)); // zero-th in "tob" should be "b"
 
         let ranges = vec![0..3, 3..6];
-        assert_eq!(wm.intersect(&ranges, 1), Some(vec!['o' as usize]));
+        assert_eq!(wm.intersect(&ranges, 1), Some(vec!['o' as u64]));
     }
 
     #[test]

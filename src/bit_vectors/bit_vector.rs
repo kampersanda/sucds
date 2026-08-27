@@ -10,8 +10,8 @@ use crate::Result;
 use crate::Serializable;
 use unary::UnaryIter;
 
-/// The number of bits in a machine word.
-pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+/// The number of bits in a word of [`BitVector`].
+pub const WORD_LEN: usize = u64::BITS as usize;
 
 /// Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 ///

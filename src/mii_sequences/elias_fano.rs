@@ -259,7 +259,7 @@ impl EliasFano {
         let (mut lo, mut hi) = (range.start, range.end);
         while hi - lo > LINEAR_SCAN_THRESHOLD {
             let mi = (lo + hi) / 2;
-            let x = self.select(mi).unwrap() as u64;
+            let x = self.select(mi).unwrap();
             if val == x {
                 return Some(mi);
             }
@@ -309,15 +309,15 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn rank(&self, pos: usize) -> Option<usize> {
-        if self.universe() < pos as u64 {
+    pub fn rank(&self, pos: u64) -> Option<usize> {
+        if self.universe() < pos {
             return None;
         }
-        if self.universe() == pos as u64 {
+        if self.universe() == pos {
             return Some(self.len());
         }
 
-        let h_rank = pos >> self.low_len;
+        let h_rank = (pos >> self.low_len) as usize;
         let mut h_pos = self.high_bits.select0(h_rank).unwrap();
         let mut rank = h_pos - h_rank;
         let l_pos = pos & ((1 << self.low_len) - 1);
@@ -328,7 +328,7 @@ impl EliasFano {
                 .low_bits
                 .get_bits((rank - 1) * self.low_len, self.low_len)
                 .unwrap()
-                >= l_pos as u64
+                >= l_pos
         {
             rank -= 1;
             h_pos -= 1;
@@ -362,16 +362,16 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn select(&self, k: usize) -> Option<usize> {
+    pub fn select(&self, k: usize) -> Option<u64> {
         if self.len() <= k {
             None
         } else {
             Some(
-                ((self.high_bits.select1(k).unwrap() - k) << self.low_len)
+                (((self.high_bits.select1(k).unwrap() - k) as u64) << self.low_len)
                     | self
                         .low_bits
                         .get_bits(k * self.low_len, self.low_len)
-                        .unwrap() as usize,
+                        .unwrap(),
             )
         }
     }
@@ -404,8 +404,8 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn predecessor(&self, pos: usize) -> Option<usize> {
-        if self.universe() <= pos as u64 {
+    pub fn predecessor(&self, pos: u64) -> Option<u64> {
+        if self.universe() <= pos {
             None
         } else {
             Some(self.rank(pos + 1).unwrap())
@@ -442,8 +442,8 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn successor(&self, pos: usize) -> Option<usize> {
-        if self.universe() <= pos as u64 {
+    pub fn successor(&self, pos: u64) -> Option<u64> {
+        if self.universe() <= pos {
             None
         } else {
             Some(self.rank(pos).unwrap())

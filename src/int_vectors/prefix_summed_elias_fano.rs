@@ -63,6 +63,11 @@ impl PrefixSummedEliasFano {
     ///
     /// - `vals`: Slice of integers to be stored.
     ///
+    /// # Panics
+    ///
+    /// It panics if the sum of `vals` is no less than [`u64::MAX`],
+    /// since the sum plus one is stored as the universe of the inner [`EliasFano`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -84,11 +89,18 @@ impl PrefixSummedEliasFano {
             return Self { ef: None };
         }
 
-        let mut universe = 0;
+        // Starts from one so that the accumulated value is the universe itself,
+        // i.e., the (exclusive) upper bound of the prefix sums.
+        let mut universe = 1u64;
         for x in vals {
-            universe += (*x).into();
+            universe = universe
+                .checked_add((*x).into())
+                .expect("the sum of vals must be less than u64::MAX.");
         }
-        let mut b = EliasFanoBuilder::new(universe + 1, vals.len()).unwrap();
+
+        // vals is not empty, and every prefix sum is less than universe,
+        // so the following operations never fail.
+        let mut b = EliasFanoBuilder::new(universe, vals.len()).unwrap();
         let mut cur = 0;
         for x in vals {
             cur += (*x).into();
@@ -238,6 +250,22 @@ impl Iterator for Iter<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_max_sum() {
+        // The largest sum that can be stored, i.e., u64::MAX - 1.
+        let seq = PrefixSummedEliasFano::from_slice(&[u64::MAX - 2, 1]);
+        assert_eq!(seq.len(), 2);
+        assert_eq!(seq.sum(), u64::MAX - 1);
+        assert_eq!(seq.access(0), Some(u64::MAX - 2));
+        assert_eq!(seq.access(1), Some(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "the sum of vals must be less than u64::MAX.")]
+    fn test_sum_overflow() {
+        PrefixSummedEliasFano::from_slice(&[u64::MAX, 1]);
+    }
 
     #[test]
     fn test_empty() {
