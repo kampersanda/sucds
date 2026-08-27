@@ -28,7 +28,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install stable
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt,clippy
@@ -48,7 +48,7 @@ jobs:
           - 1.62.0 # MSRV
           - stable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install ${{ matrix.rust }}
         run: |
           rustup toolchain install ${{ matrix.rust }} --profile minimal
@@ -64,7 +64,7 @@ jobs:
     name: Doc
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install stable
         run: |
           rustup toolchain install stable --profile minimal
