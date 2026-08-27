@@ -20,7 +20,7 @@
 //! Let $`n`$ be the number of positions (i.e., $`n = |S|`$).
 //! The implementations provided in this crate are summarized below:
 //!
-//! | Implementations | [Access](Access) | [Rank](Rank) | [Select](Select) | Update | Memory (bits) |
+//! | Implementations | [`Access`] | [`Rank`] | [`Select`] | Update | Memory (bits) |
 //! | --- | :-: | :-: | :-: | :-: | :-: |
 //! | [`BitVector`] | $`O(1)`$  | $`O(u)`$ | $`O(u)`$ | $`O(1)`$ | $`u`$ |
 //! | [`Rank9Sel`] | $`O(1)`$ | $`O(1)`$ | $`O(\lg u)`$ | -- | $`u + o(u)`$ |

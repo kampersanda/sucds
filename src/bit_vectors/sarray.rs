@@ -11,7 +11,7 @@ use crate::Result;
 use crate::Serializable;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
-/// a specialized version of [EliasFano](crate::mii_sequences::EliasFano) for bit vectors.
+/// a specialized version of [`EliasFano`] for bit vectors.
 ///
 /// # Memory complexity
 ///
