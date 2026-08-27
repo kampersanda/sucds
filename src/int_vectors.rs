@@ -65,7 +65,7 @@
 //! [`prelude`] allows you to import them easily.
 //!
 //! ```
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> sucds::Result<()> {
 //! use sucds::int_vectors::{DacsOpt, prelude::*};
 //!
 //! let seq = DacsOpt::build_from_slice(&[5, 0, 100000, 334])?;
@@ -88,7 +88,7 @@ pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
 
-use anyhow::Result;
+use crate::Result;
 use num_traits::ToPrimitive;
 
 /// Interface for building integer vectors.

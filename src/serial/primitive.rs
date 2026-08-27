@@ -3,9 +3,8 @@
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
-
 use super::Serializable;
+use crate::Result;
 
 macro_rules! common_def {
     ($int:ident) => {

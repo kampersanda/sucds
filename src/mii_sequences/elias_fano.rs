@@ -6,10 +6,9 @@ pub mod iter;
 use std::io::{Read, Write};
 use std::ops::Range;
 
-use anyhow::{anyhow, Result};
-
 use crate::bit_vectors::{Access, BitVector, DArray, NumBits, Select};
 use crate::broadword;
+use crate::Result;
 use crate::Serializable;
 use iter::Iter;
 
@@ -29,7 +28,7 @@ const LINEAR_SCAN_THRESHOLD: usize = 64;
 /// # Example
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -101,12 +100,12 @@ impl EliasFano {
     {
         let bv = BitVector::from_bits(bits);
         if bv.num_bits() == 0 {
-            return Err(anyhow!("bits must not be empty."));
+            return Err("bits must not be empty.".to_string().into());
         }
         let n = bv.num_bits();
         let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         if m == 0 {
-            return Err(anyhow!("bits must contains one set bit at least."));
+            return Err("bits must contains one set bit at least.".into());
         }
         let mut b = EliasFanoBuilder::new(n, m)?;
         for i in 0..n {
@@ -141,7 +140,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -201,7 +200,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
@@ -236,7 +235,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(11, 6)?;
@@ -296,7 +295,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -348,7 +347,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -391,7 +390,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -429,7 +428,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -462,7 +461,7 @@ impl EliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::mii_sequences::EliasFanoBuilder;
     ///
     /// let mut efb = EliasFanoBuilder::new(8, 4)?;
@@ -535,7 +534,7 @@ impl Serializable for EliasFano {
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::mii_sequences::EliasFanoBuilder;
 ///
 /// let mut efb = EliasFanoBuilder::new(8, 5)?;
@@ -576,7 +575,7 @@ impl EliasFanoBuilder {
     /// An error is returned if `num_vals == 0`.
     pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
         if num_vals == 0 {
-            return Err(anyhow!("num_vals must not be zero."));
+            return Err("num_vals must not be zero.".into());
         }
         let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
         Ok(Self {
@@ -605,22 +604,25 @@ impl EliasFanoBuilder {
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn push(&mut self, val: usize) -> Result<()> {
         if val < self.last {
-            return Err(anyhow!(
+            return Err(format!(
                 "val must be no less than the last one {}, but got {val}.",
                 self.last
-            ));
+            )
+            .into());
         }
         if self.universe <= val {
-            return Err(anyhow!(
+            return Err(format!(
                 "val must be less than self.universe()={}, but got {val}.",
                 self.universe
-            ));
+            )
+            .into());
         }
         if self.num_vals <= self.pos {
-            return Err(anyhow!(
+            return Err(format!(
                 "The number of pushed integers must not exceed self.num_vals()={}.",
                 self.num_vals
-            ));
+            )
+            .into());
         }
 
         self.last = val;

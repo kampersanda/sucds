@@ -3,12 +3,11 @@
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
-
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
 use crate::broadword;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
+use crate::Result;
 use crate::Serializable;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
@@ -204,7 +203,7 @@ impl Build for SArray {
         Self: Sized,
     {
         if with_select0 {
-            return Err(anyhow!("select0 is not supported for SArray."));
+            return Err("select0 is not supported for SArray.".into());
         }
         let mut rsbv = Self::from_bits(bits);
         if with_rank {

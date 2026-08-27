@@ -3,11 +3,11 @@
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
 use num_traits::ToPrimitive;
 
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
+use crate::Result;
 use crate::Serializable;
 
 /// Compressed integer sequence with prefix-summed Elias-Fano encoding.
@@ -25,7 +25,7 @@ use crate::Serializable;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
 /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
@@ -75,7 +75,7 @@ impl PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
@@ -90,13 +90,13 @@ impl PrefixSummedEliasFano {
         T: ToPrimitive,
     {
         if vals.is_empty() {
-            return Err(anyhow!("vals must not be empty."));
+            return Err("vals must not be empty.".into());
         }
         let mut universe = 0;
         for x in vals {
             universe += x
                 .to_usize()
-                .ok_or_else(|| anyhow!("vals must consist only of values castable into usize."))?;
+                .ok_or("vals must consist only of values castable into usize.")?;
         }
         let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
         let mut cur = 0;
@@ -112,7 +112,7 @@ impl PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
@@ -176,7 +176,7 @@ impl Access for PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;

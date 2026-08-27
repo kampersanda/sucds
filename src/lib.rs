@@ -61,5 +61,10 @@ pub mod utils;
 
 pub use serial::Serializable;
 
+/// Result type for this crate.
+///
+/// This is a simple alias for a Boxed dynamic error type which can be simply used with `format!` macros to create error messages.
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
