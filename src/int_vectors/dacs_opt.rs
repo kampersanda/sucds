@@ -369,7 +369,8 @@ impl Iterator for Iter<'_> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.seq.len(), Some(self.seq.len()))
+        let rem = self.seq.len() - self.pos;
+        (rem, Some(rem))
     }
 }
 
@@ -521,5 +522,20 @@ mod tests {
         assert_eq!(seq, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, seq.size_in_bytes());
+    }
+
+    #[test]
+    fn test_iter_size_hint() {
+        let seq = DacsOpt::from_slice(&[1u64, 2, 3, 4], None).unwrap();
+        let mut it = seq.iter();
+        assert_eq!(it.size_hint(), (4, Some(4)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (2, Some(2)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (0, Some(0)));
+        assert_eq!(it.next(), None);
+        assert_eq!(it.size_hint(), (0, Some(0)));
     }
 }

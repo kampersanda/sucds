@@ -909,7 +909,8 @@ impl Iterator for Iter<'_> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.bv.len(), Some(self.bv.len()))
+        let rem = self.bv.len() - self.pos;
+        (rem, Some(rem))
     }
 }
 
@@ -1047,5 +1048,20 @@ mod tests {
         assert_eq!(bv, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, bv.size_in_bytes());
+    }
+
+    #[test]
+    fn test_iter_size_hint() {
+        let bv = BitVector::from_bits([true, false, true, false]);
+        let mut it = bv.iter();
+        assert_eq!(it.size_hint(), (4, Some(4)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (2, Some(2)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (0, Some(0)));
+        assert_eq!(it.next(), None);
+        assert_eq!(it.size_hint(), (0, Some(0)));
     }
 }

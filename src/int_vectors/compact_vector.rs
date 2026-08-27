@@ -495,7 +495,8 @@ impl Iterator for Iter<'_> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.cv.len(), Some(self.cv.len()))
+        let rem = self.cv.len() - self.pos;
+        (rem, Some(rem))
     }
 }
 
@@ -664,5 +665,20 @@ mod tests {
         assert_eq!(cv, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, cv.size_in_bytes());
+    }
+
+    #[test]
+    fn test_iter_size_hint() {
+        let cv = CompactVector::from_slice(&[1u64, 2, 3, 4]);
+        let mut it = cv.iter();
+        assert_eq!(it.size_hint(), (4, Some(4)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (2, Some(2)));
+        it.next();
+        it.next();
+        assert_eq!(it.size_hint(), (0, Some(0)));
+        assert_eq!(it.next(), None);
+        assert_eq!(it.size_hint(), (0, Some(0)));
     }
 }
