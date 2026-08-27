@@ -3,8 +3,6 @@
 
 use std::io::{Read, Write};
 
-use num_traits::ToPrimitive;
-
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, CompactVector, NumVals};
 use crate::utils;
@@ -88,10 +86,6 @@ impl DacsOpt {
 
         if vals.is_empty() {
             return Ok(Self::default());
-        }
-        for x in vals {
-            x.to_usize()
-                .ok_or("vals must consist only of values castable into usize.")?;
         }
 
         let widths = Self::compute_opt_widths(vals, max_levels);

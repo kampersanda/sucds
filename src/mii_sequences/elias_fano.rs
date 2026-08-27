@@ -731,7 +731,10 @@ mod tests {
 
     #[test]
     fn test_builder_new_zero_size() {
-        let e = EliasFanoBuilder::new(3, 0);
+        let b = EliasFanoBuilder::new(3, 0);
+        assert_eq!(b.universe(), 3);
+        assert_eq!(b.num_vals(), 0);
+        assert_eq!(b.build().len(), 0);
     }
 
     #[test]

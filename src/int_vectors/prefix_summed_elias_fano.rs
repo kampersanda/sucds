@@ -3,8 +3,6 @@
 
 use std::io::{Read, Write};
 
-use num_traits::ToPrimitive;
-
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
@@ -82,20 +80,9 @@ impl PrefixSummedEliasFano {
     where
         T: Into<u64> + Copy,
     {
-<<<<<<< HEAD
         let mut universe = 0;
         for x in vals {
-            universe += (*x).into()
-=======
-        if vals.is_empty() {
-            return Err("vals must not be empty.".into());
-        }
-        let mut universe = 0;
-        for x in vals {
-            universe += x
-                .to_usize()
-                .ok_or("vals must consist only of values castable into usize.")?;
->>>>>>> main
+            universe += (*x).into();
         }
         let mut b = EliasFanoBuilder::new(universe + 1, vals.len());
         let mut cur = 0;

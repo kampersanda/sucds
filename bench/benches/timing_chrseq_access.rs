@@ -30,7 +30,7 @@ fn load_text(s: &str) -> CompactVector {
     for i in 0..text.len() {
         text[i] = alphabet.rank1(usize::from(text[i])).unwrap() as u8;
     }
-    CompactVector::from_slice(&text).unwrap()
+    CompactVector::from_slice(&text)
 }
 
 fn gen_random_ints(len: usize, min: usize, max: usize, seed: u64) -> Vec<usize> {

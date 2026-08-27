@@ -3,8 +3,6 @@
 
 use std::io::{Read, Write};
 
-use num_traits::ToPrimitive;
-
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
 use crate::Result;
@@ -179,6 +177,7 @@ impl CompactVector {
     /// assert_eq!(cv.len(), 2);
     /// assert_eq!(cv.width(), 3);
     /// assert_eq!(cv.get_int(0), Some(7));
+    /// # Ok(())
     /// # }
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Self
@@ -190,10 +189,7 @@ impl CompactVector {
         }
         let mut max_int = 0u64;
         for x in vals {
-            max_int = max_int.max(
-                x.to_usize()
-                    .ok_or("vals must consist only of values castable into usize.")?,
-            );
+            max_int = max_int.max((*x).into());
         }
         // unwraps should be safe
         let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int)).unwrap();

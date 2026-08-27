@@ -4,8 +4,6 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use num_traits::ToPrimitive;
-
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
@@ -75,10 +73,7 @@ impl DacsByte {
 
         let mut maxv = 0;
         for x in vals {
-            maxv = maxv.max(
-                x.to_usize()
-                    .ok_or("vals must consist only of values castable into usize.")?,
-            );
+            maxv = maxv.max((*x).into());
         }
         let num_bits = utils::needed_bits(maxv);
         let num_levels = utils::ceiled_divide(num_bits, LEVEL_WIDTH);

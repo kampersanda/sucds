@@ -82,17 +82,17 @@ fn perform_intvec_access(group: &mut BenchmarkGroup<WallTime>, vals: &[u32]) {
     let queries = gen_random_ints(NUM_QUERIES, 0, vals.len(), SEED_QUERIES);
 
     group.bench_function("sucds/CompactVector", |b| {
-        let idx = sucds::int_vectors::CompactVector::from_slice(vals).unwrap();
+        let idx = sucds::int_vectors::CompactVector::from_slice(vals);
         b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/PrefixSummedEliasFano", |b| {
-        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals).unwrap();
+        let idx = sucds::int_vectors::PrefixSummedEliasFano::from_slice(vals);
         b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/DacsByte", |b| {
-        let idx = sucds::int_vectors::DacsByte::from_slice(vals).unwrap();
+        let idx = sucds::int_vectors::DacsByte::from_slice(vals);
         b.iter(|| run_queries(&idx, &queries));
     });
 
