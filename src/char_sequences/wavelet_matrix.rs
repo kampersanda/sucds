@@ -76,8 +76,6 @@ where
             return Err("seq must not be empty.".into());
         }
 
-        // NOTE(kampersanda): `alph_width` must be derived from the maximum value itself, not from
-        // `max_value + 1`, which overflows when the sequence contains `u64::MAX`.
         let max_value = seq.iter().max().unwrap();
         let alph_width = utils::needed_bits(max_value);
 
