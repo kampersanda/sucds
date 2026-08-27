@@ -78,7 +78,7 @@ pub struct EliasFano {
     high_bits: DArray,
     low_bits: BitVector,
     low_len: usize,
-    universe: usize,
+    universe: u64,
 }
 
 impl EliasFano {
@@ -107,10 +107,10 @@ impl EliasFano {
         if m == 0 {
             return Err("bits must contains one set bit at least.".into());
         }
-        let mut b = EliasFanoBuilder::new(n, m)?;
+        let mut b = EliasFanoBuilder::new(n as u64, m)?;
         for i in 0..n {
             if bv.access(i).unwrap() {
-                b.push(i)?;
+                b.push(i as u64)?;
             }
         }
         Ok(b.build())
@@ -156,7 +156,7 @@ impl EliasFano {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn delta(&self, k: usize) -> Option<usize> {
+    pub fn delta(&self, k: usize) -> Option<u64> {
         if self.len() <= k {
             return None;
         }
@@ -164,7 +164,7 @@ impl EliasFano {
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
-            .unwrap();
+            .unwrap() as usize;
         let x = if k != 0 {
             ((high_val
                 - self
@@ -178,11 +178,11 @@ impl EliasFano {
                 - self
                     .low_bits
                     .get_bits((k - 1) * self.low_len, self.low_len)
-                    .unwrap()
+                    .unwrap() as usize
         } else {
             ((high_val - k) << self.low_len) | low_val
         };
-        Some(x)
+        Some(x as u64)
     }
 
     /// Finds the position `k` such that `select(k) == val`.
@@ -214,7 +214,7 @@ impl EliasFano {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn binsearch(&self, val: usize) -> Option<usize> {
+    pub fn binsearch(&self, val: u64) -> Option<usize> {
         // TODO(kampersanda): Implement Access.
         self.binsearch_range(0..self.len(), val)
     }
@@ -249,7 +249,7 @@ impl EliasFano {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn binsearch_range(&self, range: Range<usize>, val: usize) -> Option<usize> {
+    pub fn binsearch_range(&self, range: Range<usize>, val: u64) -> Option<usize> {
         // TODO(kampersanda): Bound check.
         if range.is_empty() {
             return None;
@@ -309,7 +309,7 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn rank(&self, pos: usize) -> Option<usize> {
+    pub fn rank(&self, pos: u64) -> Option<usize> {
         if self.universe() < pos {
             return None;
         }
@@ -317,7 +317,7 @@ impl EliasFano {
             return Some(self.len());
         }
 
-        let h_rank = pos >> self.low_len;
+        let h_rank = (pos >> self.low_len) as usize;
         let mut h_pos = self.high_bits.select0(h_rank).unwrap();
         let mut rank = h_pos - h_rank;
         let l_pos = pos & ((1 << self.low_len) - 1);
@@ -362,12 +362,12 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn select(&self, k: usize) -> Option<usize> {
+    pub fn select(&self, k: usize) -> Option<u64> {
         if self.len() <= k {
             None
         } else {
             Some(
-                ((self.high_bits.select1(k).unwrap() - k) << self.low_len)
+                (((self.high_bits.select1(k).unwrap() - k) as u64) << self.low_len)
                     | self
                         .low_bits
                         .get_bits(k * self.low_len, self.low_len)
@@ -404,7 +404,7 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn predecessor(&self, pos: usize) -> Option<usize> {
+    pub fn predecessor(&self, pos: u64) -> Option<u64> {
         if self.universe() <= pos {
             None
         } else {
@@ -442,7 +442,7 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn successor(&self, pos: usize) -> Option<usize> {
+    pub fn successor(&self, pos: u64) -> Option<u64> {
         if self.universe() <= pos {
             None
         } else {
@@ -494,7 +494,7 @@ impl EliasFano {
 
     /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
     #[inline(always)]
-    pub const fn universe(&self) -> usize {
+    pub const fn universe(&self) -> u64 {
         self.universe
     }
 }
@@ -513,7 +513,7 @@ impl Serializable for EliasFano {
         let high_bits = DArray::deserialize_from(&mut reader)?;
         let low_bits = BitVector::deserialize_from(&mut reader)?;
         let low_len = usize::deserialize_from(&mut reader)?;
-        let universe = usize::deserialize_from(&mut reader)?;
+        let universe = u64::deserialize_from(&mut reader)?;
         Ok(Self {
             high_bits,
             low_bits,
@@ -555,10 +555,10 @@ impl Serializable for EliasFano {
 pub struct EliasFanoBuilder {
     high_bits: BitVector,
     low_bits: BitVector,
-    universe: usize,
+    universe: u64,
     num_vals: usize,
     pos: usize,
-    last: usize,
+    last: u64,
     low_len: usize,
 }
 
@@ -573,13 +573,16 @@ impl EliasFanoBuilder {
     /// # Errors
     ///
     /// An error is returned if `num_vals == 0`.
-    pub fn new(universe: usize, num_vals: usize) -> Result<Self> {
+    pub fn new(universe: u64, num_vals: usize) -> Result<Self> {
         if num_vals == 0 {
             return Err("num_vals must not be zero.".into());
         }
-        let low_len = broadword::msb(universe / num_vals).unwrap_or(0);
+        let low_len = broadword::msb(universe / num_vals as u64).unwrap_or(0);
         Ok(Self {
-            high_bits: BitVector::from_bit(false, (num_vals + 1) + (universe >> low_len) + 1),
+            high_bits: BitVector::from_bit(
+                false,
+                (num_vals + 1) + (universe >> low_len) as usize + 1,
+            ),
             low_bits: BitVector::new(),
             universe,
             num_vals,
@@ -602,7 +605,7 @@ impl EliasFanoBuilder {
     /// - `val` is less than the last one,
     /// - `val` is no less than [`Self::universe()`], or
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
-    pub fn push(&mut self, val: usize) -> Result<()> {
+    pub fn push(&mut self, val: u64) -> Result<()> {
         if val < self.last {
             return Err(format!(
                 "val must be no less than the last one {}, but got {val}.",
@@ -633,7 +636,7 @@ impl EliasFanoBuilder {
                 .unwrap();
         }
         self.high_bits
-            .set_bit((val >> self.low_len) + self.pos, true)
+            .set_bit((val as usize >> self.low_len) + self.pos, true)
             .unwrap();
         self.pos += 1;
 
@@ -655,7 +658,7 @@ impl EliasFanoBuilder {
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn extend<I>(&mut self, vals: I) -> Result<()>
     where
-        I: IntoIterator<Item = usize>,
+        I: IntoIterator<Item = u64>,
     {
         for x in vals {
             self.push(x)?;
@@ -675,7 +678,7 @@ impl EliasFanoBuilder {
 
     /// Returns the universe, i.e., the (exclusive) upper bound of possible integers.
     #[inline(always)]
-    pub const fn universe(&self) -> usize {
+    pub const fn universe(&self) -> u64 {
         self.universe
     }
 

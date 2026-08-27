@@ -21,7 +21,7 @@ fn load_text(s: &str) -> CompactVector {
     for i in 0..text.len() {
         text[i] = alphabet.rank1(usize::from(text[i])).unwrap() as u8;
     }
-    CompactVector::from_slice(&text).unwrap()
+    CompactVector::from_slice(&text)
 }
 
 fn show_memories(title: &str, text: &CompactVector) {

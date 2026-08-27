@@ -66,9 +66,9 @@ impl SArray {
         let num_ones =
             (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
         let ef = if num_ones != 0 {
-            let mut b = EliasFanoBuilder::new(num_bits, num_ones).unwrap();
+            let mut b = EliasFanoBuilder::new(num_bits as u64, num_ones).unwrap();
             for i in bv.unary_iter(0) {
-                b.push(i).unwrap();
+                b.push(i as u64).unwrap();
             }
             Some(b.build())
         } else {
@@ -130,7 +130,10 @@ impl SArray {
             panic!("enable_rank() must be set up.")
         }
         // NOTE(kampersanda): self.num_bits <= pos will be checked.
-        self.ef.as_ref().and_then(|ef| ef.predecessor(pos))
+        self.ef
+            .as_ref()
+            .and_then(|ef| ef.predecessor(pos as u64))
+            .map(|x| x as usize)
     }
 
     /// Returns the smallest bit position `succ` such that `succ >= pos` and the `succ`-th bit is set, or
@@ -165,7 +168,10 @@ impl SArray {
             panic!("enable_rank() must be set up.")
         }
         // NOTE(kampersanda): self.num_bits <= pos will be checked.
-        self.ef.as_ref().and_then(|ef| ef.successor(pos))
+        self.ef
+            .as_ref()
+            .and_then(|ef| ef.successor(pos as u64))
+            .map(|x| x as usize)
     }
 
     /// Returns the number of bits stored.
@@ -252,7 +258,7 @@ impl Access for SArray {
         }
         self.ef
             .as_ref()
-            .map_or(Some(false), |ef| Some(ef.binsearch(pos).is_some()))
+            .map_or(Some(false), |ef| Some(ef.binsearch(pos as u64).is_some()))
     }
 }
 
@@ -285,7 +291,7 @@ impl Rank for SArray {
         if !self.has_rank() {
             panic!("enable_rank() must be set up.")
         }
-        self.ef.as_ref().map_or(Some(0), |ef| ef.rank(pos))
+        self.ef.as_ref().map_or(Some(0), |ef| ef.rank(pos as u64))
     }
 
     /// Returns the number of zeros from the 0-th bit to the `pos-1`-th bit, or
@@ -337,7 +343,10 @@ impl Select for SArray {
     /// assert_eq!(sa.select1(2), None);
     /// ```
     fn select1(&self, k: usize) -> Option<usize> {
-        self.ef.as_ref().and_then(|ef| ef.select(k))
+        self.ef
+            .as_ref()
+            .and_then(|ef| ef.select(k))
+            .map(|x| x as usize)
     }
 
     /// Panics always because this operation is not supported.

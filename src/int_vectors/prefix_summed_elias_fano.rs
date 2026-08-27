@@ -3,8 +3,6 @@
 
 use std::io::{Read, Write};
 
-use num_traits::ToPrimitive;
-
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
@@ -28,7 +26,7 @@ use crate::Serializable;
 /// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
-/// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+/// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10])?;
 ///
 /// assert_eq!(seq.access(0), Some(5));
 /// assert_eq!(seq.access(1), Some(14));
@@ -55,7 +53,7 @@ use crate::Serializable;
 ///    In ALENEX, 2007.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct PrefixSummedEliasFano {
-    ef: EliasFano,
+    ef: Option<EliasFano>,
 }
 
 impl PrefixSummedEliasFano {
@@ -67,10 +65,8 @@ impl PrefixSummedEliasFano {
     ///
     /// # Errors
     ///
-    /// An error is returned if
-    ///
-    /// - `vals` contains an integer that cannot be cast to [`usize`], or
-    /// - `vals` is empty.
+    /// An error is returned if the sum of `vals` is no less than [`u64::MAX`],
+    /// since the sum plus one is stored as the universe of the inner [`EliasFano`].
     ///
     /// # Examples
     ///
@@ -78,7 +74,7 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10])?;
     ///
     /// assert_eq!(seq.len(), 4);
     /// assert_eq!(seq.sum(), 363);
@@ -87,24 +83,30 @@ impl PrefixSummedEliasFano {
     /// ```
     pub fn from_slice<T>(vals: &[T]) -> Result<Self>
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
     {
         if vals.is_empty() {
-            return Err("vals must not be empty.".into());
+            return Ok(Self { ef: None });
         }
-        let mut universe = 0;
+
+        // Starts from one so that the accumulated value is the universe itself,
+        // i.e., the (exclusive) upper bound of the prefix sums.
+        let mut universe = 1u64;
         for x in vals {
-            universe += x
-                .to_usize()
-                .ok_or("vals must consist only of values castable into usize.")?;
+            universe = universe
+                .checked_add((*x).into())
+                .ok_or("the sum of vals must be less than u64::MAX.")?;
         }
-        let mut b = EliasFanoBuilder::new(universe + 1, vals.len())?;
+
+        let mut b = EliasFanoBuilder::new(universe, vals.len())?;
         let mut cur = 0;
         for x in vals {
-            cur += x.to_usize().unwrap();
+            cur += (*x).into();
             b.push(cur)?;
         }
-        Ok(Self { ef: b.build() })
+        Ok(Self {
+            ef: Some(b.build()),
+        })
     }
 
     /// Creates an iterator for enumerating integers.
@@ -115,7 +117,7 @@ impl PrefixSummedEliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10])?;
     /// let mut it = seq.iter();
     ///
     /// assert_eq!(it.next(), Some(5));
@@ -132,7 +134,7 @@ impl PrefixSummedEliasFano {
 
     /// Gets the number of integers.
     pub fn len(&self) -> usize {
-        self.ef.len()
+        self.ef.as_ref().map_or(0, EliasFano::len)
     }
 
     /// Checks if the sequence is empty.
@@ -141,8 +143,11 @@ impl PrefixSummedEliasFano {
     }
 
     /// Gets the sum of integers.
-    pub const fn sum(&self) -> usize {
-        self.ef.universe() - 1
+    pub const fn sum(&self) -> u64 {
+        match &self.ef {
+            Some(ef) => ef.universe() - 1,
+            None => 0,
+        }
     }
 }
 
@@ -152,7 +157,7 @@ impl Build for PrefixSummedEliasFano {
     /// This just calls [`Self::from_slice()`]. See the documentation.
     fn build_from_slice<T>(vals: &[T]) -> Result<Self>
     where
-        T: ToPrimitive,
+        T: Into<u64> + Copy,
         Self: Sized,
     {
         Self::from_slice(vals)
@@ -179,7 +184,7 @@ impl Access for PrefixSummedEliasFano {
     /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
-    /// let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334])?;
+    /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334])?;
     /// assert_eq!(seq.access(0), Some(5));
     /// assert_eq!(seq.access(1), Some(14));
     /// assert_eq!(seq.access(2), Some(334));
@@ -187,8 +192,8 @@ impl Access for PrefixSummedEliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    fn access(&self, pos: usize) -> Option<usize> {
-        self.ef.delta(pos)
+    fn access(&self, pos: usize) -> Option<u64> {
+        self.ef.as_ref()?.delta(pos)
     }
 }
 
@@ -198,7 +203,7 @@ impl Serializable for PrefixSummedEliasFano {
     }
 
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let ef = EliasFano::deserialize_from(reader)?;
+        let ef = Option::<EliasFano>::deserialize_from(reader)?;
         Ok(Self { ef })
     }
 
@@ -221,7 +226,7 @@ impl<'a> Iter<'a> {
 }
 
 impl Iterator for Iter<'_> {
-    type Item = usize;
+    type Item = u64;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -245,18 +250,49 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_slice_uncastable() {
-        let e = PrefixSummedEliasFano::from_slice(&[u128::MAX]);
+    fn test_max_sum() {
+        // The largest sum that can be stored, i.e., u64::MAX - 1.
+        let seq = PrefixSummedEliasFano::from_slice(&[u64::MAX - 2, 1]).unwrap();
+        assert_eq!(seq.len(), 2);
+        assert_eq!(seq.sum(), u64::MAX - 1);
+        assert_eq!(seq.access(0), Some(u64::MAX - 2));
+        assert_eq!(seq.access(1), Some(1));
+    }
+
+    #[test]
+    fn test_sum_overflow() {
+        let e = PrefixSummedEliasFano::from_slice(&[u64::MAX, 1]);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("vals must consist only of values castable into usize.".to_string())
+            Some("the sum of vals must be less than u64::MAX.".to_string())
         );
+    }
+
+    #[test]
+    fn test_empty() {
+        let seq = PrefixSummedEliasFano::from_slice::<u64>(&[]).unwrap();
+        assert!(seq.is_empty());
+        assert_eq!(seq.len(), 0);
+        assert_eq!(seq.sum(), 0);
+        assert_eq!(seq.access(0), None);
+        assert_eq!(seq.iter().next(), None);
     }
 
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
-        let seq = PrefixSummedEliasFano::from_slice(&[5, 14, 334, 10]).unwrap();
+        let seq = PrefixSummedEliasFano::from_slice(&[5u16, 14, 334, 10]).unwrap();
+        let size = seq.serialize_into(&mut bytes).unwrap();
+        let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(seq, other);
+        assert_eq!(size, bytes.len());
+        assert_eq!(size, seq.size_in_bytes());
+    }
+
+    #[test]
+    fn test_serialize_empty() {
+        let mut bytes = vec![];
+        let seq = PrefixSummedEliasFano::default();
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = PrefixSummedEliasFano::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);

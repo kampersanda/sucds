@@ -10,8 +10,8 @@ use crate::Result;
 use crate::Serializable;
 use unary::UnaryIter;
 
-/// The number of bits in a machine word.
-pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
+/// The number of bits in a word of [`BitVector`].
+pub const WORD_LEN: usize = u64::BITS as usize;
 
 /// Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 ///
@@ -39,7 +39,7 @@ pub const WORD_LEN: usize = std::mem::size_of::<usize>() * 8;
 /// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
-    words: Vec<usize>,
+    words: Vec<u64>,
     len: usize,
 }
 
@@ -98,7 +98,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bit(0), Some(false));
     /// ```
     pub fn from_bit(bit: bool, len: usize) -> Self {
-        let word = if bit { usize::MAX } else { 0 };
+        let word = if bit { u64::MAX } else { 0 };
         let mut words = vec![word; Self::words_for(len)];
         let shift = len % WORD_LEN;
         if shift != 0 {
@@ -193,7 +193,7 @@ impl BitVector {
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
         self.words[word] &= !(1 << pos_in_word);
-        self.words[word] |= (bit as usize) << pos_in_word;
+        self.words[word] |= (bit as u64) << pos_in_word;
         Ok(())
     }
 
@@ -217,10 +217,10 @@ impl BitVector {
     pub fn push_bit(&mut self, bit: bool) {
         let pos_in_word = self.len % WORD_LEN;
         if pos_in_word == 0 {
-            self.words.push(bit as usize);
+            self.words.push(bit as u64);
         } else {
             let cur_word = self.words.last_mut().unwrap();
-            *cur_word |= (bit as usize) << pos_in_word;
+            *cur_word |= (bit as u64) << pos_in_word;
         }
         self.len += 1;
     }
@@ -245,7 +245,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(2, 3), None);
     /// ```
     #[inline(always)]
-    pub fn get_bits(&self, pos: usize, len: usize) -> Option<usize> {
+    pub fn get_bits(&self, pos: usize, len: usize) -> Option<u64> {
         if WORD_LEN < len || self.len() < pos + len {
             return None;
         }
@@ -257,7 +257,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = if shift + len <= WORD_LEN {
@@ -301,7 +301,7 @@ impl BitVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn set_bits(&mut self, pos: usize, bits: usize, len: usize) -> Result<()> {
+    pub fn set_bits(&mut self, pos: usize, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
             return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
         }
@@ -320,7 +320,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = bits & mask;
@@ -371,7 +371,7 @@ impl BitVector {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn push_bits(&mut self, bits: usize, len: usize) -> Result<()> {
+    pub fn push_bits(&mut self, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
             return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
         }
@@ -383,7 +383,7 @@ impl BitVector {
             if len < WORD_LEN {
                 (1 << len) - 1
             } else {
-                usize::MAX
+                u64::MAX
             }
         };
         let bits = bits & mask;
@@ -620,7 +620,7 @@ impl BitVector {
     /// assert_eq!(bv.get_bits(1, 64), None);  // out of bounds
     /// ```
     #[inline(always)]
-    pub fn get_word64(&self, pos: usize) -> Option<usize> {
+    pub fn get_word64(&self, pos: usize) -> Option<u64> {
         if self.len <= pos {
             return None;
         }
@@ -643,12 +643,12 @@ impl BitVector {
     }
 
     /// Gets the slice of raw words.
-    pub fn words(&self) -> &[usize] {
+    pub fn words(&self) -> &[u64] {
         &self.words
     }
 
     /// Converts into the slice of raw words.
-    pub fn into_words(self) -> Vec<usize> {
+    pub fn into_words(self) -> Vec<u64> {
         self.words
     }
 
@@ -943,7 +943,7 @@ impl Serializable for BitVector {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = Vec::<usize>::deserialize_from(&mut reader)?;
+        let words = Vec::<u64>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
         Ok(Self { words, len })
     }
