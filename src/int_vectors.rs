@@ -65,7 +65,7 @@
 //! [`prelude`] allows you to import them easily.
 //!
 //! ```
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> sucds::Result<()> {
 //! use sucds::int_vectors::{DacsOpt, prelude::*};
 //!
 //! let seq = DacsOpt::build_from_slice(&[5u64, 0, 100000, 334]);

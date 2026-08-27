@@ -5,14 +5,14 @@ pub mod primitive;
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use crate::Result;
 
 /// Trait to serialize/deserialize data structures.
 ///
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::{bit_vectors::BitVector, Serializable};
 ///
 /// let bv = BitVector::from_bits([true, false, false, true]);

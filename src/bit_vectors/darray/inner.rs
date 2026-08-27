@@ -3,10 +3,9 @@
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
-
 use crate::bit_vectors::BitVector;
 use crate::bit_vectors::NumBits;
+use crate::Result;
 use crate::{broadword, Serializable};
 
 const BLOCK_LEN: usize = 1024;

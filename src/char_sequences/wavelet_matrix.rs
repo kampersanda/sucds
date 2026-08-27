@@ -5,11 +5,10 @@
 use std::io::{Read, Write};
 use std::ops::Range;
 
-use anyhow::{anyhow, Result};
-
 use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::utils;
+use crate::Result;
 use crate::Serializable;
 
 /// Time- and space-efficient data structure for a sequence of integers,
@@ -23,7 +22,7 @@ use crate::Serializable;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::bit_vectors::Rank9Sel;
 /// use sucds::char_sequences::WaveletMatrix;
 /// use sucds::int_vectors::CompactVector;
@@ -74,7 +73,7 @@ where
     ///  - `B::build_from_bits` fails.
     pub fn new(seq: CompactVector) -> Result<Self> {
         if seq.is_empty() {
-            return Err(anyhow!("seq must not be empty."));
+            return Err("seq must not be empty.".into());
         }
 
         let alph_size = seq.iter().max().unwrap() + 1;
@@ -141,7 +140,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -191,7 +190,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -226,7 +225,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -282,7 +281,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -343,7 +342,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -411,7 +410,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -517,7 +516,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::bit_vectors::Rank9Sel;
     /// use sucds::char_sequences::WaveletMatrix;
     /// use sucds::int_vectors::CompactVector;
@@ -534,7 +533,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter<B> {
+    pub const fn iter(&self) -> Iter<'_, B> {
         Iter::new(self)
     }
 

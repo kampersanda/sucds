@@ -3,10 +3,11 @@
 
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use num_traits::ToPrimitive;
 
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
+use crate::Result;
 use crate::Serializable;
 
 /// Compressed integer sequence with prefix-summed Elias-Fano encoding.
@@ -24,7 +25,7 @@ use crate::Serializable;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
 ///
 /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
@@ -67,7 +68,7 @@ impl PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
@@ -81,9 +82,20 @@ impl PrefixSummedEliasFano {
     where
         T: Into<u64> + Copy,
     {
+<<<<<<< HEAD
         let mut universe = 0;
         for x in vals {
             universe += (*x).into()
+=======
+        if vals.is_empty() {
+            return Err("vals must not be empty.".into());
+        }
+        let mut universe = 0;
+        for x in vals {
+            universe += x
+                .to_usize()
+                .ok_or("vals must consist only of values castable into usize.")?;
+>>>>>>> main
         }
         let mut b = EliasFanoBuilder::new(universe + 1, vals.len());
         let mut cur = 0;
@@ -99,7 +111,7 @@ impl PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::PrefixSummedEliasFano;
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334, 10]);
@@ -113,7 +125,7 @@ impl PrefixSummedEliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -163,7 +175,7 @@ impl Access for PrefixSummedEliasFano {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{PrefixSummedEliasFano, Access};
     ///
     /// let seq = PrefixSummedEliasFano::from_slice(&[5u64, 14, 334]);

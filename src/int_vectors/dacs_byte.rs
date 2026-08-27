@@ -4,11 +4,12 @@
 use std::convert::TryFrom;
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
+use crate::Result;
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
@@ -31,7 +32,7 @@ const LEVEL_MASK: u64 = (1 << LEVEL_WIDTH) - 1;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{DacsByte, Access};
 ///
 /// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
@@ -74,7 +75,10 @@ impl DacsByte {
 
         let mut maxv = 0;
         for x in vals {
-            maxv = maxv.max((*x).into());
+            maxv = maxv.max(
+                x.to_usize()
+                    .ok_or("vals must consist only of values castable into usize.")?,
+            );
         }
         let num_bits = utils::needed_bits(maxv);
         let num_levels = utils::ceiled_divide(num_bits, LEVEL_WIDTH);
@@ -119,7 +123,7 @@ impl DacsByte {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::DacsByte;
     ///
     /// let seq = DacsByte::from_slice(&[5u64, 0, 100000, 334]);
@@ -133,7 +137,7 @@ impl DacsByte {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -203,7 +207,7 @@ impl Access for DacsByte {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{DacsByte, Access};
     ///
     /// let seq = DacsByte::from_slice(&[5u64, 999, 334]);

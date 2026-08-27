@@ -60,7 +60,7 @@
 //! [`prelude`] allows you to import them easily.
 //!
 //! ```
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> sucds::Result<()> {
 //! use sucds::bit_vectors::{Rank9Sel, prelude::*};
 //!
 //! let bv = Rank9Sel::build_from_bits(
@@ -94,7 +94,7 @@ pub use darray::DArray;
 pub use rank9sel::Rank9Sel;
 pub use sarray::SArray;
 
-use anyhow::Result;
+use crate::Result;
 
 /// Interface for building a bit vector with rank/select queries.
 pub trait Build {

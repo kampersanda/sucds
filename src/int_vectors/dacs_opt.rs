@@ -3,11 +3,12 @@
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, CompactVector, NumVals};
 use crate::utils;
+use crate::Result;
 use crate::Serializable;
 
 /// Compressed integer sequence using Directly Addressable Codes (DACs) with optimal assignment.
@@ -29,7 +30,7 @@ use crate::Serializable;
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::{DacsOpt, Access};
 ///
 /// // Specifies two for the maximum number of levels to control time efficiency.
@@ -82,13 +83,15 @@ impl DacsOpt {
     {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
-            return Err(anyhow!(
-                "max_levels must be in 1..=64, but got {max_levels}"
-            ));
+            return Err(format!("max_levels must be in 1..=64, but got {max_levels}").into());
         }
 
         if vals.is_empty() {
             return Ok(Self::default());
+        }
+        for x in vals {
+            x.to_usize()
+                .ok_or("vals must consist only of values castable into usize.")?;
         }
 
         let widths = Self::compute_opt_widths(vals, max_levels);
@@ -228,7 +231,7 @@ impl DacsOpt {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::DacsOpt;
     ///
     /// let seq = DacsOpt::from_slice(&[5u64, 0, 100000, 334], Some(2))?;
@@ -242,7 +245,7 @@ impl DacsOpt {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -311,7 +314,7 @@ impl Access for DacsOpt {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{DacsOpt, Access};
     ///
     /// let seq = DacsOpt::from_slice(&[5u64, 999, 334], None)?;

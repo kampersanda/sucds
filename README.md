@@ -1,8 +1,8 @@
 # Succinct data structures in Rust
 
-![](https://github.com/kampersanda/sucds/actions/workflows/rust.yml/badge.svg)
-[![Documentation](https://docs.rs/sucds/badge.svg)](https://docs.rs/sucds)
 [![Crates.io](https://img.shields.io/crates/v/sucds.svg)](https://crates.io/crates/sucds)
+[![Documentation](https://docs.rs/sucds/badge.svg)](https://docs.rs/sucds)
+[![Build Status](https://github.com/kampersanda/sucds/actions/workflows/rust.yml/badge.svg)](https://github.com/kampersanda/sucds/actions)
 
 Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure) written in Rust.
 

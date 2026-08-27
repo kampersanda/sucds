@@ -3,10 +3,11 @@
 
 use std::io::{Read, Write};
 
-use anyhow::{anyhow, Result};
+use num_traits::ToPrimitive;
 
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
+use crate::Result;
 use crate::{utils, Serializable};
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
@@ -18,7 +19,7 @@ use crate::{utils, Serializable};
 /// # Examples
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> sucds::Result<()> {
 /// use sucds::int_vectors::CompactVector;
 ///
 /// // Can store integers within 3 bits each.
@@ -56,7 +57,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
@@ -67,7 +68,7 @@ impl CompactVector {
     /// ```
     pub fn new(width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64, but got {width}."));
+            return Err(format!("width must be in 1..=64, but got {width}.").into());
         }
         Ok(Self {
             chunks: BitVector::default(),
@@ -91,7 +92,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::with_capacity(10, 3)?;
@@ -106,7 +107,7 @@ impl CompactVector {
     /// ```
     pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64, but got {width}."));
+            return Err(format!("width must be in 1..=64, but got {width}.").into());
         }
         Ok(Self {
             chunks: BitVector::with_capacity(capa * width),
@@ -134,7 +135,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(7, 2, 3)?;
@@ -146,12 +147,10 @@ impl CompactVector {
     /// ```
     pub fn from_int(val: u64, len: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(anyhow!("width must be in 1..=64, but got {width}."));
+            return Err(format!("width must be in 1..=64, but got {width}.").into());
         }
         if width < 64 && val >> width != 0 {
-            return Err(anyhow!(
-                "val must fit in width={width} bits, but got {val}."
-            ));
+            return Err(format!("val must fit in width={width} bits, but got {val}.").into());
         }
         // NOTE(kampersanda): It should be safe.
         let mut cv = Self::with_capacity(len, width).unwrap();
@@ -173,7 +172,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_slice(&[7u64, 2]);
@@ -191,7 +190,10 @@ impl CompactVector {
         }
         let mut max_int = 0u64;
         for x in vals {
-            max_int = max_int.max((*x).into());
+            max_int = max_int.max(
+                x.to_usize()
+                    .ok_or("vals must consist only of values castable into usize.")?,
+            );
         }
         // unwraps should be safe
         let mut cv = Self::with_capacity(vals.len(), utils::needed_bits(max_int)).unwrap();
@@ -214,7 +216,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
@@ -249,7 +251,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::from_int(0, 2, 3)?;
@@ -261,16 +263,18 @@ impl CompactVector {
     #[inline(always)]
     pub fn set_int(&mut self, pos: usize, val: u64) -> Result<()> {
         if self.len() <= pos {
-            return Err(anyhow!(
+            return Err(format!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
                 self.len()
-            ));
+            )
+            .into());
         }
         if self.width() != 64 && val >> self.width() != 0 {
-            return Err(anyhow!(
+            return Err(format!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
-            ));
+            )
+            .into());
         }
         // NOTE(kampersanda): set_bits should be safe.
         self.chunks
@@ -296,7 +300,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
@@ -309,10 +313,11 @@ impl CompactVector {
     #[inline(always)]
     pub fn push_int(&mut self, val: u64) -> Result<()> {
         if self.width() != 64 && val >> self.width() != 0 {
-            return Err(anyhow!(
+            return Err(format!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
-            ));
+            )
+            .into());
         }
         // NOTE(kampersanda): set_bits should be safe.
         self.chunks.push_bits(val, self.width).unwrap();
@@ -337,7 +342,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let mut cv = CompactVector::new(3)?;
@@ -361,7 +366,7 @@ impl CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::CompactVector;
     ///
     /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
@@ -374,7 +379,7 @@ impl CompactVector {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn iter(&self) -> Iter {
+    pub const fn iter(&self) -> Iter<'_> {
         Iter::new(self)
     }
 
@@ -453,7 +458,7 @@ impl Access for CompactVector {
     /// # Examples
     ///
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> sucds::Result<()> {
     /// use sucds::int_vectors::{CompactVector, Access};
     ///
     /// let cv = CompactVector::from_slice(&[5u64, 256, 0]);
