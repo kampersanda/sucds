@@ -9,6 +9,7 @@ use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 
 /// Compressed integer sequence with prefix-summed Elias-Fano encoding.
 ///
@@ -95,9 +96,9 @@ impl PrefixSummedEliasFano {
         // i.e., the (exclusive) upper bound of the prefix sums.
         let mut universe = 1u64;
         for x in vals {
-            universe = universe
-                .checked_add((*x).into())
-                .ok_or("the sum of vals must be less than u64::MAX.")?;
+            universe = universe.checked_add((*x).into()).ok_or_else(|| {
+                SucdsError::invalid_argument("the sum of vals must be less than u64::MAX.")
+            })?;
         }
 
         let mut b = EliasFanoBuilder::new(universe, vals.len())?;
@@ -253,8 +254,6 @@ impl Iterator for Iter<'_> {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
-
     #[test]
     fn test_max_sum() {
         // The largest sum that can be stored, i.e., u64::MAX - 1.
@@ -268,10 +267,7 @@ mod tests {
     #[test]
     fn test_sum_overflow() {
         let e = PrefixSummedEliasFano::from_slice(&[u64::MAX, 1]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("the sum of vals must be less than u64::MAX.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]

@@ -14,6 +14,7 @@ use crate::utils;
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 
 /// Time- and space-efficient data structure for a sequence of integers,
 /// supporting some queries such as ranking, selection, and intersection.
@@ -77,7 +78,7 @@ where
     ///  - `B::build_from_bits` fails.
     pub fn new(seq: CompactVector) -> Result<Self> {
         if seq.is_empty() {
-            return Err("seq must not be empty.".into());
+            return Err(SucdsError::invalid_argument("seq must not be empty."));
         }
 
         let max_value = seq.iter().max().unwrap();
@@ -637,17 +638,12 @@ where
 mod test {
     use super::*;
 
-    use alloc::string::ToString;
-
     use crate::bit_vectors::Rank9Sel;
 
     #[test]
     fn test_empty_seq() {
         let e = WaveletMatrix::<Rank9Sel>::new(CompactVector::new(1).unwrap());
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("seq must not be empty.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]

@@ -11,6 +11,7 @@ use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [`EliasFano`] for bit vectors.
@@ -211,7 +212,9 @@ impl Build for SArray {
         Self: Sized,
     {
         if with_select0 {
-            return Err("select0 is not supported for SArray.".into());
+            return Err(SucdsError::unsupported(
+                "select0 is not supported for SArray.",
+            ));
         }
         let mut rsbv = Self::from_bits(bits);
         if with_rank {
@@ -393,8 +396,6 @@ impl Serializable for SArray {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
-
     #[test]
     fn test_all_zeros() {
         let sa = SArray::from_bits([false, false, false]).enable_rank();
@@ -442,10 +443,7 @@ mod tests {
     #[test]
     fn test_rs_build_with_s0() {
         let e = SArray::build_from_bits([false, true, false], false, false, true);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("select0 is not supported for SArray.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::Unsupported(_))));
     }
 
     #[cfg(feature = "std")]

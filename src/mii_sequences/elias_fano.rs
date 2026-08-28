@@ -3,8 +3,6 @@
 
 pub mod iter;
 
-use alloc::string::ToString;
-
 use core::ops::Range;
 #[cfg(feature = "std")]
 use std::io::{Read, Write};
@@ -14,6 +12,7 @@ use crate::broadword;
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 use iter::Iter;
 
 const LINEAR_SCAN_THRESHOLD: usize = 64;
@@ -104,12 +103,14 @@ impl EliasFano {
     {
         let bv = BitVector::from_bits(bits);
         if bv.num_bits() == 0 {
-            return Err("bits must not be empty.".to_string().into());
+            return Err(SucdsError::invalid_argument("bits must not be empty."));
         }
         let num_bits = bv.num_bits();
         let num_ones = bv.num_ones();
         if num_ones == 0 {
-            return Err("bits must contains one set bit at least.".into());
+            return Err(SucdsError::invalid_argument(
+                "bits must contains one set bit at least.",
+            ));
         }
         let mut builder = EliasFanoBuilder::new(num_bits as u64, num_ones)?;
         for pos in 0..num_bits {
@@ -581,7 +582,7 @@ impl EliasFanoBuilder {
     /// An error is returned if `num_vals == 0`.
     pub fn new(universe: u64, num_vals: usize) -> Result<Self> {
         if num_vals == 0 {
-            return Err("num_vals must not be zero.".into());
+            return Err(SucdsError::invalid_argument("num_vals must not be zero."));
         }
         let low_len = broadword::msb(universe / num_vals as u64).unwrap_or(0);
         Ok(Self {
@@ -613,25 +614,22 @@ impl EliasFanoBuilder {
     /// - the number of stored integers becomes no less than [`Self::num_vals()`].
     pub fn push(&mut self, val: u64) -> Result<()> {
         if val < self.last {
-            return Err(format!(
+            return Err(SucdsError::invalid_argument(format!(
                 "val must be no less than the last one {}, but got {val}.",
                 self.last
-            )
-            .into());
+            )));
         }
         if self.universe <= val {
-            return Err(format!(
+            return Err(SucdsError::invalid_argument(format!(
                 "val must be less than self.universe()={}, but got {val}.",
                 self.universe
-            )
-            .into());
+            )));
         }
         if self.num_vals <= self.num_pushed {
-            return Err(format!(
+            return Err(SucdsError::invalid_state(format!(
                 "The number of pushed integers must not exceed self.num_vals()={}.",
                 self.num_vals
-            )
-            .into());
+            )));
         }
 
         self.last = val;
@@ -702,19 +700,13 @@ mod tests {
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("bits must not be empty.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_from_bits_unset() {
         let e = EliasFano::from_bits([false, false, false]);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("bits must contains one set bit at least.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[cfg(feature = "std")]
@@ -734,10 +726,7 @@ mod tests {
     #[test]
     fn test_builder_new_zero_size() {
         let e = EliasFanoBuilder::new(3, 0);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("num_vals must not be zero.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
@@ -745,20 +734,14 @@ mod tests {
         let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         b.push(2).unwrap();
         let e = b.push(1);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("val must be no less than the last one 2, but got 1.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_builder_overflow_universe() {
         let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         let e = b.push(3);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("val must be less than self.universe()=3, but got 3.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
@@ -766,9 +749,6 @@ mod tests {
         let mut b = EliasFanoBuilder::new(3, 1).unwrap();
         b.push(1).unwrap();
         let e = b.push(2);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("The number of pushed integers must not exceed self.num_vals()=1.".to_string())
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidState(_))));
     }
 }
