@@ -151,12 +151,12 @@ pub trait Access {
 /// at which bits are set in a bit vector of length $`u`$.
 pub trait Rank {
     /// Returns the cardinality of $`\{ x \in S \mid x < i \}`$,
-    /// or [`None`] if $`u < x`$.
-    fn rank1(&self, x: usize) -> Option<usize>;
+    /// or [`None`] if $`u < i`$.
+    fn rank1(&self, i: usize) -> Option<usize>;
 
     /// Returns the cardinality of $`\{ x \not\in S \mid 0 \leq x < i \}`$,
-    /// or [`None`] if $`u < x`$.
-    fn rank0(&self, x: usize) -> Option<usize>;
+    /// or [`None`] if $`u < i`$.
+    fn rank0(&self, i: usize) -> Option<usize>;
 }
 
 /// Interface for select queries on bit vectors.

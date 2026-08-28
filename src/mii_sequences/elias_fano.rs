@@ -106,18 +106,18 @@ impl EliasFano {
         if bv.num_bits() == 0 {
             return Err("bits must not be empty.".to_string().into());
         }
-        let n = bv.num_bits();
-        let m = (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
-        if m == 0 {
+        let num_bits = bv.num_bits();
+        let num_ones = bv.num_ones();
+        if num_ones == 0 {
             return Err("bits must contains one set bit at least.".into());
         }
-        let mut b = EliasFanoBuilder::new(n as u64, m)?;
-        for i in 0..n {
-            if bv.access(i).unwrap() {
-                b.push(i as u64)?;
+        let mut builder = EliasFanoBuilder::new(num_bits as u64, num_ones)?;
+        for pos in 0..num_bits {
+            if bv.access(pos).unwrap() {
+                builder.push(pos as u64)?;
             }
         }
-        Ok(b.build())
+        Ok(builder.build())
     }
 
     /// Builds an index to enable operations [`Self::rank()`],
@@ -169,7 +169,7 @@ impl EliasFano {
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
             .unwrap() as usize;
-        let x = if k != 0 {
+        let delta = if k != 0 {
             ((high_val
                 - self
                     .high_bits
@@ -186,7 +186,7 @@ impl EliasFano {
         } else {
             ((high_val - k) << self.low_len) | low_val
         };
-        Some(x as u64)
+        Some(delta as u64)
     }
 
     /// Finds the position `k` such that `select(k) == val`.
@@ -285,8 +285,8 @@ impl EliasFano {
         None
     }
 
-    /// Returns the number of integers less than `pos`, or
-    /// [`None`] if `self.universe() < pos`.
+    /// Returns the number of integers less than `val`, or
+    /// [`None`] if `self.universe() < val`.
     ///
     /// # Complexity
     ///
@@ -313,29 +313,30 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn rank(&self, pos: u64) -> Option<usize> {
-        if self.universe() < pos {
+    pub fn rank(&self, val: u64) -> Option<usize> {
+        if self.universe() < val {
             return None;
         }
-        if self.universe() == pos {
+        if self.universe() == val {
             return Some(self.len());
         }
 
-        let h_rank = (pos >> self.low_len) as usize;
-        let mut h_pos = self.high_bits.select0(h_rank).unwrap();
-        let mut rank = h_pos - h_rank;
-        let l_pos = pos & ((1 << self.low_len) - 1);
+        let high_val = (val >> self.low_len) as usize;
+        let low_val = val & ((1 << self.low_len) - 1);
 
-        while h_pos > 0
-            && self.high_bits.access(h_pos - 1).unwrap()
+        let mut high_pos = self.high_bits.select0(high_val).unwrap();
+        let mut rank = high_pos - high_val;
+
+        while high_pos > 0
+            && self.high_bits.access(high_pos - 1).unwrap()
             && self
                 .low_bits
                 .get_bits((rank - 1) * self.low_len, self.low_len)
                 .unwrap()
-                >= l_pos
+                >= low_val
         {
             rank -= 1;
-            h_pos -= 1;
+            high_pos -= 1;
         }
 
         Some(rank)
@@ -380,12 +381,12 @@ impl EliasFano {
         }
     }
 
-    /// Gets the largest element `pred` such that `pred <= pos`, or
-    /// [`None`] if `self.universe() <= pos`.
+    /// Gets the largest element `pred` such that `pred <= val`, or
+    /// [`None`] if `self.universe() <= val`.
     ///
     /// # Arguments
     ///
-    /// - `pos`: Predecessor query.
+    /// - `val`: Predecessor query.
     ///
     /// # Complexity
     ///
@@ -408,22 +409,22 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn predecessor(&self, pos: u64) -> Option<u64> {
-        if self.universe() <= pos {
+    pub fn predecessor(&self, val: u64) -> Option<u64> {
+        if self.universe() <= val {
             None
         } else {
-            Some(self.rank(pos + 1).unwrap())
+            Some(self.rank(val + 1).unwrap())
                 .filter(|&i| i > 0)
                 .map(|i| self.select(i - 1).unwrap())
         }
     }
 
-    /// Gets the smallest element `succ` such that `succ >= pos`, or
-    /// [`None`] if `self.universe() <= pos`.
+    /// Gets the smallest element `succ` such that `succ >= val`, or
+    /// [`None`] if `self.universe() <= val`.
     ///
     /// # Arguments
     ///
-    /// - `pos`: Successor query.
+    /// - `val`: Successor query.
     ///
     /// # Complexity
     ///
@@ -446,11 +447,11 @@ impl EliasFano {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn successor(&self, pos: u64) -> Option<u64> {
-        if self.universe() <= pos {
+    pub fn successor(&self, val: u64) -> Option<u64> {
+        if self.universe() <= val {
             None
         } else {
-            Some(self.rank(pos).unwrap())
+            Some(self.rank(val).unwrap())
                 .filter(|&i| i < self.len())
                 .map(|i| self.select(i).unwrap())
         }
@@ -460,7 +461,7 @@ impl EliasFano {
     ///
     /// # Arguments
     ///
-    /// - `k`: Select query.
+    /// - `k`: Position to start enumeration.
     ///
     /// # Examples
     ///
@@ -562,7 +563,7 @@ pub struct EliasFanoBuilder {
     low_bits: BitVector,
     universe: u64,
     num_vals: usize,
-    pos: usize,
+    num_pushed: usize,
     last: u64,
     low_len: usize,
 }
@@ -591,7 +592,7 @@ impl EliasFanoBuilder {
             low_bits: BitVector::new(),
             universe,
             num_vals,
-            pos: 0,
+            num_pushed: 0,
             last: 0,
             low_len,
         })
@@ -625,7 +626,7 @@ impl EliasFanoBuilder {
             )
             .into());
         }
-        if self.num_vals <= self.pos {
+        if self.num_vals <= self.num_pushed {
             return Err(format!(
                 "The number of pushed integers must not exceed self.num_vals()={}.",
                 self.num_vals
@@ -641,9 +642,9 @@ impl EliasFanoBuilder {
                 .unwrap();
         }
         self.high_bits
-            .set_bit((val as usize >> self.low_len) + self.pos, true)
+            .set_bit((val as usize >> self.low_len) + self.num_pushed, true)
             .unwrap();
-        self.pos += 1;
+        self.num_pushed += 1;
 
         Ok(())
     }
@@ -665,8 +666,8 @@ impl EliasFanoBuilder {
     where
         I: IntoIterator<Item = u64>,
     {
-        for x in vals {
-            self.push(x)?;
+        for val in vals {
+            self.push(val)?;
         }
         Ok(())
     }

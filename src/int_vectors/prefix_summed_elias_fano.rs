@@ -217,14 +217,14 @@ impl Serializable for PrefixSummedEliasFano {
 
 /// Iterator for enumerating integers, created by [`PrefixSummedEliasFano::iter()`].
 pub struct Iter<'a> {
-    efl: &'a PrefixSummedEliasFano,
+    psef: &'a PrefixSummedEliasFano,
     pos: usize,
 }
 
 impl<'a> Iter<'a> {
     /// Creates a new iterator.
-    pub const fn new(efl: &'a PrefixSummedEliasFano) -> Self {
-        Self { efl, pos: 0 }
+    pub const fn new(psef: &'a PrefixSummedEliasFano) -> Self {
+        Self { psef, pos: 0 }
     }
 }
 
@@ -233,8 +233,8 @@ impl Iterator for Iter<'_> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos < self.efl.len() {
-            let x = self.efl.access(self.pos).unwrap();
+        if self.pos < self.psef.len() {
+            let x = self.psef.access(self.pos).unwrap();
             self.pos += 1;
             Some(x)
         } else {
@@ -244,7 +244,7 @@ impl Iterator for Iter<'_> {
 
     #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let rem = self.efl.len() - self.pos;
+        let rem = self.psef.len() - self.pos;
         (rem, Some(rem))
     }
 }
@@ -310,8 +310,8 @@ mod tests {
 
     #[test]
     fn test_iter_size_hint() {
-        let efl = PrefixSummedEliasFano::from_slice(&[1u64, 2, 3, 4]).unwrap();
-        let mut it = efl.iter();
+        let psef = PrefixSummedEliasFano::from_slice(&[1u64, 2, 3, 4]).unwrap();
+        let mut it = psef.iter();
         assert_eq!(it.size_hint(), (4, Some(4)));
         it.next();
         it.next();
