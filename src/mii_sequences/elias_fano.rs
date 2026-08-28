@@ -289,10 +289,6 @@ impl EliasFano {
     /// Returns the number of integers less than `val`, or
     /// [`None`] if `self.universe() < val`.
     ///
-    /// # Arguments
-    ///
-    /// - `val`: Integer to be searched.
-    ///
     /// # Complexity
     ///
     /// $`O(\lg \frac{u}{n})`$
@@ -391,7 +387,7 @@ impl EliasFano {
     ///
     /// # Arguments
     ///
-    /// - `val`: Integer to be searched.
+    /// - `val`: Predecessor query.
     ///
     /// # Complexity
     ///
@@ -429,7 +425,7 @@ impl EliasFano {
     ///
     /// # Arguments
     ///
-    /// - `val`: Integer to be searched.
+    /// - `val`: Successor query.
     ///
     /// # Complexity
     ///

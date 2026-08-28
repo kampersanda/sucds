@@ -150,12 +150,12 @@ pub trait Access {
 /// Let $`S \subseteq \{ 0,1,\dots,u-1 \}`$ be a set of positions
 /// at which bits are set in a bit vector of length $`u`$.
 pub trait Rank {
-    /// Returns the cardinality of $`\{ x \in S \mid x < pos \}`$,
-    /// or [`None`] if $`u < pos`$.
+    /// Returns the cardinality of $`\{ x \in S \mid x < i \}`$,
+    /// or [`None`] if $`u < i`$.
     fn rank1(&self, pos: usize) -> Option<usize>;
 
-    /// Returns the cardinality of $`\{ x \not\in S \mid 0 \leq x < pos \}`$,
-    /// or [`None`] if $`u < pos`$.
+    /// Returns the cardinality of $`\{ x \not\in S \mid 0 \leq x < i \}`$,
+    /// or [`None`] if $`u < i`$.
     fn rank0(&self, pos: usize) -> Option<usize>;
 }
 
