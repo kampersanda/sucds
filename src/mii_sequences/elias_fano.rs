@@ -697,6 +697,8 @@ impl EliasFanoBuilder {
 mod tests {
     use super::*;
 
+    use alloc::string::ToString;
+
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
