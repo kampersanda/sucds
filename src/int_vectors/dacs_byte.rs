@@ -1,13 +1,17 @@
 //! Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
 #![cfg(target_pointer_width = "64")]
 
-use std::convert::TryFrom;
+use alloc::vec::Vec;
+
+use core::convert::TryFrom;
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, NumVals};
 use crate::utils;
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 
 const LEVEL_WIDTH: usize = 8;
@@ -266,6 +270,7 @@ impl Iterator for Iter<'_> {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for DacsByte {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -344,6 +349,7 @@ mod tests {
         assert_eq!(seq.access(3), Some(0));
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

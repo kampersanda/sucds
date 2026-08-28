@@ -3,11 +3,13 @@
 
 pub mod inner;
 
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 use inner::Rank9SelIndex;
 
@@ -276,6 +278,7 @@ impl Select for Rank9Sel {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for Rank9Sel {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -347,6 +350,7 @@ mod tests {
         assert_eq!(bv.select1(2), None);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

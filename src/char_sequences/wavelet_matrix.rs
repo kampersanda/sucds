@@ -2,13 +2,17 @@
 //! supporting some queries such as ranking, selection, and intersection.
 #![cfg(target_pointer_width = "64")]
 
+use alloc::vec::Vec;
+
+use core::ops::Range;
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
-use std::ops::Range;
 
 use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::utils;
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 
 /// Time- and space-efficient data structure for a sequence of integers,
@@ -607,6 +611,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<B> Serializable for WaveletMatrix<B>
 where
     B: Serializable,
@@ -631,6 +636,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use alloc::string::ToString;
 
     use crate::bit_vectors::Rank9Sel;
 
@@ -719,6 +726,7 @@ mod test {
         assert_eq!(wm.intersect(&ranges, 1), Some(vec!['o' as u64]));
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let text = "tobeornottobethatisthequestion";

@@ -1,12 +1,17 @@
 //! Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
+
 pub mod unary;
 
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
 use crate::utils::MatrixView;
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 use unary::UnaryIter;
 
@@ -914,7 +919,7 @@ impl Iterator for Iter<'_> {
     }
 }
 
-impl std::iter::Extend<bool> for BitVector {
+impl core::iter::Extend<bool> for BitVector {
     fn extend<I>(&mut self, bits: I)
     where
         I: IntoIterator<Item = bool>,
@@ -923,8 +928,8 @@ impl std::iter::Extend<bool> for BitVector {
     }
 }
 
-impl std::fmt::Debug for BitVector {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for BitVector {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut bits = vec![0u8; self.len()];
         for (i, b) in bits.iter_mut().enumerate() {
             *b = self.access(i).unwrap() as u8;
@@ -936,6 +941,7 @@ impl std::fmt::Debug for BitVector {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for BitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.words.serialize_into(&mut writer)?;
@@ -957,6 +963,8 @@ impl Serializable for BitVector {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use alloc::string::ToString;
 
     #[test]
     fn test_set_bit_oob() {
@@ -1039,6 +1047,7 @@ mod tests {
         assert_eq!(bv.get_word64(60), Some(0b1111));
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

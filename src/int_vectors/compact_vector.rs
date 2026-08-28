@@ -1,12 +1,15 @@
 //! Updatable compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
+use crate::utils;
 use crate::Result;
-use crate::{utils, Serializable};
+#[cfg(feature = "std")]
+use crate::Serializable;
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
 ///
@@ -502,8 +505,8 @@ impl Iterator for Iter<'_> {
     }
 }
 
-impl std::fmt::Debug for CompactVector {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for CompactVector {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut ints = vec![0; self.len()];
         for (i, b) in ints.iter_mut().enumerate() {
             *b = self.access(i).unwrap();
@@ -516,6 +519,7 @@ impl std::fmt::Debug for CompactVector {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for CompactVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.chunks.serialize_into(&mut writer)?;
@@ -539,6 +543,8 @@ impl Serializable for CompactVector {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use alloc::string::ToString;
 
     #[test]
     fn test_new_oob_0() {
@@ -658,6 +664,7 @@ mod tests {
         assert_eq!(cv.get_int(0), Some(42));
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
