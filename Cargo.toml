@@ -1,6 +1,6 @@
 [package]
 name = "sucds"
-version = "0.8.3"
+version = "0.9.0"
 authors = ["Shunsuke Kanda (kampersanda) <shnsk.knd@gmail.com>"]
 description = "Succinct data structures in Rust"
 license = "MIT OR Apache-2.0"
@@ -9,7 +9,7 @@ documentation = "https://docs.rs/sucds"
 repository = "https://github.com/kampersanda/sucds"
 homepage = "https://github.com/kampersanda/sucds"
 keywords = ["succinct", "compression"]
-categories = ["data-structures"]
+categories = ["data-structures", "no-std"]
 edition = "2018"
 rust-version = "1.62.0"
 
