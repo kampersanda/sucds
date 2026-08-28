@@ -396,7 +396,7 @@ impl Serializable for SArray {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     #[test]
     fn test_all_zeros() {
@@ -445,10 +445,7 @@ mod tests {
     #[test]
     fn test_rs_build_with_s0() {
         let e = SArray::build_from_bits([false, true, false], false, false, true);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("unsupported operation: select0 is not supported for SArray.".to_string())
-        );
+        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::Unsupported));
     }
 
     #[cfg(feature = "std")]

@@ -254,7 +254,7 @@ impl Iterator for Iter<'_> {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     #[test]
     fn test_max_sum() {
@@ -270,8 +270,8 @@ mod tests {
     fn test_sum_overflow() {
         let e = PrefixSummedEliasFano::from_slice(&[u64::MAX, 1]);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: the sum of vals must be less than u64::MAX.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 

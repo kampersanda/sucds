@@ -697,14 +697,14 @@ impl EliasFanoBuilder {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: bits must not be empty.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -712,8 +712,8 @@ mod tests {
     fn test_from_bits_unset() {
         let e = EliasFano::from_bits([false, false, false]);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: bits must contains one set bit at least.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -735,8 +735,8 @@ mod tests {
     fn test_builder_new_zero_size() {
         let e = EliasFanoBuilder::new(3, 0);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: num_vals must not be zero.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -746,10 +746,8 @@ mod tests {
         b.push(2).unwrap();
         let e = b.push(1);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some(
-                "invalid argument: val must be no less than the last one 2, but got 1.".to_string()
-            )
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -758,10 +756,8 @@ mod tests {
         let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         let e = b.push(3);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some(
-                "invalid argument: val must be less than self.universe()=3, but got 3.".to_string()
-            )
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -771,11 +767,8 @@ mod tests {
         b.push(1).unwrap();
         let e = b.push(2);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some(
-                "invalid state: The number of pushed integers must not exceed self.num_vals()=1."
-                    .to_string()
-            )
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidState)
         );
     }
 }

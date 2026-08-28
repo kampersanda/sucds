@@ -550,14 +550,14 @@ impl Serializable for CompactVector {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     #[test]
     fn test_new_oob_0() {
         let e = CompactVector::new(0);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -565,8 +565,8 @@ mod tests {
     fn test_new_oob_65() {
         let e = CompactVector::new(65);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -574,8 +574,8 @@ mod tests {
     fn test_with_capacity_oob_0() {
         let e = CompactVector::with_capacity(0, 0);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -583,8 +583,8 @@ mod tests {
     fn test_with_capacity_oob_65() {
         let e = CompactVector::with_capacity(0, 65);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -592,8 +592,8 @@ mod tests {
     fn test_from_int_oob_0() {
         let e = CompactVector::from_int(0, 0, 0);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -601,8 +601,8 @@ mod tests {
     fn test_from_int_oob_65() {
         let e = CompactVector::from_int(0, 0, 65);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -610,8 +610,8 @@ mod tests {
     fn test_from_int_unfit() {
         let e = CompactVector::from_int(4, 0, 2);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: val must fit in width=2 bits, but got 4.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -619,10 +619,7 @@ mod tests {
     fn test_set_int_oob() {
         let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
         let e = cv.set_int(1, 1);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("out of bounds: pos must be no greater than self.len()=1, but got 1.".to_string())
-        );
+        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
     }
 
     #[test]
@@ -630,8 +627,8 @@ mod tests {
         let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
         let e = cv.set_int(0, 4);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -640,8 +637,8 @@ mod tests {
         let mut cv = CompactVector::new(2).unwrap();
         let e = cv.push_int(4);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -650,8 +647,8 @@ mod tests {
         let mut cv = CompactVector::new(2).unwrap();
         let e = cv.extend([4]);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 

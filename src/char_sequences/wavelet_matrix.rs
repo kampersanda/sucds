@@ -638,7 +638,7 @@ where
 mod test {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     use crate::bit_vectors::Rank9Sel;
 
@@ -646,8 +646,8 @@ mod test {
     fn test_empty_seq() {
         let e = WaveletMatrix::<Rank9Sel>::new(CompactVector::new(1).unwrap());
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: seq must not be empty.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 

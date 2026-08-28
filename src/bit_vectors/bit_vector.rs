@@ -967,16 +967,13 @@ impl Serializable for BitVector {
 mod tests {
     use super::*;
 
-    use alloc::string::ToString;
+    use crate::SucdsErrorKind;
 
     #[test]
     fn test_set_bit_oob() {
         let mut bv = BitVector::from_bit(false, 3);
         let e = bv.set_bit(3, true);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("out of bounds: pos must be no greater than self.len()=3, but got 3.".to_string())
-        );
+        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
     }
 
     #[test]
@@ -984,8 +981,8 @@ mod tests {
         let mut bv = BitVector::from_bit(false, 100);
         let e = bv.set_bits(0, 0b0, 65);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: len must be no greater than 64, but got 65.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 
@@ -993,13 +990,7 @@ mod tests {
     fn test_set_bits_oob() {
         let mut bv = BitVector::from_bit(false, 3);
         let e = bv.set_bits(2, 0b11, 2);
-        assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some(
-                "out of bounds: pos+len must be no greater than self.len()=3, but got 4."
-                    .to_string()
-            )
-        );
+        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
     }
 
     #[test]
@@ -1021,8 +1012,8 @@ mod tests {
         let mut bv = BitVector::new();
         let e = bv.push_bits(0b0, 65);
         assert_eq!(
-            e.err().map(|x| x.to_string()),
-            Some("invalid argument: len must be no greater than 64, but got 65.".to_string())
+            e.err().map(|x| x.kind()),
+            Some(SucdsErrorKind::InvalidArgument)
         );
     }
 

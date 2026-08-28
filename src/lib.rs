@@ -48,7 +48,8 @@
 //! It is an enum categorizing failures into kinds such as
 //! [`InvalidArgument`](SucdsError::InvalidArgument) or
 //! [`OutOfBounds`](SucdsError::OutOfBounds), so that errors can be handled
-//! without parsing messages.
+//! without parsing messages. [`SucdsError::kind`] returns the kind alone as a
+//! comparable [`SucdsErrorKind`]; error messages are not part of the stable API.
 //!
 //! ## `no_std` support
 //!
@@ -82,7 +83,7 @@ pub mod mii_sequences;
 pub mod serial;
 pub mod utils;
 
-pub use errors::SucdsError;
+pub use errors::{SucdsError, SucdsErrorKind};
 #[cfg(feature = "std")]
 pub use serial::Serializable;
 
