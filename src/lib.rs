@@ -42,15 +42,6 @@
 //! All the data structures can be serialized or deserialized through the `Serializable` trait
 //! (available with the `std` feature).
 //!
-//! ## Error handling
-//!
-//! Fallible operations return [`Result`], whose error type is [`SucdsError`].
-//! It is an enum categorizing failures into kinds such as
-//! [`InvalidArgument`](SucdsError::InvalidArgument) or
-//! [`OutOfBounds`](SucdsError::OutOfBounds), so that errors can be handled
-//! without parsing messages. Error messages are not part of the stable API;
-//! match on the variant instead.
-//!
 //! ## `no_std` support
 //!
 //! This crate supports `no_std` environments by disabling the default `std` feature,

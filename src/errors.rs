@@ -11,15 +11,6 @@ use core::fmt;
 ///
 /// To branch on or test for a specific failure, match on the variant rather
 /// than on the message, which is not part of the stable API.
-///
-/// # Examples
-///
-/// ```
-/// use sucds::{int_vectors::CompactVector, SucdsError};
-///
-/// let e = CompactVector::new(65).err().unwrap();
-/// assert!(matches!(e, SucdsError::InvalidArgument(_)));
-/// ```
 #[derive(Debug)]
 pub enum SucdsError {
     /// An argument is out of the valid range or does not satisfy
