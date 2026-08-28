@@ -254,8 +254,6 @@ impl Iterator for Iter<'_> {
 mod tests {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     #[test]
     fn test_max_sum() {
         // The largest sum that can be stored, i.e., u64::MAX - 1.
@@ -269,10 +267,7 @@ mod tests {
     #[test]
     fn test_sum_overflow() {
         let e = PrefixSummedEliasFano::from_slice(&[u64::MAX, 1]);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]

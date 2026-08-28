@@ -396,8 +396,6 @@ impl Serializable for SArray {
 mod tests {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     #[test]
     fn test_all_zeros() {
         let sa = SArray::from_bits([false, false, false]).enable_rank();
@@ -445,7 +443,7 @@ mod tests {
     #[test]
     fn test_rs_build_with_s0() {
         let e = SArray::build_from_bits([false, true, false], false, false, true);
-        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::Unsupported));
+        assert!(matches!(e, Err(SucdsError::Unsupported(_))));
     }
 
     #[cfg(feature = "std")]

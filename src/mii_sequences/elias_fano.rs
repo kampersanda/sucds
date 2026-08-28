@@ -697,24 +697,16 @@ impl EliasFanoBuilder {
 mod tests {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     #[test]
     fn test_from_bits_empty() {
         let e = EliasFano::from_bits([]);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_from_bits_unset() {
         let e = EliasFano::from_bits([false, false, false]);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[cfg(feature = "std")]
@@ -734,10 +726,7 @@ mod tests {
     #[test]
     fn test_builder_new_zero_size() {
         let e = EliasFanoBuilder::new(3, 0);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
@@ -745,20 +734,14 @@ mod tests {
         let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         b.push(2).unwrap();
         let e = b.push(1);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_builder_overflow_universe() {
         let mut b = EliasFanoBuilder::new(3, 2).unwrap();
         let e = b.push(3);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
@@ -766,9 +749,6 @@ mod tests {
         let mut b = EliasFanoBuilder::new(3, 1).unwrap();
         b.push(1).unwrap();
         let e = b.push(2);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidState)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidState(_))));
     }
 }

@@ -3,67 +3,22 @@
 use alloc::string::String;
 use core::fmt;
 
-/// Kind of [`SucdsError`].
-///
-/// This mirrors the variants of [`SucdsError`] without carrying a message, so
-/// that errors can be compared and matched without depending on message text.
-/// Obtain it with [`SucdsError::kind`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum SucdsErrorKind {
-    /// Kind of [`SucdsError::InvalidArgument`].
-    InvalidArgument,
-
-    /// Kind of [`SucdsError::OutOfBounds`].
-    OutOfBounds,
-
-    /// Kind of [`SucdsError::InvalidState`].
-    InvalidState,
-
-    /// Kind of [`SucdsError::Unsupported`].
-    Unsupported,
-
-    /// Kind of `SucdsError::Io`.
-    ///
-    /// This variant is available only with the `std` feature.
-    #[cfg(feature = "std")]
-    Io,
-}
-
-impl fmt::Display for SucdsErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::InvalidArgument => "invalid argument",
-            Self::OutOfBounds => "out of bounds",
-            Self::InvalidState => "invalid state",
-            Self::Unsupported => "unsupported operation",
-            #[cfg(feature = "std")]
-            Self::Io => "io error",
-        };
-        f.write_str(s)
-    }
-}
-
 /// Error type for this crate.
 ///
 /// Errors are categorized into several kinds so that callers can handle them
 /// without parsing error messages. Each variant holds a human-readable message
 /// describing the concrete violation.
 ///
-/// To branch on or compare errors, use [`SucdsError::kind`] rather than the
-/// message, which is not part of the stable API.
-///
-/// This type derives only [`Debug`]: `Io` wraps `std::io::Error`, which
-/// implements neither [`PartialEq`] nor [`Clone`]. Use [`SucdsErrorKind`],
-/// which derives both, for comparisons.
+/// To branch on or test for a specific failure, match on the variant rather
+/// than on the message, which is not part of the stable API.
 ///
 /// # Examples
 ///
 /// ```
-/// use sucds::{int_vectors::CompactVector, SucdsErrorKind};
+/// use sucds::{int_vectors::CompactVector, SucdsError};
 ///
 /// let e = CompactVector::new(65).err().unwrap();
-/// assert_eq!(e.kind(), SucdsErrorKind::InvalidArgument);
+/// assert!(matches!(e, SucdsError::InvalidArgument(_)));
 /// ```
 #[derive(Debug)]
 #[non_exhaustive]
@@ -89,20 +44,6 @@ pub enum SucdsError {
 }
 
 impl SucdsError {
-    /// Returns the [`SucdsErrorKind`] of this error.
-    ///
-    /// Prefer this over inspecting the message when handling or testing errors.
-    pub const fn kind(&self) -> SucdsErrorKind {
-        match self {
-            Self::InvalidArgument(_) => SucdsErrorKind::InvalidArgument,
-            Self::OutOfBounds(_) => SucdsErrorKind::OutOfBounds,
-            Self::InvalidState(_) => SucdsErrorKind::InvalidState,
-            Self::Unsupported(_) => SucdsErrorKind::Unsupported,
-            #[cfg(feature = "std")]
-            Self::Io(_) => SucdsErrorKind::Io,
-        }
-    }
-
     /// Creates [`SucdsError::InvalidArgument`] with a message.
     pub fn invalid_argument<S>(msg: S) -> Self
     where
@@ -139,12 +80,12 @@ impl SucdsError {
 impl fmt::Display for SucdsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidArgument(msg)
-            | Self::OutOfBounds(msg)
-            | Self::InvalidState(msg)
-            | Self::Unsupported(msg) => write!(f, "{}: {msg}", self.kind()),
+            Self::InvalidArgument(msg) => write!(f, "invalid argument: {msg}"),
+            Self::OutOfBounds(msg) => write!(f, "out of bounds: {msg}"),
+            Self::InvalidState(msg) => write!(f, "invalid state: {msg}"),
+            Self::Unsupported(msg) => write!(f, "unsupported operation: {msg}"),
             #[cfg(feature = "std")]
-            Self::Io(e) => write!(f, "{}: {e}", self.kind()),
+            Self::Io(e) => write!(f, "io error: {e}"),
         }
     }
 }

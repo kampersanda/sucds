@@ -638,17 +638,12 @@ where
 mod test {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     use crate::bit_vectors::Rank9Sel;
 
     #[test]
     fn test_empty_seq() {
         let e = WaveletMatrix::<Rank9Sel>::new(CompactVector::new(1).unwrap());
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]

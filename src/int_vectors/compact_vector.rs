@@ -550,106 +550,74 @@ impl Serializable for CompactVector {
 mod tests {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     #[test]
     fn test_new_oob_0() {
         let e = CompactVector::new(0);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_new_oob_65() {
         let e = CompactVector::new(65);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_with_capacity_oob_0() {
         let e = CompactVector::with_capacity(0, 0);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_with_capacity_oob_65() {
         let e = CompactVector::with_capacity(0, 65);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_from_int_oob_0() {
         let e = CompactVector::from_int(0, 0, 0);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_from_int_oob_65() {
         let e = CompactVector::from_int(0, 0, 65);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_from_int_unfit() {
         let e = CompactVector::from_int(4, 0, 2);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_set_int_oob() {
         let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
         let e = cv.set_int(1, 1);
-        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
+        assert!(matches!(e, Err(SucdsError::OutOfBounds(_))));
     }
 
     #[test]
     fn test_set_int_unfit() {
         let mut cv = CompactVector::from_int(0, 1, 2).unwrap();
         let e = cv.set_int(0, 4);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_push_int_unfit() {
         let mut cv = CompactVector::new(2).unwrap();
         let e = cv.push_int(4);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_extend_unfit() {
         let mut cv = CompactVector::new(2).unwrap();
         let e = cv.extend([4]);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]

@@ -967,30 +967,25 @@ impl Serializable for BitVector {
 mod tests {
     use super::*;
 
-    use crate::SucdsErrorKind;
-
     #[test]
     fn test_set_bit_oob() {
         let mut bv = BitVector::from_bit(false, 3);
         let e = bv.set_bit(3, true);
-        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
+        assert!(matches!(e, Err(SucdsError::OutOfBounds(_))));
     }
 
     #[test]
     fn test_set_bits_over_word() {
         let mut bv = BitVector::from_bit(false, 100);
         let e = bv.set_bits(0, 0b0, 65);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
     fn test_set_bits_oob() {
         let mut bv = BitVector::from_bit(false, 3);
         let e = bv.set_bits(2, 0b11, 2);
-        assert_eq!(e.err().map(|x| x.kind()), Some(SucdsErrorKind::OutOfBounds));
+        assert!(matches!(e, Err(SucdsError::OutOfBounds(_))));
     }
 
     #[test]
@@ -1011,10 +1006,7 @@ mod tests {
     fn test_push_bits_over_word() {
         let mut bv = BitVector::new();
         let e = bv.push_bits(0b0, 65);
-        assert_eq!(
-            e.err().map(|x| x.kind()),
-            Some(SucdsErrorKind::InvalidArgument)
-        );
+        assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
     #[test]
