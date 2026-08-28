@@ -88,7 +88,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// Error type for `no_std` builds, simply holding an error message.
 #[cfg(not(feature = "std"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub struct Error(alloc::string::String);
 
 #[cfg(not(feature = "std"))]
