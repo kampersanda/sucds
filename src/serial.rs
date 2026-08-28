@@ -1,8 +1,11 @@
 //! Serializers.
 #![cfg(target_pointer_width = "64")]
 
+use alloc::vec::Vec;
+
 pub mod primitive;
 
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::Result;
@@ -52,6 +55,7 @@ pub trait Serializable: Sized {
     }
 }
 
+#[cfg(feature = "std")]
 impl<S> Serializable for Option<S>
 where
     S: Serializable,
@@ -81,6 +85,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<S> Serializable for Vec<S>
 where
     S: Serializable,

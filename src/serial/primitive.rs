@@ -1,6 +1,7 @@
 //! Utilities for serialize/deserialize integers.
 #![cfg(target_pointer_width = "64")]
 
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use super::Serializable;
@@ -11,21 +12,21 @@ macro_rules! common_def {
         impl Serializable for $int {
             fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
                 writer.write_all(&self.to_le_bytes())?;
-                Ok(std::mem::size_of::<Self>())
+                Ok(core::mem::size_of::<Self>())
             }
 
             fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-                let mut buf = [0; std::mem::size_of::<Self>()];
+                let mut buf = [0; core::mem::size_of::<Self>()];
                 reader.read_exact(&mut buf)?;
                 Ok(Self::from_le_bytes(buf))
             }
 
             fn size_in_bytes(&self) -> usize {
-                std::mem::size_of::<Self>()
+                core::mem::size_of::<Self>()
             }
 
             fn size_of() -> Option<usize> {
-                Some(std::mem::size_of::<Self>())
+                Some(core::mem::size_of::<Self>())
             }
         }
     };
@@ -42,6 +43,7 @@ common_def!(i32);
 common_def!(i64);
 common_def!(isize);
 
+#[cfg(feature = "std")]
 impl Serializable for bool {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         (*self as u8).serialize_into(writer)
@@ -52,10 +54,10 @@ impl Serializable for bool {
     }
 
     fn size_in_bytes(&self) -> usize {
-        std::mem::size_of::<u8>()
+        core::mem::size_of::<u8>()
     }
 
     fn size_of() -> Option<usize> {
-        Some(std::mem::size_of::<u8>())
+        Some(core::mem::size_of::<u8>())
     }
 }

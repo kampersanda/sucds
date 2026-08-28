@@ -1,11 +1,13 @@
 //! Compressed integer sequence with prefix-summed Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::int_vectors::prelude::*;
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 
 /// Compressed integer sequence with prefix-summed Elias-Fano encoding.
@@ -197,6 +199,7 @@ impl Access for PrefixSummedEliasFano {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for PrefixSummedEliasFano {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         self.ef.serialize_into(writer)
@@ -250,6 +253,8 @@ impl Iterator for Iter<'_> {
 mod tests {
     use super::*;
 
+    use alloc::string::ToString;
+
     #[test]
     fn test_max_sum() {
         // The largest sum that can be stored, i.e., u64::MAX - 1.
@@ -279,6 +284,7 @@ mod tests {
         assert_eq!(seq.iter().next(), None);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
@@ -290,6 +296,7 @@ mod tests {
         assert_eq!(size, seq.size_in_bytes());
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize_empty() {
         let mut bytes = vec![];

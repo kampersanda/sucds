@@ -1,12 +1,18 @@
 //! Internal index structure of [`Rank9Sel`](super::Rank9Sel).
 #![cfg(target_pointer_width = "64")]
 
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use crate::bit_vectors::BitVector;
 use crate::bit_vectors::NumBits;
+use crate::broadword;
+#[cfg(feature = "std")]
 use crate::Result;
-use crate::{broadword, Serializable};
+#[cfg(feature = "std")]
+use crate::Serializable;
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -393,6 +399,7 @@ impl Rank9SelIndex {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for Rank9SelIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;

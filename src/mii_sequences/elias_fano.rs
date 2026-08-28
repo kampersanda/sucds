@@ -1,14 +1,18 @@
 //! Compressed monotone increasing sequence through Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
+use alloc::string::ToString;
+
 pub mod iter;
 
+use core::ops::Range;
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
-use std::ops::Range;
 
 use crate::bit_vectors::{Access, BitVector, DArray, NumBits, Select};
 use crate::broadword;
 use crate::Result;
+#[cfg(feature = "std")]
 use crate::Serializable;
 use iter::Iter;
 
@@ -499,6 +503,7 @@ impl EliasFano {
     }
 }
 
+#[cfg(feature = "std")]
 impl Serializable for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -711,6 +716,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

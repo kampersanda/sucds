@@ -39,13 +39,24 @@
 //!
 //! ## Serialization/deserialization
 //!
-//! All the data structures can be serialized or deserialized through the [`Serializable`] trait.
+//! All the data structures can be serialized or deserialized through the `Serializable` trait
+//! (available with the `std` feature).
+//!
+//! ## `no_std` support
+//!
+//! This crate supports `no_std` environments by disabling the default `std` feature,
+//! although the `alloc` crate is always required.
+//! Note that serialization/deserialization is unavailable in that case
+//! because it is built on `std::io`.
 //!
 //! ## Limitation
 //!
 //! This library is designed to run on 64-bit machines.
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
 
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("`target_pointer_width` must be 64");
@@ -56,15 +67,50 @@ pub mod char_sequences;
 pub mod int_vectors;
 mod intrinsics;
 pub mod mii_sequences;
+#[cfg(feature = "std")]
 pub mod serial;
 pub mod utils;
 
+#[cfg(feature = "std")]
 pub use serial::Serializable;
 
 /// Result type for this crate.
 ///
 /// This is a simple alias for a Boxed dynamic error type which can be simply used with `format!` macros to create error messages.
-pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+#[cfg(feature = "std")]
+pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+/// Result type for this crate.
+///
+/// In `no_std` builds, the error type is [`Error`], a simple wrapper of an error message.
+#[cfg(not(feature = "std"))]
+pub type Result<T> = core::result::Result<T, Error>;
+
+/// Error type for `no_std` builds, simply holding an error message.
+#[cfg(not(feature = "std"))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Error(alloc::string::String);
+
+#[cfg(not(feature = "std"))]
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl From<alloc::string::String> for Error {
+    fn from(msg: alloc::string::String) -> Self {
+        Self(msg)
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl From<&str> for Error {
+    fn from(msg: &str) -> Self {
+        Self(alloc::string::ToString::to_string(msg))
+    }
+}
 
 // NOTE(kampersanda): We should not use `get()` because it has been already used in most std
 // containers with different type annotations.
