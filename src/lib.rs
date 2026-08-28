@@ -46,8 +46,15 @@
 //!
 //! This crate supports `no_std` environments by disabling the default `std` feature,
 //! although the `alloc` crate is always required.
-//! Note that serialization/deserialization is unavailable in that case
-//! because it is built on `std::io`.
+//! Two things differ from the default build:
+//!
+//! - Serialization/deserialization is unavailable, because it is built on `std::io`.
+//! - The error type behind [`Result`] is `Error` instead of
+//!   `Box<dyn std::error::Error + Send + Sync>`. It simply wraps an error message and
+//!   implements [`Display`](core::fmt::Display), and is convertible from `&str` and
+//!   `String`, so `Err("...".into())` works in both builds.
+//!   Since `Error` does not exist in the default build, it does not appear in this
+//!   documentation.
 //!
 //! ## Limitation
 //!
@@ -87,6 +94,9 @@ pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error + Send + 
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// Error type for `no_std` builds, simply holding an error message.
+///
+/// This type exists only when the `std` feature is disabled.
+/// The default build uses `Box<dyn std::error::Error + Send + Sync>` instead.
 #[cfg(not(feature = "std"))]
 #[derive(Debug)]
 pub struct Error(alloc::string::String);
