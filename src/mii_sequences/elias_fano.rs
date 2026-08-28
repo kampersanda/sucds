@@ -107,8 +107,7 @@ impl EliasFano {
             return Err("bits must not be empty.".to_string().into());
         }
         let num_bits = bv.num_bits();
-        let num_ones =
-            (0..bv.num_words()).fold(0, |acc, i| acc + broadword::popcount(bv.words()[i]));
+        let num_ones = bv.num_ones();
         if num_ones == 0 {
             return Err("bits must contains one set bit at least.".into());
         }
@@ -165,17 +164,17 @@ impl EliasFano {
         if self.len() <= k {
             return None;
         }
-        let high_pos = self.high_bits.select1(k).unwrap();
+        let high_val = self.high_bits.select1(k).unwrap();
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
             .unwrap() as usize;
         let delta = if k != 0 {
-            ((high_pos
+            ((high_val
                 - self
                     .high_bits
                     .bit_vector()
-                    .predecessor1(high_pos - 1)
+                    .predecessor1(high_val - 1)
                     .unwrap()
                 - 1)
                 << self.low_len)
@@ -185,7 +184,7 @@ impl EliasFano {
                     .get_bits((k - 1) * self.low_len, self.low_len)
                     .unwrap() as usize
         } else {
-            ((high_pos - k) << self.low_len) | low_val
+            ((high_val - k) << self.low_len) | low_val
         };
         Some(delta as u64)
     }
