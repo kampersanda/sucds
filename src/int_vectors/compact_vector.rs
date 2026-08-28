@@ -10,6 +10,7 @@ use crate::utils;
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 
 /// Updatable compact vector in which each integer is represented in a fixed number of bits.
 ///
@@ -69,7 +70,9 @@ impl CompactVector {
     /// ```
     pub fn new(width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(format!("width must be in 1..=64, but got {width}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "width must be in 1..=64, but got {width}."
+            )));
         }
         Ok(Self {
             chunks: BitVector::default(),
@@ -108,7 +111,9 @@ impl CompactVector {
     /// ```
     pub fn with_capacity(capa: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(format!("width must be in 1..=64, but got {width}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "width must be in 1..=64, but got {width}."
+            )));
         }
         Ok(Self {
             chunks: BitVector::with_capacity(capa * width),
@@ -148,10 +153,14 @@ impl CompactVector {
     /// ```
     pub fn from_int(val: u64, len: usize, width: usize) -> Result<Self> {
         if !(1..=64).contains(&width) {
-            return Err(format!("width must be in 1..=64, but got {width}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "width must be in 1..=64, but got {width}."
+            )));
         }
         if width < 64 && val >> width != 0 {
-            return Err(format!("val must fit in width={width} bits, but got {val}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "val must fit in width={width} bits, but got {val}."
+            )));
         }
         // NOTE(kampersanda): It should be safe.
         let mut cv = Self::with_capacity(len, width).unwrap();
@@ -260,18 +269,16 @@ impl CompactVector {
     #[inline(always)]
     pub fn set_int(&mut self, pos: usize, val: u64) -> Result<()> {
         if self.len() <= pos {
-            return Err(format!(
+            return Err(SucdsError::out_of_bounds(format!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
                 self.len()
-            )
-            .into());
+            )));
         }
         if self.width() != 64 && val >> self.width() != 0 {
-            return Err(format!(
+            return Err(SucdsError::invalid_argument(format!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
-            )
-            .into());
+            )));
         }
         // NOTE(kampersanda): set_bits should be safe.
         self.chunks
@@ -310,11 +317,10 @@ impl CompactVector {
     #[inline(always)]
     pub fn push_int(&mut self, val: u64) -> Result<()> {
         if self.width() != 64 && val >> self.width() != 0 {
-            return Err(format!(
+            return Err(SucdsError::invalid_argument(format!(
                 "val must fit in self.width()={} bits, but got {val}.",
                 self.width()
-            )
-            .into());
+            )));
         }
         // NOTE(kampersanda): set_bits should be safe.
         self.chunks.push_bits(val, self.width).unwrap();
@@ -551,7 +557,7 @@ mod tests {
         let e = CompactVector::new(0);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 0.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
         );
     }
 
@@ -560,7 +566,7 @@ mod tests {
         let e = CompactVector::new(65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 65.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
         );
     }
 
@@ -569,7 +575,7 @@ mod tests {
         let e = CompactVector::with_capacity(0, 0);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 0.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
         );
     }
 
@@ -578,7 +584,7 @@ mod tests {
         let e = CompactVector::with_capacity(0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 65.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
         );
     }
 
@@ -587,7 +593,7 @@ mod tests {
         let e = CompactVector::from_int(0, 0, 0);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 0.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 0.".to_string())
         );
     }
 
@@ -596,7 +602,7 @@ mod tests {
         let e = CompactVector::from_int(0, 0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("width must be in 1..=64, but got 65.".to_string())
+            Some("invalid argument: width must be in 1..=64, but got 65.".to_string())
         );
     }
 
@@ -605,7 +611,7 @@ mod tests {
         let e = CompactVector::from_int(4, 0, 2);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("val must fit in width=2 bits, but got 4.".to_string())
+            Some("invalid argument: val must fit in width=2 bits, but got 4.".to_string())
         );
     }
 
@@ -615,7 +621,7 @@ mod tests {
         let e = cv.set_int(1, 1);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("pos must be no greater than self.len()=1, but got 1.".to_string())
+            Some("out of bounds: pos must be no greater than self.len()=1, but got 1.".to_string())
         );
     }
 
@@ -625,7 +631,7 @@ mod tests {
         let e = cv.set_int(0, 4);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
         );
     }
 
@@ -635,7 +641,7 @@ mod tests {
         let e = cv.push_int(4);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
         );
     }
 
@@ -645,7 +651,7 @@ mod tests {
         let e = cv.extend([4]);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("val must fit in self.width()=2 bits, but got 4.".to_string())
+            Some("invalid argument: val must fit in self.width()=2 bits, but got 4.".to_string())
         );
     }
 

@@ -13,6 +13,7 @@ use crate::utils::MatrixView;
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 use unary::UnaryIter;
 
 /// The number of bits in a word of [`BitVector`].
@@ -189,11 +190,10 @@ impl BitVector {
     #[inline(always)]
     pub fn set_bit(&mut self, pos: usize, bit: bool) -> Result<()> {
         if self.len() <= pos {
-            return Err(format!(
+            return Err(SucdsError::out_of_bounds(format!(
                 "pos must be no greater than self.len()={}, but got {pos}.",
                 self.len()
-            )
-            .into());
+            )));
         }
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
@@ -308,15 +308,16 @@ impl BitVector {
     #[inline(always)]
     pub fn set_bits(&mut self, pos: usize, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "len must be no greater than {WORD_LEN}, but got {len}."
+            )));
         }
         if self.len() < pos + len {
-            return Err(format!(
+            return Err(SucdsError::out_of_bounds(format!(
                 "pos+len must be no greater than self.len()={}, but got {}.",
                 self.len(),
                 pos + len
-            )
-            .into());
+            )));
         }
         if len == 0 {
             return Ok(());
@@ -378,7 +379,9 @@ impl BitVector {
     #[inline(always)]
     pub fn push_bits(&mut self, bits: u64, len: usize) -> Result<()> {
         if WORD_LEN < len {
-            return Err(format!("len must be no greater than {WORD_LEN}, but got {len}.").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "len must be no greater than {WORD_LEN}, but got {len}."
+            )));
         }
         if len == 0 {
             return Ok(());
@@ -972,7 +975,7 @@ mod tests {
         let e = bv.set_bit(3, true);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("pos must be no greater than self.len()=3, but got 3.".to_string())
+            Some("out of bounds: pos must be no greater than self.len()=3, but got 3.".to_string())
         );
     }
 
@@ -982,7 +985,7 @@ mod tests {
         let e = bv.set_bits(0, 0b0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("len must be no greater than 64, but got 65.".to_string())
+            Some("invalid argument: len must be no greater than 64, but got 65.".to_string())
         );
     }
 
@@ -992,7 +995,10 @@ mod tests {
         let e = bv.set_bits(2, 0b11, 2);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("pos+len must be no greater than self.len()=3, but got 4.".to_string())
+            Some(
+                "out of bounds: pos+len must be no greater than self.len()=3, but got 4."
+                    .to_string()
+            )
         );
     }
 
@@ -1016,7 +1022,7 @@ mod tests {
         let e = bv.push_bits(0b0, 65);
         assert_eq!(
             e.err().map(|x| x.to_string()),
-            Some("len must be no greater than 64, but got 65.".to_string())
+            Some("invalid argument: len must be no greater than 64, but got 65.".to_string())
         );
     }
 

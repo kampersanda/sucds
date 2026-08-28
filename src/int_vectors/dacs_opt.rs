@@ -12,6 +12,7 @@ use crate::utils;
 use crate::Result;
 #[cfg(feature = "std")]
 use crate::Serializable;
+use crate::SucdsError;
 
 /// Compressed integer sequence using Directly Addressable Codes (DACs) with optimal assignment.
 ///
@@ -85,7 +86,9 @@ impl DacsOpt {
     {
         let max_levels = max_levels.unwrap_or(64);
         if !(1..=64).contains(&max_levels) {
-            return Err(format!("max_levels must be in 1..=64, but got {max_levels}").into());
+            return Err(SucdsError::invalid_argument(format!(
+                "max_levels must be in 1..=64, but got {max_levels}"
+            )));
         }
 
         if vals.is_empty() {
