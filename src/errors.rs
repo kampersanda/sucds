@@ -21,7 +21,6 @@ use core::fmt;
 /// assert!(matches!(e, SucdsError::InvalidArgument(_)));
 /// ```
 #[derive(Debug)]
-#[non_exhaustive]
 pub enum SucdsError {
     /// An argument is out of the valid range or does not satisfy
     /// the condition required by the operation.
