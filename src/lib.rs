@@ -108,7 +108,7 @@ impl From<alloc::string::String> for Error {
 #[cfg(not(feature = "std"))]
 impl From<&str> for Error {
     fn from(msg: &str) -> Self {
-        Self(alloc::string::ToString::to_string(msg))
+        Self(msg.into())
     }
 }
 

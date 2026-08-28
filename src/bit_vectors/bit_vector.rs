@@ -1,7 +1,8 @@
 //! Updatable bit vector in a plain format, supporting some utilities such as chunking and predecessor queries.
 
-use alloc::vec::Vec;
 pub mod unary;
+
+use alloc::vec::Vec;
 
 #[cfg(feature = "std")]
 use std::io::{Read, Write};

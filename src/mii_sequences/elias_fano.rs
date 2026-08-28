@@ -1,9 +1,9 @@
 //! Compressed monotone increasing sequence through Elias-Fano encoding.
 #![cfg(target_pointer_width = "64")]
 
-use alloc::string::ToString;
-
 pub mod iter;
+
+use alloc::string::ToString;
 
 use core::ops::Range;
 #[cfg(feature = "std")]

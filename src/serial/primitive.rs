@@ -1,7 +1,6 @@
 //! Utilities for serialize/deserialize integers.
 #![cfg(target_pointer_width = "64")]
 
-#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 use super::Serializable;
@@ -43,7 +42,6 @@ common_def!(i32);
 common_def!(i64);
 common_def!(isize);
 
-#[cfg(feature = "std")]
 impl Serializable for bool {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
         (*self as u8).serialize_into(writer)
