@@ -15,15 +15,13 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 ## Data structures
 
-| Category | Queries | Implementations |
-| --- | --- | --- |
-| [Integer vectors](https://docs.rs/sucds/latest/sucds/int_vectors/) | Access/Update on a vector of unsigned integers | `CompactVector`, `PrefixSummedEliasFano`, `DacsByte`, `DacsOpt` |
-| [Bit vectors](https://docs.rs/sucds/latest/sucds/bit_vectors/) | Access/Rank/Select on a bit vector | `BitVector`, `Rank9Sel`, `DArray`, `SArray` |
-| [Monotone-increasing integer sequences](https://docs.rs/sucds/latest/sucds/mii_sequences/) | Rank/Select/Predecessor/Successor on a sorted integer sequence | `EliasFano` |
-| [Character sequences](https://docs.rs/sucds/latest/sucds/char_sequences/) | Access/Rank/Select on a sequence over an alphabet | `WaveletMatrix` |
+- [Integer vectors](https://docs.rs/sucds/latest/sucds/int_vectors/): Store a sequence of unsigned integers in compressed space, while allowing for random access.
+- [Bit vectors](https://docs.rs/sucds/latest/sucds/bit_vectors/): Store a set of positions in a bit sequence, while allowing for counting and locating the set bits.
+- [Monotone-increasing integer sequences](https://docs.rs/sucds/latest/sucds/mii_sequences/): Store a sorted sequence of integers in compressed space, while allowing for searching it.
+- [Character sequences](https://docs.rs/sucds/latest/sucds/char_sequences/): Store a string over an alphabet, while allowing for counting and locating each character.
 
-Implementations in the same category differ in time and space trade-offs.
-See the module documentation linked above to choose one.
+See the module documentation linked above for the available implementations
+and their time and space trade-offs.
 
 ## Example
 
