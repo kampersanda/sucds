@@ -68,6 +68,11 @@ extern crate alloc;
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("`target_pointer_width` must be 64");
 
+/// Tests the code examples in README.md.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 pub mod bit_vectors;
 pub mod broadword;
 pub mod char_sequences;
