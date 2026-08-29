@@ -8,7 +8,7 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 ## Features
 
-- **Curated collection:** Data structures in [four categories](#data-structures) are provided, focusing on those with competitive advantages.
+- **Curated collection:** Data structures in four categories are provided, focusing on those with competitive advantages.
 - **Consistent interfaces:** Data structures in the same category share traits such as `Access`, `Rank`, and `Select`, and are easily replaceable.
 - **Ensured safety:** Unsafe instructions, typically reserved for extremely low-level
   programming, are avoided.
@@ -65,9 +65,9 @@ This library is designed to run on 64-bit machines.
 
 Licensed under either of
 
- * Apache License, Version 2.0
-   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license
-   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0
+  ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license
+  ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
