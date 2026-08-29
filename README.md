@@ -20,9 +20,6 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 - [Monotone-increasing integer sequences](https://docs.rs/sucds/latest/sucds/mii_sequences/): Store a sorted sequence of integers in compressed space, while allowing for searching it.
 - [Character sequences](https://docs.rs/sucds/latest/sucds/char_sequences/): Store a string over an alphabet, while allowing for counting and locating each character.
 
-See the module documentation linked above for the available implementations
-and their time and space trade-offs.
-
 ## Example
 
 ```rust
