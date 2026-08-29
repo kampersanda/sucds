@@ -50,6 +50,14 @@
 //! - [`SucdsError`] does not implement `std::error::Error`, and its `Io` variant holds
 //!   [`io::Error`] defined in this crate instead of `std::io::Error`.
 //!
+//! ## `intrinsics` feature
+//!
+//! Primitive bit operations in the [`broadword`] module are implemented with broadword
+//! techniques by default.
+//! Enabling the `intrinsics` feature replaces them with the equivalent operations of
+//! the standard library, which can be compiled into dedicated CPU instructions.
+//! Building with `RUSTFLAGS="-C target-cpu=native"` is recommended in that case.
+//!
 //! ## Limitation
 //!
 //! This library is designed to run on 64-bit machines.
