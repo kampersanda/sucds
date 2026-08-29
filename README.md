@@ -10,7 +10,8 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 - **Curated collection:** Data structures in [four categories](#data-structures) are provided, focusing on those with competitive advantages.
 - **Consistent interfaces:** Data structures in the same category share traits such as `Access`, `Rank`, and `Select`, and are easily replaceable.
-- **Serialization:** Every data structure can be serialized and deserialized through the `Serializable` trait.
+- **Ensured safety:** Unsafe instructions, typically reserved for extremely low-level
+  programming, are avoided.
 - **Pure Rust:** The implementation is written in safe and pure Rust, with optional `no_std` support.
 
 ## Data structures
