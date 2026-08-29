@@ -4,14 +4,11 @@ pub mod unary;
 
 use alloc::vec::Vec;
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
+use crate::io::{Read, Write};
 use crate::utils::MatrixView;
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 use unary::UnaryIter;
@@ -944,7 +941,6 @@ impl core::fmt::Debug for BitVector {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for BitVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.words.serialize_into(&mut writer)?;
@@ -1036,7 +1032,6 @@ mod tests {
         assert_eq!(bv.get_word64(60), Some(0b1111));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

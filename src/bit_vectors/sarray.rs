@@ -1,15 +1,12 @@
 //! Rank/Select data structure over very sparse bit vectors using the Elias-Fano scheme.
 #![cfg(target_pointer_width = "64")]
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
 use crate::broadword;
+use crate::io::{Read, Write};
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 
@@ -360,7 +357,6 @@ impl Select for SArray {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for SArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -446,7 +442,6 @@ mod tests {
         assert!(matches!(e, Err(SucdsError::Unsupported(_))));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

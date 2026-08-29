@@ -1,14 +1,11 @@
 //! Updatable compact vector in which each integer is represented in a fixed number of bits.
 #![cfg(target_pointer_width = "64")]
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
+use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 
@@ -525,7 +522,6 @@ impl core::fmt::Debug for CompactVector {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for CompactVector {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.chunks.serialize_into(&mut writer)?;
@@ -635,7 +631,6 @@ mod tests {
         assert_eq!(cv.get_int(0), Some(42));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

@@ -3,8 +3,9 @@
 
 pub mod primitive;
 
-use std::io::{Read, Write};
+use alloc::vec::Vec;
 
+use crate::io::{Read, Write};
 use crate::Result;
 
 /// Trait to serialize/deserialize data structures.

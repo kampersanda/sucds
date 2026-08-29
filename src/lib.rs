@@ -39,8 +39,11 @@
 //!
 //! ## Serialization/deserialization
 //!
-//! All the data structures can be serialized or deserialized through the `Serializable` trait
-//! (available with the `std` feature).
+//! All the data structures can be serialized or deserialized through the `Serializable` trait,
+//! which is defined on the [`Read`](crate::io::Read) and [`Write`](crate::io::Write) traits
+//! in the [`io`] module.
+//! With the `std` feature (enabled by default), those traits are re-exports of `std::io`,
+//! and any reader or writer of the standard library can be used as usual.
 //!
 //! ## `no_std` support
 //!
@@ -48,8 +51,10 @@
 //! although the `alloc` crate is always required.
 //! Two things differ from the default build:
 //!
-//! - Serialization/deserialization is unavailable, because it is built on `std::io`.
-//! - [`SucdsError`] has no `Io` variant, and does not implement `std::error::Error`.
+//! - Readers and writers are limited to the byte containers available in `alloc`,
+//!   i.e., [`Vec<u8>`](alloc::vec::Vec) and `&mut [u8]` for writing and `&[u8]` for reading.
+//! - [`SucdsError`] does not implement `std::error::Error`, and its `Io` variant holds
+//!   [`io::Error`] defined in this crate instead of `std::io::Error`.
 //!
 //! ## Limitation
 //!
@@ -69,13 +74,12 @@ pub mod char_sequences;
 pub mod errors;
 pub mod int_vectors;
 mod intrinsics;
+pub mod io;
 pub mod mii_sequences;
-#[cfg(feature = "std")]
 pub mod serial;
 pub mod utils;
 
 pub use errors::SucdsError;
-#[cfg(feature = "std")]
 pub use serial::Serializable;
 
 /// Result type for this crate.

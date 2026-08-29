@@ -5,14 +5,12 @@
 use alloc::vec::Vec;
 
 use core::ops::Range;
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
 
 use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
+use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 
@@ -612,7 +610,6 @@ where
     }
 }
 
-#[cfg(feature = "std")]
 impl<B> Serializable for WaveletMatrix<B>
 where
     B: Serializable,
@@ -722,7 +719,6 @@ mod test {
         assert_eq!(wm.intersect(&ranges, 1), Some(vec!['o' as u64]));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let text = "tobeornottobethatisthequestion";

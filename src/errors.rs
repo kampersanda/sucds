@@ -28,9 +28,9 @@ pub enum SucdsError {
 
     /// An I/O error occurred in serialization or deserialization.
     ///
-    /// This variant is available only with the `std` feature.
-    #[cfg(feature = "std")]
-    Io(std::io::Error),
+    /// The payload is [`io::Error`](crate::io::Error), which is a re-export of
+    /// `std::io::Error` with the `std` feature.
+    Io(crate::io::Error),
 }
 
 impl SucdsError {
@@ -74,7 +74,6 @@ impl fmt::Display for SucdsError {
             Self::OutOfBounds(msg) => write!(f, "out of bounds: {msg}"),
             Self::InvalidState(msg) => write!(f, "invalid state: {msg}"),
             Self::Unsupported(msg) => write!(f, "unsupported operation: {msg}"),
-            #[cfg(feature = "std")]
             Self::Io(e) => write!(f, "io error: {e}"),
         }
     }
@@ -90,9 +89,8 @@ impl std::error::Error for SucdsError {
     }
 }
 
-#[cfg(feature = "std")]
-impl From<std::io::Error> for SucdsError {
-    fn from(e: std::io::Error) -> Self {
+impl From<crate::io::Error> for SucdsError {
+    fn from(e: crate::io::Error) -> Self {
         Self::Io(e)
     }
 }

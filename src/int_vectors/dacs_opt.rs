@@ -3,14 +3,11 @@
 
 use alloc::vec::Vec;
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, Build, CompactVector, NumVals};
+use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 
@@ -381,7 +378,6 @@ impl Iterator for Iter<'_> {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for DacsOpt {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -521,7 +517,6 @@ mod tests {
         assert_eq!(seq.access(3), Some(0));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
