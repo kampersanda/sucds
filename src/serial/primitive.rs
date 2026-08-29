@@ -1,9 +1,8 @@
 //! Utilities for serialize/deserialize integers.
 #![cfg(target_pointer_width = "64")]
 
-use std::io::{Read, Write};
-
 use super::Serializable;
+use crate::io::{Read, Write};
 use crate::Result;
 
 macro_rules! common_def {

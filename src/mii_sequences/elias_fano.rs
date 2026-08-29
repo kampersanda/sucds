@@ -4,13 +4,11 @@
 pub mod iter;
 
 use core::ops::Range;
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
 
 use crate::bit_vectors::{Access, BitVector, DArray, NumBits, Select};
 use crate::broadword;
+use crate::io::{Read, Write};
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use crate::SucdsError;
 use iter::Iter;
@@ -505,7 +503,6 @@ impl EliasFano {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -709,7 +706,6 @@ mod tests {
         assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];

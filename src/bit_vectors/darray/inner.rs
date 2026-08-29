@@ -3,15 +3,11 @@
 
 use alloc::vec::Vec;
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::BitVector;
 use crate::bit_vectors::NumBits;
 use crate::broadword;
-#[cfg(feature = "std")]
+use crate::io::{Read, Write};
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 
 const BLOCK_LEN: usize = 1024;
@@ -236,7 +232,6 @@ impl DArrayIndex {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for DArrayIndex {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;

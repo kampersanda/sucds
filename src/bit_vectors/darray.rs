@@ -3,14 +3,11 @@
 
 pub mod inner;
 
-#[cfg(feature = "std")]
-use std::io::{Read, Write};
-
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::rank9sel::inner::Rank9SelIndex;
 use crate::bit_vectors::BitVector;
+use crate::io::{Read, Write};
 use crate::Result;
-#[cfg(feature = "std")]
 use crate::Serializable;
 use inner::DArrayIndex;
 
@@ -319,7 +316,6 @@ impl Select for DArray {
     }
 }
 
-#[cfg(feature = "std")]
 impl Serializable for DArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -377,7 +373,6 @@ mod tests {
         da.select0(0);
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_serialize() {
         let mut bytes = vec![];
