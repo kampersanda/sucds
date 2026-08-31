@@ -57,9 +57,15 @@ Or, the document can be compiled with the following command:
 RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
 ```
 
-## Limitation
+## Portability
 
-This library is designed to run on 64-bit machines.
+This library is tuned for 64-bit machines but also runs on 32-bit ones, where
+the broadword operations are emulated and each data structure holds less than
+2^32 bits or integers.
+
+The serialization format is independent of the pointer width, since `usize` and
+`isize` are stored as 64-bit little-endian integers. Deserialization fails with
+an error if a stored value does not fit in `usize` of the machine.
 
 ## Licensing
 

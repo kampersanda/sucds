@@ -64,6 +64,34 @@ jobs:
       - name: Run cargo test (no-default-features)
         run: cargo test --release --no-default-features
 
+  test-32bit:
+    name: Test on 32-bit
+    # The pointer width is checked here only on stable; the MSRV is covered by
+    # the 64-bit `test` job, since nothing here depends on the pointer width.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add i686-unknown-linux-gnu
+      # gcc-multilib provides the 32-bit linker and libc for i686 binaries.
+      - name: Install gcc-multilib
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+      # i686 binaries run natively on the x86_64 runner, so the tests really
+      # execute with a 32-bit `usize`.
+      - name: Run cargo test (32-bit)
+        run: cargo test --release --target i686-unknown-linux-gnu
+      - name: Run cargo test (32-bit, intrinsics)
+        run: cargo test --release --target i686-unknown-linux-gnu --features intrinsics
+      # Not --workspace here: the bench crate depends on sucds with default features,
+      # and feature unification would silently turn `std` back on.
+      - name: Run cargo test (32-bit, no-default-features)
+        run: cargo test --release --target i686-unknown-linux-gnu --no-default-features
+
   no-std:
     name: Build for no_std on ${{ matrix.rust }}
     runs-on: ubuntu-latest
@@ -80,10 +108,14 @@ jobs:
           rustup toolchain install ${{ matrix.rust }} --profile minimal
           rustup default ${{ matrix.rust }}
           rustup target add x86_64-unknown-none
+          rustup target add thumbv7em-none-eabi
       # x86_64-unknown-none is a bare-metal target without std, so this fails
       # if anything in the crate still reaches for std.
       - name: Run cargo build (no_std)
         run: cargo build --release --no-default-features --target x86_64-unknown-none
+      # thumbv7em-none-eabi covers no_std and a 32-bit pointer width at once.
+      - name: Run cargo build (no_std, 32-bit)
+        run: cargo build --release --no-default-features --target thumbv7em-none-eabi
 
   doc:
     name: Doc

@@ -58,17 +58,21 @@
 //! the standard library, which can be compiled into dedicated CPU instructions.
 //! Building with `RUSTFLAGS="-C target-cpu=native"` is recommended in that case.
 //!
-//! ## Limitation
+//! ## Portability
 //!
-//! This library is designed to run on 64-bit machines.
+//! This library is tuned for 64-bit machines but also runs on 32-bit ones, where
+//! the broadword operations are emulated and each data structure holds less than
+//! $`2^{32}`$ bits or integers.
+//!
+//! The serialization format is independent of the pointer width, since [`usize`]
+//! and [`isize`] are stored as 64-bit little-endian integers. Deserialization fails
+//! with [`SucdsError::InvalidArgument`] if a stored value does not fit in [`usize`]
+//! of the machine.
 #![deny(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
 extern crate alloc;
-
-#[cfg(not(target_pointer_width = "64"))]
-compile_error!("`target_pointer_width` must be 64");
 
 /// Tests the code examples in README.md.
 #[cfg(doctest)]

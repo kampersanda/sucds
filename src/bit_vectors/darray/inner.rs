@@ -1,5 +1,4 @@
 //! Internal index structure of [`DArray`](super::DArray).
-#![cfg(target_pointer_width = "64")]
 
 use alloc::vec::Vec;
 
@@ -17,7 +16,7 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// The index implementation of [`DArray`](super::DArray) separated from the bit vector.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DArrayIndex {
-    block_inventory: Vec<isize>,
+    block_inventory: Vec<i64>,
     subblock_inventory: Vec<u16>,
     overflow_positions: Vec<usize>,
     num_positions: usize,
@@ -200,19 +199,19 @@ impl DArrayIndex {
 
     fn flush_cur_block(
         cur_block_positions: &mut Vec<usize>,
-        block_inventory: &mut Vec<isize>,
+        block_inventory: &mut Vec<i64>,
         subblock_inventory: &mut Vec<u16>,
         overflow_positions: &mut Vec<usize>,
     ) {
         let &first = cur_block_positions.first().unwrap();
         let &last = cur_block_positions.last().unwrap();
         if last - first < MAX_IN_BLOCK_DISTANCE {
-            block_inventory.push(first as isize);
+            block_inventory.push(first as i64);
             for i in (0..cur_block_positions.len()).step_by(SUBBLOCK_LEN) {
                 subblock_inventory.push((cur_block_positions[i] - first) as u16);
             }
         } else {
-            block_inventory.push(-((overflow_positions.len() + 1) as isize));
+            block_inventory.push(-((overflow_positions.len() + 1) as i64));
             for &x in cur_block_positions.iter() {
                 overflow_positions.push(x);
             }
@@ -244,7 +243,7 @@ impl Serializable for DArrayIndex {
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = Vec::<isize>::deserialize_from(&mut reader)?;
+        let block_inventory = Vec::<i64>::deserialize_from(&mut reader)?;
         let subblock_inventory = Vec::<u16>::deserialize_from(&mut reader)?;
         let overflow_positions = Vec::<usize>::deserialize_from(&mut reader)?;
         let num_positions = usize::deserialize_from(&mut reader)?;

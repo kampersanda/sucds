@@ -1,5 +1,4 @@
 //! Compressed integer sequence using Directly Addressable Codes (DACs) with optimal assignment.
-#![cfg(target_pointer_width = "64")]
 
 use alloc::vec::Vec;
 
