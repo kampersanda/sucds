@@ -1,5 +1,4 @@
 //! Internal index structure of [`Rank9Sel`](super::Rank9Sel).
-#![cfg(target_pointer_width = "64")]
 
 use alloc::vec::Vec;
 
@@ -18,7 +17,7 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Rank9SelIndex {
     len: usize,
-    block_rank_pairs: Vec<usize>,
+    block_rank_pairs: Vec<u64>,
     select1_hints: Option<Vec<usize>>,
     select0_hints: Option<Vec<usize>>,
 }
@@ -42,14 +41,14 @@ impl Rank9SelIndex {
     }
 
     fn build_rank(bv: &BitVector) -> Self {
-        let mut next_rank = 0;
-        let mut cur_subrank = 0;
-        let mut subranks = 0;
+        let mut next_rank = 0u64;
+        let mut cur_subrank = 0u64;
+        let mut subranks = 0u64;
 
         let mut block_rank_pairs = vec![next_rank];
 
         for i in 0..bv.num_words() {
-            let word_pop = broadword::popcount(bv.words()[i]);
+            let word_pop = broadword::popcount(bv.words()[i]) as u64;
 
             let shift = i % BLOCK_LEN;
             if shift != 0 {
@@ -124,7 +123,7 @@ impl Rank9SelIndex {
     /// Gets the number of bits set.
     #[inline(always)]
     pub fn num_ones(&self) -> usize {
-        self.block_rank_pairs[self.block_rank_pairs.len() - 2]
+        self.block_rank_pairs[self.block_rank_pairs.len() - 2] as usize
     }
 
     /// Gets the number of bits unset.
@@ -140,17 +139,18 @@ impl Rank9SelIndex {
 
     #[inline(always)]
     fn block_rank(&self, block: usize) -> usize {
-        self.block_rank_pairs[block * 2]
+        self.block_rank_pairs[block * 2] as usize
     }
 
     #[inline(always)]
     fn sub_block_rank(&self, sub_bpos: usize) -> usize {
         let (block, left) = (sub_bpos / BLOCK_LEN, sub_bpos % BLOCK_LEN);
-        self.block_rank(block) + ((self.sub_block_ranks(block) >> ((7 - left) * 9)) & 0x1FF)
+        self.block_rank(block)
+            + ((self.sub_block_ranks(block) >> ((7 - left) * 9)) & 0x1FF) as usize
     }
 
     #[inline(always)]
-    fn sub_block_ranks(&self, block: usize) -> usize {
+    fn sub_block_ranks(&self, block: usize) -> u64 {
         self.block_rank_pairs[block * 2 + 1]
     }
 
@@ -303,13 +303,13 @@ impl Rank9SelIndex {
         let mut cur_rank = self.block_rank(block);
         debug_assert!(cur_rank <= k);
 
-        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
+        let rank_in_block_parallel = (k - cur_rank) as u64 * broadword::ONES_STEP_9;
         let sub_ranks = self.sub_block_ranks(block);
-        let sub_block_offset = (broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+        let sub_block_offset = ((broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54)
-            & 0x7;
-        cur_rank += (sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF;
+            & 0x7) as usize;
+        cur_rank += ((sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF) as usize;
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
@@ -379,13 +379,13 @@ impl Rank9SelIndex {
         let mut cur_rank = self.block_rank0(block);
         debug_assert!(cur_rank <= k);
 
-        let rank_in_block_parallel = (k - cur_rank) * broadword::ONES_STEP_9;
+        let rank_in_block_parallel = (k - cur_rank) as u64 * broadword::ONES_STEP_9;
         let sub_ranks = 64 * broadword::INV_COUNT_STEP_9 - self.sub_block_ranks(block);
-        let sub_block_offset = (broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
+        let sub_block_offset = ((broadword::uleq_step_9(sub_ranks, rank_in_block_parallel)
             .wrapping_mul(broadword::ONES_STEP_9)
             >> 54)
-            & 0x7;
-        cur_rank += (sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF;
+            & 0x7) as usize;
+        cur_rank += ((sub_ranks >> (7 - sub_block_offset).wrapping_mul(9)) & 0x1FF) as usize;
         debug_assert!(cur_rank <= k);
 
         let word_offset = block_offset + sub_block_offset;
@@ -407,7 +407,7 @@ impl Serializable for Rank9SelIndex {
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let len = usize::deserialize_from(&mut reader)?;
-        let block_rank_pairs = Vec::<usize>::deserialize_from(&mut reader)?;
+        let block_rank_pairs = Vec::<u64>::deserialize_from(&mut reader)?;
         let select1_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
         let select0_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
         Ok(Self {

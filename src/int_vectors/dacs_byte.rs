@@ -1,5 +1,4 @@
 //! Compressed integer sequence using Directly Addressable Codes (DACs) in a simple bytewise scheme.
-#![cfg(target_pointer_width = "64")]
 
 use alloc::vec::Vec;
 

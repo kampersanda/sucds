@@ -1,5 +1,4 @@
 //! Updatable compact vector in which each integer is represented in a fixed number of bits.
-#![cfg(target_pointer_width = "64")]
 
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;

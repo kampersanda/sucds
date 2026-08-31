@@ -1,5 +1,4 @@
 //! Compressed monotone increasing sequence through Elias-Fano encoding.
-#![cfg(target_pointer_width = "64")]
 
 pub mod iter;
 
@@ -167,25 +166,25 @@ impl EliasFano {
         let low_val = self
             .low_bits
             .get_bits(k * self.low_len, self.low_len)
-            .unwrap() as usize;
+            .unwrap();
         let delta = if k != 0 {
-            ((high_val
+            (((high_val
                 - self
                     .high_bits
                     .bit_vector()
                     .predecessor1(high_val - 1)
                     .unwrap()
-                - 1)
+                - 1) as u64)
                 << self.low_len)
                 + low_val
                 - self
                     .low_bits
                     .get_bits((k - 1) * self.low_len, self.low_len)
-                    .unwrap() as usize
+                    .unwrap()
         } else {
-            ((high_val - k) << self.low_len) | low_val
+            (((high_val - k) as u64) << self.low_len) | low_val
         };
-        Some(delta as u64)
+        Some(delta)
     }
 
     /// Finds the position `k` such that `select(k) == val`.
@@ -637,7 +636,7 @@ impl EliasFanoBuilder {
                 .unwrap();
         }
         self.high_bits
-            .set_bit((val as usize >> self.low_len) + self.num_pushed, true)
+            .set_bit((val >> self.low_len) as usize + self.num_pushed, true)
             .unwrap();
         self.num_pushed += 1;
 

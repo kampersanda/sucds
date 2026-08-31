@@ -1,5 +1,4 @@
 //! Compressed integer sequence with prefix-summed Elias-Fano encoding.
-#![cfg(target_pointer_width = "64")]
 
 use crate::int_vectors::prelude::*;
 use crate::io::{Read, Write};

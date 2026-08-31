@@ -1,44 +1,43 @@
 //! Broadword tools.
-#![cfg(target_pointer_width = "64")]
 #![allow(dead_code)]
 
 #[cfg(feature = "intrinsics")]
 use crate::intrinsics;
 
 pub(crate) const ONES_STEP_4: u64 = 0x1111111111111111;
-pub(crate) const ONES_STEP_8: usize = 0x0101010101010101;
-pub(crate) const ONES_STEP_9: usize =
+pub(crate) const ONES_STEP_8: u64 = 0x0101010101010101;
+pub(crate) const ONES_STEP_9: u64 =
     (1 << 0) | (1 << 9) | (1 << 18) | (1 << 27) | (1 << 36) | (1 << 45) | (1 << 54);
-pub(crate) const MSBS_STEP_8: usize = 0x80 * ONES_STEP_8;
-pub(crate) const MSBS_STEP_9: usize = 0x100 * ONES_STEP_9;
-pub(crate) const INV_COUNT_STEP_9: usize =
+pub(crate) const MSBS_STEP_8: u64 = 0x80 * ONES_STEP_8;
+pub(crate) const MSBS_STEP_9: u64 = 0x100 * ONES_STEP_9;
+pub(crate) const INV_COUNT_STEP_9: u64 =
     (1 << 54) | (2 << 45) | (3 << 36) | (4 << 27) | (5 << 18) | (6 << 9) | 7;
 
 #[inline(always)]
-pub(crate) const fn leq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn leq_step_8(x: u64, y: u64) -> u64 {
     ((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub(crate) const fn uleq_step_8(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_8(x: u64, y: u64) -> u64 {
     (((((y | MSBS_STEP_8) - (x & !MSBS_STEP_8)) ^ (x ^ y)) ^ (x & !y)) & MSBS_STEP_8) >> 7
 }
 
 #[inline(always)]
-pub(crate) const fn uleq_step_9(x: usize, y: usize) -> usize {
+pub(crate) const fn uleq_step_9(x: u64, y: u64) -> u64 {
     (((((y | MSBS_STEP_9) - (x & !MSBS_STEP_9)) | (x ^ y)) ^ (x & !y)) & MSBS_STEP_9) >> 8
 }
 
 #[inline(always)]
-pub(crate) const fn byte_counts(mut x: u64) -> usize {
+pub(crate) const fn byte_counts(mut x: u64) -> u64 {
     x = x - ((x & (0xa * ONES_STEP_4)) >> 1);
     x = (x & (3 * ONES_STEP_4)) + ((x >> 2) & (3 * ONES_STEP_4));
-    ((x + (x >> 4)) & (0x0f * ONES_STEP_8 as u64)) as usize
+    (x + (x >> 4)) & (0x0f * ONES_STEP_8)
 }
 
 #[inline(always)]
 pub(crate) const fn bytes_sum(x: u64) -> usize {
-    ((ONES_STEP_8 as u64).wrapping_mul(x) >> 56) as usize
+    (ONES_STEP_8.wrapping_mul(x) >> 56) as usize
 }
 
 /// Counts the number of set bits.
@@ -56,7 +55,7 @@ pub(crate) const fn bytes_sum(x: u64) -> usize {
 pub const fn popcount(x: u64) -> usize {
     #[cfg(not(feature = "intrinsics"))]
     {
-        bytes_sum(byte_counts(x) as u64)
+        bytes_sum(byte_counts(x))
     }
     #[cfg(feature = "intrinsics")]
     {
@@ -83,19 +82,19 @@ pub const fn select_in_word(x: u64, k: usize) -> Option<usize> {
         return None;
     }
     let byte_sums = ONES_STEP_8.wrapping_mul(byte_counts(x));
-    let k_step_8 = k * ONES_STEP_8;
+    let k_step_8 = k as u64 * ONES_STEP_8;
     let geq_k_step_8 = ((k_step_8 | MSBS_STEP_8) - byte_sums) & MSBS_STEP_8;
     let place = {
         #[cfg(feature = "intrinsics")]
         {
-            popcount(geq_k_step_8 as u64) * 8
+            popcount(geq_k_step_8) * 8
         }
         #[cfg(not(feature = "intrinsics"))]
         {
-            ((geq_k_step_8 >> 7).wrapping_mul(ONES_STEP_8) >> 53) & !0x7
+            (((geq_k_step_8 >> 7).wrapping_mul(ONES_STEP_8) >> 53) & !0x7) as usize
         }
     };
-    let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF);
+    let byte_rank = k - (((byte_sums << 8) >> place) & 0xFF) as usize;
     let sel = place + SELECT_IN_BYTE[((x >> place) as usize & 0xFF) | (byte_rank << 8)] as usize;
     Some(sel)
 }

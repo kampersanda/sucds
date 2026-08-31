@@ -1,5 +1,4 @@
 //! Rank/Select data structure over very sparse bit vectors using the Elias-Fano scheme.
-#![cfg(target_pointer_width = "64")]
 
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
