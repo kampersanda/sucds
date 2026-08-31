@@ -59,15 +59,13 @@ RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
 
 ## Portability
 
-This library is tuned for 64-bit machines, but it also builds and runs on 32-bit ones.
-On a 32-bit machine, the size of each data structure is limited by `usize`, i.e.,
-the number of stored bits or integers must be less than 2^32,
-and the broadword operations on 64-bit words are emulated and thus slower.
+This library is tuned for 64-bit machines but also runs on 32-bit ones, where
+the broadword operations are emulated and each data structure holds less than
+2^32 bits or integers.
 
-The serialization format does not depend on the pointer width:
-`usize` and `isize` are always stored as fixed 64-bit little-endian integers.
-Serialized data are therefore portable between 32-bit and 64-bit machines
-(deserialization fails with an error if a stored value does not fit in `usize` of the machine).
+The serialization format is independent of the pointer width, since `usize` and
+`isize` are stored as 64-bit little-endian integers. Deserialization fails with
+an error if a stored value does not fit in `usize` of the machine.
 
 ## Licensing
 
