@@ -679,33 +679,6 @@ impl BitVector {
     }
 }
 
-impl Build for BitVector {
-    /// Creates a new vector from input bit stream `bits`.
-    ///
-    /// # Arguments
-    ///
-    /// - `bits`: Bit stream.
-    /// - `with_rank`: Dummy.
-    /// - `with_select1`: Dummy.
-    /// - `with_select0`: Dummy.
-    ///
-    /// # Errors
-    ///
-    /// Never.
-    fn build_from_bits<I>(
-        bits: I,
-        _with_rank: bool,
-        _with_select1: bool,
-        _with_select0: bool,
-    ) -> Result<Self>
-    where
-        I: IntoIterator<Item = bool>,
-        Self: Sized,
-    {
-        Ok(Self::from_bits(bits))
-    }
-}
-
 impl NumBits for BitVector {
     /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     fn num_bits(&self) -> usize {

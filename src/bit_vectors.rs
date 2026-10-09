@@ -63,12 +63,9 @@
 //! # fn main() -> sucds::Result<()> {
 //! use sucds::bit_vectors::{Rank9Sel, prelude::*};
 //!
-//! let bv = Rank9Sel::build_from_bits(
-//!     [true, false, false, true],
-//!     true, // Enables rank1/0
-//!     true, // Enables select1
-//!     true  // Enables select0
-//! )?;
+//! let bv = Rank9Sel::from_bits([true, false, false, true])
+//!     .select1_hints() // Accelerates select1
+//!     .select0_hints(); // Accelerates select0
 //!
 //! assert_eq!(bv.num_bits(), 4);
 //! assert_eq!(bv.num_ones(), 2);
@@ -93,36 +90,6 @@ pub use bit_vector::BitVector;
 pub use darray::DArray;
 pub use rank9sel::Rank9Sel;
 pub use sarray::SArray;
-
-use crate::Result;
-
-/// Interface for building a bit vector with rank/select queries.
-pub trait Build {
-    /// Creates a new vector from input bit stream `bits`.
-    ///
-    /// A data structure may not support a part of rank/select queries in the default
-    /// configuration. The last three flags allow to enable them if optionally supported.
-    ///
-    /// # Arguments
-    ///
-    /// - `bits`: Bit stream.
-    /// - `with_rank`: Flag to enable rank1/0.
-    /// - `with_select1`: Flag to enable select1.
-    /// - `with_select0`: Flag to enable select0.
-    ///
-    /// # Errors
-    ///
-    /// An error is returned if specified queries are not supported.
-    fn build_from_bits<I>(
-        bits: I,
-        with_rank: bool,
-        with_select1: bool,
-        with_select0: bool,
-    ) -> Result<Self>
-    where
-        I: IntoIterator<Item = bool>,
-        Self: Sized;
-}
 
 /// Interface for reporting basic statistics in a bit vector.
 pub trait NumBits {
