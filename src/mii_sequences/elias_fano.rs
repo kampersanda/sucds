@@ -485,13 +485,13 @@ impl EliasFano {
 
     /// Gets the number of integers.
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.high_bits.num_ones()
     }
 
     /// Checks if the sequence is empty.
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

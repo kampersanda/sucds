@@ -137,13 +137,13 @@ impl DArray {
 
     /// Returns the number of bits set.
     #[inline(always)]
-    pub fn num_ones(&self) -> usize {
+    pub const fn num_ones(&self) -> usize {
         self.s1.num_ones()
     }
 
     /// Returns the number of bits unset.
     #[inline(always)]
-    pub fn num_zeros(&self) -> usize {
+    pub const fn num_zeros(&self) -> usize {
         self.len() - self.num_ones()
     }
 }
