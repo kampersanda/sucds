@@ -636,17 +636,26 @@ where
 {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
+        mem += self.max_value.serialize_into(&mut writer)?;
+        // NOTE(kampersanda): The zeros and len fields follow the previously existing ones
+        // so that reading data in the old format fails with an EOF error.
         mem += self.zeros.serialize_into(&mut writer)?;
         mem += self.len.serialize_into(&mut writer)?;
-        mem += self.max_value.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
+        let max_value = u64::deserialize_from(&mut reader)?;
         let zeros = Vec::<usize>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
-        let max_value = u64::deserialize_from(&mut reader)?;
+        if zeros.len() != layers.len() {
+            return Err(SucdsError::invalid_state(format!(
+                "zeros.len()={} must be equal to layers.len()={}.",
+                zeros.len(),
+                layers.len()
+            )));
+        }
         Ok(Self {
             layers,
             zeros,
@@ -657,9 +666,9 @@ where
 
     fn size_in_bytes(&self) -> usize {
         self.layers.size_in_bytes()
+            + u64::size_of().unwrap()
             + self.zeros.size_in_bytes()
             + self.len.size_in_bytes()
-            + u64::size_of().unwrap()
     }
 }
 
@@ -764,6 +773,33 @@ mod test {
         assert_eq!(wm, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, wm.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_old_format() {
+        let seq = CompactVector::from_slice(&[1u64, 2, 3, 4]);
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
+
+        // The previous format consists of only layers and max_value.
+        let mut bytes = vec![];
+        wm.layers.serialize_into(&mut bytes).unwrap();
+        wm.max_value.serialize_into(&mut bytes).unwrap();
+        let e = WaveletMatrix::<Rank9Sel>::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::Io(_))));
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_zeros() {
+        let seq = CompactVector::from_slice(&[1u64, 2, 3, 4]);
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
+
+        let mut bytes = vec![];
+        wm.layers.serialize_into(&mut bytes).unwrap();
+        wm.max_value.serialize_into(&mut bytes).unwrap();
+        wm.zeros[1..].to_vec().serialize_into(&mut bytes).unwrap();
+        wm.len.serialize_into(&mut bytes).unwrap();
+        let e = WaveletMatrix::<Rank9Sel>::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidState(_))));
     }
 
     #[test]
