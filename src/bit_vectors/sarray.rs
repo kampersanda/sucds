@@ -7,7 +7,6 @@ use crate::io::{Read, Write};
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
 use crate::Result;
 use crate::Serializable;
-use crate::SucdsError;
 
 /// Rank/Select data structure over very sparse bit vectors, which is
 /// a specialized version of [`EliasFano`] for bit vectors.
@@ -181,42 +180,6 @@ impl SArray {
     /// Checks if the vector is empty.
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-}
-
-impl Build for SArray {
-    /// Creates a new vector from input bit stream `bits`.
-    ///
-    /// # Arguments
-    ///
-    /// - `bits`: Bit stream.
-    /// - `with_rank`: Flag to enable [`Self::enable_rank()`].
-    /// - `with_select1`: Dummy.
-    /// - `with_select0`: Not supported.
-    ///
-    /// # Errors
-    ///
-    /// An error is returned if `with_select0` is set.
-    fn build_from_bits<I>(
-        bits: I,
-        with_rank: bool,
-        _with_select1: bool,
-        with_select0: bool,
-    ) -> Result<Self>
-    where
-        I: IntoIterator<Item = bool>,
-        Self: Sized,
-    {
-        if with_select0 {
-            return Err(SucdsError::unsupported(
-                "select0 is not supported for SArray.",
-            ));
-        }
-        let mut rsbv = Self::from_bits(bits);
-        if with_rank {
-            rsbv = rsbv.enable_rank();
-        }
-        Ok(rsbv)
     }
 }
 
@@ -433,12 +396,6 @@ mod tests {
     fn test_successor1_panic() {
         let sa = SArray::from_bits([false, true, false]);
         sa.successor1(1);
-    }
-
-    #[test]
-    fn test_rs_build_with_s0() {
-        let e = SArray::build_from_bits([false, true, false], false, false, true);
-        assert!(matches!(e, Err(SucdsError::Unsupported(_))));
     }
 
     #[test]

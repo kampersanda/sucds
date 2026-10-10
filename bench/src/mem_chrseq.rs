@@ -29,17 +29,23 @@ fn show_memories(title: &str, text: &CompactVector) {
     show_data_stats(text);
 
     let bytes = {
-        let idx =
-            sucds::char_sequences::WaveletMatrix::<sucds::bit_vectors::Rank9Sel>::new(text.clone())
-                .unwrap();
+        let idx = sucds::char_sequences::WaveletMatrix::new(text.clone(), |bv| {
+            sucds::bit_vectors::Rank9Sel::new(bv)
+                .select1_hints()
+                .select0_hints()
+        })
+        .unwrap();
         idx.size_in_bytes()
     };
     print_memory("WaveletMatrix<Rank9Sel>", bytes, text.len());
 
     let bytes = {
-        let idx =
-            sucds::char_sequences::WaveletMatrix::<sucds::bit_vectors::DArray>::new(text.clone())
-                .unwrap();
+        let idx = sucds::char_sequences::WaveletMatrix::new(text.clone(), |bv| {
+            sucds::bit_vectors::DArray::from_bits(bv.iter())
+                .enable_rank()
+                .enable_select0()
+        })
+        .unwrap();
         idx.size_in_bytes()
     };
     print_memory("WaveletMatrix<DArray>", bytes, text.len());

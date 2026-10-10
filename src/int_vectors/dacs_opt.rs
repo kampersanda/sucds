@@ -3,7 +3,7 @@
 use alloc::vec::Vec;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, Build, CompactVector, NumVals};
+use crate::int_vectors::{Access, CompactVector, NumVals};
 use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
@@ -277,19 +277,6 @@ impl Default for DacsOpt {
             data: vec![CompactVector::default()],
             flags: vec![],
         }
-    }
-}
-
-impl Build for DacsOpt {
-    /// Creates a new vector from a slice of integers `vals`.
-    ///
-    /// This just calls [`Self::from_slice()`] with `max_levels == None`. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
-    where
-        T: Into<u64> + Copy,
-        Self: Sized,
-    {
-        Self::from_slice(vals, None)
     }
 }
 

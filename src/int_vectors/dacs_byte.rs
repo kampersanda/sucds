@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, Build, NumVals};
+use crate::int_vectors::{Access, NumVals};
 use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
@@ -169,19 +169,6 @@ impl Default for DacsByte {
             data: vec![vec![]],
             flags: vec![],
         }
-    }
-}
-
-impl Build for DacsByte {
-    /// Creates a new vector from a slice of integers `vals`.
-    ///
-    /// This just calls [`Self::from_slice()`]. See the documentation.
-    fn build_from_slice<T>(vals: &[T]) -> Result<Self>
-    where
-        T: Into<u64> + Copy,
-        Self: Sized,
-    {
-        Ok(Self::from_slice(vals))
     }
 }
 

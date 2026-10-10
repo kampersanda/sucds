@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 
 use core::ops::Range;
 
-use crate::bit_vectors::{Access, BitVector, Build, NumBits, Rank, Select};
+use crate::bit_vectors::{Access, BitVector, NumBits, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::io::{Read, Write};
 use crate::utils;
@@ -35,7 +35,9 @@ use crate::SucdsError;
 /// // It accepts an integer representable in 8 bits.
 /// let mut seq = CompactVector::new(8)?;
 /// seq.extend(text.chars().map(|c| c as u64))?;
-/// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+/// let wm = WaveletMatrix::new(seq, |bv| {
+///     Rank9Sel::new(bv).select1_hints().select0_hints()
+/// })?;
 ///
 /// assert_eq!(wm.len(), len);
 /// assert_eq!(wm.max_value(), 'n' as u64);
@@ -63,17 +65,23 @@ pub struct WaveletMatrix<B> {
 
 impl<B> WaveletMatrix<B>
 where
-    B: Access + Build + NumBits + Rank + Select,
+    B: Access + NumBits + Rank + Select,
 {
     /// Creates a new instance from an input sequence `seq`.
     ///
+    /// # Arguments
+    ///
+    /// - `seq`: Sequence of integers to be stored.
+    /// - `build_layer`: Function to build each layer from a [`BitVector`].
+    ///   The resulting layer must support [`Access`], [`Rank`], and [`Select`] (both select1 and select0).
+    ///
     /// # Errors
     ///
-    /// An error is returned if
-    ///
-    ///  - `seq` is empty, or
-    ///  - `B::build_from_bits` fails.
-    pub fn new(seq: CompactVector) -> Result<Self> {
+    /// An error is returned if `seq` is empty.
+    pub fn new<F>(seq: CompactVector, mut build_layer: F) -> Result<Self>
+    where
+        F: FnMut(BitVector) -> B,
+    {
         if seq.is_empty() {
             return Err(SucdsError::invalid_argument("seq must not be empty."));
         }
@@ -105,7 +113,7 @@ where
             );
             zeros = next_zeros;
             ones = next_ones;
-            layers.push(B::build_from_bits(bv.iter(), true, true, true)?);
+            layers.push(build_layer(bv));
         }
 
         Ok(Self { layers, max_value })
@@ -149,7 +157,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// assert_eq!(wm.access(2), Some('n' as u64));
     /// assert_eq!(wm.access(5), Some('a' as u64));
@@ -199,7 +207,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// assert_eq!(wm.rank(3, 'a' as u64), Some(1));
     /// assert_eq!(wm.rank(5, 'c' as u64), Some(0));
@@ -234,7 +242,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// assert_eq!(wm.rank_range(1..4, 'a' as u64), Some(2));
     /// assert_eq!(wm.rank_range(2..4, 'c' as u64), Some(0));
@@ -290,7 +298,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// assert_eq!(wm.select(1, 'a' as u64), Some(3));
     /// assert_eq!(wm.select(0, 'c' as u64), None);
@@ -345,7 +353,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// assert_eq!(wm.quantile(1..4, 0), Some('a' as u64)); // The 0th in "ana" should be "a"
     /// assert_eq!(wm.quantile(1..4, 1), Some('a' as u64)); // The 1st in "ana" should be "a"
@@ -413,7 +421,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("banana".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// // Intersections among "ana", "na", and "ba".
     /// assert_eq!(
@@ -519,7 +527,7 @@ where
     ///
     /// let mut seq = CompactVector::new(8)?;
     /// seq.extend("ban".chars().map(|c| c as u64))?;
-    /// let wm = WaveletMatrix::<Rank9Sel>::new(seq)?;
+    /// let wm = WaveletMatrix::new(seq, Rank9Sel::new)?;
     ///
     /// let mut it = wm.iter();
     /// assert_eq!(it.next(), Some('b' as u64));
@@ -586,7 +594,7 @@ impl<'a, B> Iter<'a, B> {
 
 impl<B> Iterator for Iter<'_, B>
 where
-    B: Access + Build + NumBits + Rank + Select,
+    B: Access + NumBits + Rank + Select,
 {
     type Item = u64;
 
@@ -638,7 +646,7 @@ mod test {
 
     #[test]
     fn test_empty_seq() {
-        let e = WaveletMatrix::<Rank9Sel>::new(CompactVector::new(1).unwrap());
+        let e = WaveletMatrix::new(CompactVector::new(1).unwrap(), Rank9Sel::new);
         assert!(matches!(e, Err(SucdsError::InvalidArgument(_))));
     }
 
@@ -646,7 +654,7 @@ mod test {
     fn test_max_value() {
         let mut seq = CompactVector::new(64).unwrap();
         seq.extend([0, u64::MAX, 42, u64::MAX]).unwrap();
-        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
 
         assert_eq!(wm.len(), 4);
         assert_eq!(wm.alph_width(), 64);
@@ -679,7 +687,7 @@ mod test {
         // The maximum value 255 fits in 8 bits, i.e., sigma = 256 needs 8 layers.
         let mut seq = CompactVector::new(8).unwrap();
         seq.extend([255, 0, 128]).unwrap();
-        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
 
         assert_eq!(wm.max_value(), 255);
         assert_eq!(wm.alph_width(), 8);
@@ -699,7 +707,7 @@ mod test {
 
         let mut seq = CompactVector::new(8).unwrap();
         seq.extend(text.chars().map(|c| c as u64)).unwrap();
-        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
 
         assert_eq!(wm.len(), len);
         assert_eq!(wm.max_value(), 'u' as u64);
@@ -723,7 +731,7 @@ mod test {
         let text = "tobeornottobethatisthequestion";
         let mut seq = CompactVector::new(8).unwrap();
         seq.extend(text.chars().map(|c| c as u64)).unwrap();
-        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
 
         let mut bytes = vec![];
         let size = wm.serialize_into(&mut bytes).unwrap();
@@ -736,7 +744,7 @@ mod test {
     #[test]
     fn test_iter_size_hint() {
         let seq = CompactVector::from_slice(&[1u64, 2, 3, 4]);
-        let wm = WaveletMatrix::<Rank9Sel>::new(seq).unwrap();
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
         let mut it = wm.iter();
         assert_eq!(it.size_hint(), (4, Some(4)));
         it.next();

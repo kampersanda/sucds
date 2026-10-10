@@ -73,7 +73,7 @@ fn criterion_chrseq_access_proteins(c: &mut Criterion) {
 
 fn run_queries<B>(idx: &sucds::char_sequences::WaveletMatrix<B>, queries: &[usize])
 where
-    B: Access + Build + NumBits + Rank + Select,
+    B: Access + NumBits + Rank + Select,
 {
     let mut sum = 0;
     for &q in queries {
@@ -88,16 +88,22 @@ fn perform_chrseq_access(group: &mut BenchmarkGroup<WallTime>, text: &CompactVec
     let queries = gen_random_ints(NUM_QUERIES, 0, text.len(), SEED_QUERIES);
 
     group.bench_function("sucds/WaveletMatrix<Rank9Sel>", |b| {
-        let idx =
-            sucds::char_sequences::WaveletMatrix::<sucds::bit_vectors::Rank9Sel>::new(text.clone())
-                .unwrap();
+        let idx = sucds::char_sequences::WaveletMatrix::new(text.clone(), |bv| {
+            sucds::bit_vectors::Rank9Sel::new(bv)
+                .select1_hints()
+                .select0_hints()
+        })
+        .unwrap();
         b.iter(|| run_queries(&idx, &queries));
     });
 
     group.bench_function("sucds/WaveletMatrix<DArray>", |b| {
-        let idx =
-            sucds::char_sequences::WaveletMatrix::<sucds::bit_vectors::DArray>::new(text.clone())
-                .unwrap();
+        let idx = sucds::char_sequences::WaveletMatrix::new(text.clone(), |bv| {
+            sucds::bit_vectors::DArray::from_bits(bv.iter())
+                .enable_rank()
+                .enable_select0()
+        })
+        .unwrap();
         b.iter(|| run_queries(&idx, &queries));
     });
 }

@@ -110,40 +110,6 @@ impl Rank9Sel {
     }
 }
 
-impl Build for Rank9Sel {
-    /// Creates a new vector from input bit stream `bits`.
-    ///
-    /// # Arguments
-    ///
-    /// - `bits`: Bit stream.
-    /// - `with_rank`: Dummy.
-    /// - `with_select1`: Flag to enable [`Self::select1_hints()`].
-    /// - `with_select0`: Flag to enable [`Self::select0_hints()`].
-    ///
-    /// # Errors
-    ///
-    /// Never.
-    fn build_from_bits<I>(
-        bits: I,
-        _with_rank: bool,
-        with_select1: bool,
-        with_select0: bool,
-    ) -> Result<Self>
-    where
-        I: IntoIterator<Item = bool>,
-        Self: Sized,
-    {
-        let mut rsbv = Self::from_bits(bits);
-        if with_select1 {
-            rsbv = rsbv.select1_hints();
-        }
-        if with_select0 {
-            rsbv = rsbv.select0_hints();
-        }
-        Ok(rsbv)
-    }
-}
-
 impl NumBits for Rank9Sel {
     /// Returns the number of bits stored (just wrapping [`Self::len()`]).
     #[inline(always)]
