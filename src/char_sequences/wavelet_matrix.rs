@@ -637,8 +637,6 @@ where
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
         mem += self.max_value.serialize_into(&mut writer)?;
-        // NOTE(kampersanda): The zeros and len fields follow the previously existing ones
-        // so that reading data in the old format fails with an EOF error.
         mem += self.zeros.serialize_into(&mut writer)?;
         mem += self.len.serialize_into(&mut writer)?;
         Ok(mem)
@@ -773,19 +771,6 @@ mod test {
         assert_eq!(wm, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, wm.size_in_bytes());
-    }
-
-    #[test]
-    fn test_deserialize_old_format() {
-        let seq = CompactVector::from_slice(&[1u64, 2, 3, 4]);
-        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
-
-        // The previous format consists of only layers and max_value.
-        let mut bytes = vec![];
-        wm.layers.serialize_into(&mut bytes).unwrap();
-        wm.max_value.serialize_into(&mut bytes).unwrap();
-        let e = WaveletMatrix::<Rank9Sel>::deserialize_from(&bytes[..]);
-        assert!(matches!(e, Err(SucdsError::Io(_))));
     }
 
     #[test]
