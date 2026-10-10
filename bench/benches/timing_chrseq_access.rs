@@ -73,7 +73,7 @@ fn criterion_chrseq_access_proteins(c: &mut Criterion) {
 
 fn run_queries<B>(idx: &sucds::char_sequences::WaveletMatrix<B>, queries: &[usize])
 where
-    B: Access + NumBits + Rank + Select,
+    B: Access + Rank + Select,
 {
     let mut sum = 0;
     for &q in queries {

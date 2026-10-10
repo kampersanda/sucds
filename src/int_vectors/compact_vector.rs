@@ -422,13 +422,6 @@ impl CompactVector {
     }
 }
 
-impl NumVals for CompactVector {
-    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
-    fn num_vals(&self) -> usize {
-        self.len()
-    }
-}
-
 impl Access for CompactVector {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds
     /// (just wrapping [`Self::get_int()`]).

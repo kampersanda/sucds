@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 
 use core::ops::Range;
 
-use crate::bit_vectors::{Access, BitVector, NumBits, Rank, Select};
+use crate::bit_vectors::{Access, BitVector, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::io::{Read, Write};
 use crate::utils;
@@ -60,12 +60,15 @@ use crate::SucdsError;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct WaveletMatrix<B> {
     layers: Vec<B>,
+    // Number of zeros in each layer.
+    zeros: Vec<usize>,
+    len: usize,
     max_value: u64,
 }
 
 impl<B> WaveletMatrix<B>
 where
-    B: Access + NumBits + Rank + Select,
+    B: Access + Rank + Select,
 {
     /// Creates a new instance from an input sequence `seq`.
     ///
@@ -86,12 +89,14 @@ where
             return Err(SucdsError::invalid_argument("seq must not be empty."));
         }
 
+        let len = seq.len();
         let max_value = seq.iter().max().unwrap();
         let alph_width = utils::needed_bits(max_value);
 
         let mut zeros = seq;
         let mut ones = CompactVector::new(alph_width).unwrap();
         let mut layers = vec![];
+        let mut layer_zeros = vec![];
 
         for depth in 0..alph_width {
             let mut next_zeros = CompactVector::new(alph_width).unwrap();
@@ -111,12 +116,18 @@ where
                 &mut next_ones,
                 &mut bv,
             );
+            layer_zeros.push(next_zeros.len());
             zeros = next_zeros;
             ones = next_ones;
             layers.push(build_layer(bv));
         }
 
-        Ok(Self { layers, max_value })
+        Ok(Self {
+            layers,
+            zeros: layer_zeros,
+            len,
+            max_value,
+        })
     }
 
     fn filter(
@@ -173,11 +184,11 @@ where
             return None;
         }
         let mut val = 0;
-        for layer in &self.layers {
+        for (layer, &zeros) in self.layers.iter().zip(&self.zeros) {
             val <<= 1;
             if layer.access(pos).unwrap() {
                 val |= 1;
-                pos = layer.rank1(pos).unwrap() + layer.num_zeros();
+                pos = layer.rank1(pos).unwrap() + zeros;
             } else {
                 pos = layer.rank0(pos).unwrap();
             }
@@ -266,8 +277,9 @@ where
         for (depth, layer) in self.layers.iter().enumerate() {
             let bit = Self::get_msb(val, depth, self.alph_width());
             if bit {
-                start_pos = layer.rank1(start_pos).unwrap() + layer.num_zeros();
-                end_pos = layer.rank1(end_pos).unwrap() + layer.num_zeros();
+                let zeros = self.zeros[depth];
+                start_pos = layer.rank1(start_pos).unwrap() + zeros;
+                end_pos = layer.rank1(end_pos).unwrap() + zeros;
             } else {
                 start_pos = layer.rank0(start_pos).unwrap();
                 end_pos = layer.rank0(end_pos).unwrap();
@@ -318,7 +330,7 @@ where
         let bit = Self::get_msb(val, depth, self.alph_width());
         let layer = &self.layers[depth];
         if bit {
-            let zeros = layer.num_zeros();
+            let zeros = self.zeros[depth];
             // NOTE(kampersanda): rank should be safe.
             pos = layer.rank1(pos).unwrap() + zeros;
             k = self.select_helper(k, val, pos, depth + 1)?;
@@ -375,7 +387,7 @@ where
         let mut start_pos = range.start;
         let mut end_pos = range.end;
 
-        for layer in &self.layers {
+        for (layer, &layer_zeros) in self.layers.iter().zip(&self.zeros) {
             val <<= 1;
             // NOTE(kampersanda): rank should be safe because of the precheck.
             let zero_start_pos = layer.rank0(start_pos).unwrap();
@@ -387,8 +399,8 @@ where
             } else {
                 k -= zeros;
                 val |= 1;
-                start_pos = layer.num_zeros() + start_pos - zero_start_pos;
-                end_pos = layer.num_zeros() + end_pos - zero_end_pos;
+                start_pos = layer_zeros + start_pos - zero_start_pos;
+                end_pos = layer_zeros + end_pos - zero_end_pos;
             }
         }
         Some(val)
@@ -464,8 +476,9 @@ where
         let mut one_ranges = vec![];
 
         let layer = &self.layers[depth];
+        let layer_zeros = self.zeros[depth];
         for range in ranges {
-            if layer.num_bits() < range.end {
+            if self.len() < range.end {
                 return None;
             }
             // NOTE(kampersanda): An empty range should be skipped because it is never co-occurred.
@@ -479,8 +492,8 @@ where
             // NOTE(kampersanda): rank should be safe because of the precheck.
             let zero_start_pos = layer.rank0(start_pos).unwrap();
             let zero_end_pos = layer.rank0(end_pos).unwrap();
-            let one_start_pos = layer.num_zeros() + start_pos - zero_start_pos;
-            let one_end_pos = layer.num_zeros() + end_pos - zero_end_pos;
+            let one_start_pos = layer_zeros + start_pos - zero_start_pos;
+            let one_end_pos = layer_zeros + end_pos - zero_end_pos;
 
             if zero_end_pos - zero_start_pos > 0 {
                 zero_ranges.push(zero_start_pos..zero_end_pos)
@@ -543,13 +556,13 @@ where
 
     /// Returns the number of values stored.
     #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.layers.first().map(|l| l.num_bits()).unwrap_or(0)
+    pub const fn len(&self) -> usize {
+        self.len
     }
 
     /// Checks if the sequence is empty.
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
@@ -594,7 +607,7 @@ impl<'a, B> Iter<'a, B> {
 
 impl<B> Iterator for Iter<'_, B>
 where
-    B: Access + NumBits + Rank + Select,
+    B: Access + Rank + Select,
 {
     type Item = u64;
 
@@ -624,17 +637,36 @@ where
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.layers.serialize_into(&mut writer)?;
         mem += self.max_value.serialize_into(&mut writer)?;
+        mem += self.zeros.serialize_into(&mut writer)?;
+        mem += self.len.serialize_into(&mut writer)?;
         Ok(mem)
     }
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
         let max_value = u64::deserialize_from(&mut reader)?;
-        Ok(Self { layers, max_value })
+        let zeros = Vec::<usize>::deserialize_from(&mut reader)?;
+        let len = usize::deserialize_from(&mut reader)?;
+        if zeros.len() != layers.len() {
+            return Err(SucdsError::invalid_state(format!(
+                "zeros.len()={} must be equal to layers.len()={}.",
+                zeros.len(),
+                layers.len()
+            )));
+        }
+        Ok(Self {
+            layers,
+            zeros,
+            len,
+            max_value,
+        })
     }
 
     fn size_in_bytes(&self) -> usize {
-        self.layers.size_in_bytes() + u64::size_of().unwrap()
+        self.layers.size_in_bytes()
+            + u64::size_of().unwrap()
+            + self.zeros.size_in_bytes()
+            + self.len.size_in_bytes()
     }
 }
 
@@ -739,6 +771,20 @@ mod test {
         assert_eq!(wm, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, wm.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_zeros() {
+        let seq = CompactVector::from_slice(&[1u64, 2, 3, 4]);
+        let wm = WaveletMatrix::new(seq, Rank9Sel::new).unwrap();
+
+        let mut bytes = vec![];
+        wm.layers.serialize_into(&mut bytes).unwrap();
+        wm.max_value.serialize_into(&mut bytes).unwrap();
+        wm.zeros[1..].to_vec().serialize_into(&mut bytes).unwrap();
+        wm.len.serialize_into(&mut bytes).unwrap();
+        let e = WaveletMatrix::<Rank9Sel>::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidState(_))));
     }
 
     #[test]

@@ -6,4 +6,4 @@
 //! # #![allow(unused_imports)]
 //! use sucds::int_vectors::prelude::*;
 //! ```
-pub use crate::int_vectors::{Access, NumVals};
+pub use crate::int_vectors::Access;

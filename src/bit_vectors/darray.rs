@@ -134,19 +134,17 @@ impl DArray {
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
-}
-
-impl NumBits for DArray {
-    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
-    #[inline(always)]
-    fn num_bits(&self) -> usize {
-        self.len()
-    }
 
     /// Returns the number of bits set.
     #[inline(always)]
-    fn num_ones(&self) -> usize {
+    pub const fn num_ones(&self) -> usize {
         self.s1.num_ones()
+    }
+
+    /// Returns the number of bits unset.
+    #[inline(always)]
+    pub const fn num_zeros(&self) -> usize {
+        self.len() - self.num_ones()
     }
 }
 

@@ -60,7 +60,7 @@
 //!
 //! # Examples
 //!
-//! This module provides several traits for essential behaviors,
+//! This module provides the [`Access`] trait for essential behaviors,
 //! allowing to compare our integer vectors as components in your data structures.
 //! [`prelude`] allows you to import them easily.
 //!
@@ -70,7 +70,7 @@
 //!
 //! let seq = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
 //!
-//! assert_eq!(seq.num_vals(), 4);
+//! assert_eq!(seq.len(), 4);
 //!
 //! assert_eq!(seq.access(3), Some(334));
 //! assert_eq!(seq.access(4), None);
@@ -87,12 +87,6 @@ pub use compact_vector::CompactVector;
 pub use dacs_byte::DacsByte;
 pub use dacs_opt::DacsOpt;
 pub use prefix_summed_elias_fano::PrefixSummedEliasFano;
-
-/// Interface for reporting basic statistics of integer vectors.
-pub trait NumVals {
-    /// Returns the number of integers stored.
-    fn num_vals(&self) -> usize;
-}
 
 /// Interface for accessing elements on integer vectors.
 pub trait Access {

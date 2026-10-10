@@ -3,7 +3,7 @@
 use alloc::vec::Vec;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, CompactVector, NumVals};
+use crate::int_vectors::{Access, CompactVector};
 use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
@@ -277,13 +277,6 @@ impl Default for DacsOpt {
             data: vec![CompactVector::default()],
             flags: vec![],
         }
-    }
-}
-
-impl NumVals for DacsOpt {
-    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
-    fn num_vals(&self) -> usize {
-        self.len()
     }
 }
 

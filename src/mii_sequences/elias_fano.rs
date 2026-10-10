@@ -4,7 +4,7 @@ pub mod iter;
 
 use core::ops::Range;
 
-use crate::bit_vectors::{Access, BitVector, DArray, NumBits, Select};
+use crate::bit_vectors::{Access, BitVector, DArray, Select};
 use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
@@ -99,10 +99,10 @@ impl EliasFano {
         I: IntoIterator<Item = bool>,
     {
         let bv = BitVector::from_bits(bits);
-        if bv.num_bits() == 0 {
+        if bv.is_empty() {
             return Err(SucdsError::invalid_argument("bits must not be empty."));
         }
-        let num_bits = bv.num_bits();
+        let num_bits = bv.len();
         let num_ones = bv.num_ones();
         if num_ones == 0 {
             return Err(SucdsError::invalid_argument(
@@ -485,13 +485,13 @@ impl EliasFano {
 
     /// Gets the number of integers.
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.high_bits.num_ones()
     }
 
     /// Checks if the sequence is empty.
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

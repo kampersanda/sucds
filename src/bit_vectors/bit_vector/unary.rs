@@ -1,7 +1,6 @@
 //! Unary iterator on bit vectors.
 use super::WORD_LEN;
 use crate::bit_vectors::BitVector;
-use crate::bit_vectors::NumBits;
 use crate::broadword;
 
 /// Iterator for enumerating positions of set bits, created by [`BitVector::unary_iter`].
@@ -98,7 +97,7 @@ impl<'a> UnaryIter<'a> {
         let pos_in_word = broadword::select_in_word(buf, k - skipped).unwrap();
         self.buf = !buf & u64::MAX.wrapping_shl(pos_in_word as u32);
         self.pos = (self.pos & !(WORD_LEN - 1)) + pos_in_word;
-        Some(self.pos).filter(|&x| x < self.bv.num_bits())
+        Some(self.pos).filter(|&x| x < self.bv.len())
     }
 }
 

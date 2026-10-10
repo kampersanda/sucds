@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
-use crate::int_vectors::{Access, NumVals};
+use crate::int_vectors::Access;
 use crate::io::{Read, Write};
 use crate::utils;
 use crate::Result;
@@ -169,13 +169,6 @@ impl Default for DacsByte {
             data: vec![vec![]],
             flags: vec![],
         }
-    }
-}
-
-impl NumVals for DacsByte {
-    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
-    fn num_vals(&self) -> usize {
-        self.len()
     }
 }
 
