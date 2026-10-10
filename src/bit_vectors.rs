@@ -67,7 +67,7 @@
 //!     .select1_hints() // Accelerates select1
 //!     .select0_hints(); // Accelerates select0
 //!
-//! assert_eq!(bv.num_bits(), 4);
+//! assert_eq!(bv.len(), 4);
 //! assert_eq!(bv.num_ones(), 2);
 //!
 //! assert_eq!(bv.access(1), Some(false));
@@ -90,21 +90,6 @@ pub use bit_vector::BitVector;
 pub use darray::DArray;
 pub use rank9sel::Rank9Sel;
 pub use sarray::SArray;
-
-/// Interface for reporting basic statistics in a bit vector.
-pub trait NumBits {
-    /// Returns the number of bits stored.
-    fn num_bits(&self) -> usize;
-
-    /// Returns the number of bits set.
-    fn num_ones(&self) -> usize;
-
-    /// Returns the number of bits unset.
-    #[inline(always)]
-    fn num_zeros(&self) -> usize {
-        self.num_bits() - self.num_ones()
-    }
-}
 
 /// Interface for accessing elements on bit arrays.
 pub trait Access {

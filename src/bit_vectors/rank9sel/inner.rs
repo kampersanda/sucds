@@ -3,7 +3,6 @@
 use alloc::vec::Vec;
 
 use crate::bit_vectors::BitVector;
-use crate::bit_vectors::NumBits;
 use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
@@ -81,7 +80,7 @@ impl Rank9SelIndex {
         block_rank_pairs.shrink_to_fit();
 
         Self {
-            len: bv.num_bits(),
+            len: bv.len(),
             block_rank_pairs,
             select1_hints: None,
             select0_hints: None,
@@ -192,10 +191,10 @@ impl Rank9SelIndex {
     /// }
     /// ```
     pub unsafe fn rank1(&self, bv: &BitVector, pos: usize) -> Option<usize> {
-        if bv.num_bits() < pos {
+        if bv.len() < pos {
             return None;
         }
-        if pos == bv.num_bits() {
+        if pos == bv.len() {
             return Some(self.num_ones());
         }
         let (sub_bpos, sub_left) = (pos / 64, pos % 64);

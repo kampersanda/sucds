@@ -150,13 +150,6 @@ impl PrefixSummedEliasFano {
     }
 }
 
-impl NumVals for PrefixSummedEliasFano {
-    /// Returns the number of integers stored (just wrapping [`Self::len()`]).
-    fn num_vals(&self) -> usize {
-        self.len()
-    }
-}
-
 impl Access for PrefixSummedEliasFano {
     /// Returns the `pos`-th integer, or [`None`] if out of bounds.
     ///

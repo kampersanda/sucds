@@ -647,6 +647,24 @@ impl BitVector {
         self.len() == 0
     }
 
+    /// Returns the number of bits set.
+    ///
+    /// # Notes on complexity
+    ///
+    /// It is performed by linear scan in $`O(u)`$ time.
+    pub fn num_ones(&self) -> usize {
+        self.rank1(self.len).unwrap()
+    }
+
+    /// Returns the number of bits unset.
+    ///
+    /// # Notes on complexity
+    ///
+    /// It is performed by linear scan in $`O(u)`$ time.
+    pub fn num_zeros(&self) -> usize {
+        self.len() - self.num_ones()
+    }
+
     /// Gets the slice of raw words.
     pub fn words(&self) -> &[u64] {
         &self.words
@@ -676,22 +694,6 @@ impl BitVector {
     #[inline(always)]
     const fn words_for(n: usize) -> usize {
         (n + WORD_LEN - 1) / WORD_LEN
-    }
-}
-
-impl NumBits for BitVector {
-    /// Returns the number of bits stored (just wrapping [`Self::len()`]).
-    fn num_bits(&self) -> usize {
-        self.len()
-    }
-
-    /// Returns the number of bits set.
-    ///
-    /// # Notes on complexity
-    ///
-    /// It is performed by linear scan in $`O(u)`$ time.
-    fn num_ones(&self) -> usize {
-        self.rank1(self.len).unwrap()
     }
 }
 

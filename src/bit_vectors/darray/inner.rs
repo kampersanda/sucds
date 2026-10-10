@@ -3,7 +3,6 @@
 use alloc::vec::Vec;
 
 use crate::bit_vectors::BitVector;
-use crate::bit_vectors::NumBits;
 use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
@@ -155,7 +154,7 @@ impl DArrayIndex {
             while let Some(l) = broadword::lsb(cur_word) {
                 cur_pos += l;
                 cur_word >>= l;
-                if cur_pos >= bv.num_bits() {
+                if cur_pos >= bv.len() {
                     break;
                 }
 
