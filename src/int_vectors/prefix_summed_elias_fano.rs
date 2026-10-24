@@ -181,11 +181,21 @@ impl Serializable for PrefixSummedEliasFano {
         self.ef.serialize_into(writer)
     }
 
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the inner [`EliasFano`].
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         let ef = Option::<EliasFano>::deserialize_from(reader)?;
         Ok(Self { ef })
     }
 
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the inner [`EliasFano`] without the checks.
     fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
         let ef = Option::<EliasFano>::deserialize_from_unchecked(reader)?;
         Ok(Self { ef })

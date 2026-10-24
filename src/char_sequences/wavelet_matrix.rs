@@ -664,11 +664,21 @@ where
         Ok(mem)
     }
 
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the layers `B`, plus time linear in the number of layers.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from(&mut reader)?;
         Self::deserialize_rest(layers, reader)
     }
 
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the layers `B` without the checks, plus time linear in the number of layers.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let layers = Vec::<B>::deserialize_from_unchecked(&mut reader)?;
         Self::deserialize_rest(layers, reader)

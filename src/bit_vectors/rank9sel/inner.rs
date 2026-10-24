@@ -425,6 +425,11 @@ impl Serializable for Rank9SelIndex {
         Ok(mem)
     }
 
+    /// Deserializes the index without checking it against a bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let len = usize::deserialize_from(&mut reader)?;
         let block_rank_pairs = Vec::<u64>::deserialize_from(&mut reader)?;

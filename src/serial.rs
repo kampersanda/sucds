@@ -9,8 +9,8 @@ use crate::Result;
 
 /// Upper bound of the bytes preallocated for a deserialized [`Vec`].
 ///
-/// A length read from corrupted input can be huge, so the vector grows while reading
-/// beyond this bound, and such input fails with an I/O error instead of aborting on allocation.
+/// A length read from corrupted input can be huge, so beyond this bound the vector grows while reading,
+/// at most doubling each time, and such input fails with an I/O error instead of aborting on allocation.
 const MAX_PREALLOC_BYTES: usize = 1 << 20;
 
 /// Trait to serialize/deserialize data structures.
@@ -47,6 +47,12 @@ pub trait Serializable: Sized {
     /// # Arguments
     ///
     /// - `reader`: [`Read`] variable.
+    ///
+    /// # Complexity
+    ///
+    /// It depends on the data structure; see each implementation.
+    /// Reading the data takes time linear in its size, and some data structures
+    /// additionally check the consistency of their fields.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self>;
 
     /// Deserializes the data structure from the reader, skipping costly consistency checks.
@@ -60,6 +66,10 @@ pub trait Serializable: Sized {
     /// # Arguments
     ///
     /// - `reader`: [`Read`] variable.
+    ///
+    /// # Complexity
+    ///
+    /// It depends on the data structure; see each implementation.
     ///
     /// # Panics
     ///
@@ -92,6 +102,11 @@ where
         Ok(mem)
     }
 
+    /// Deserializes `Some(x)` or `None`.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing `x`, if any.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let x = if bool::deserialize_from(&mut reader)? {
             Some(S::deserialize_from(&mut reader)?)
@@ -101,6 +116,11 @@ where
         Ok(x)
     }
 
+    /// Deserializes `Some(x)` or `None`, without costly consistency checks of `x`.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing `x` without the checks, if any.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let x = if bool::deserialize_from(&mut reader)? {
             Some(S::deserialize_from_unchecked(&mut reader)?)
@@ -127,10 +147,22 @@ where
         Ok(mem)
     }
 
+    /// Deserializes the elements.
+    ///
+    /// # Complexity
+    ///
+    /// The sum of those of deserializing the elements.
+    /// The capacity grows geometrically, which takes amortized linear time in the length.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         deserialize_vec(reader, |r| S::deserialize_from(r))
     }
 
+    /// Deserializes the elements without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// The sum of those of deserializing the elements without the checks.
+    /// The capacity grows geometrically, which takes amortized linear time in the length.
     fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
         deserialize_vec(reader, |r| S::deserialize_from_unchecked(r))
     }
@@ -150,9 +182,31 @@ where
 {
     let len = usize::deserialize_from(&mut reader)?;
     let max_capa = MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1);
-    let mut vec = Vec::with_capacity(len.min(max_capa));
-    for _ in 0..len {
-        vec.push(deserialize(&mut reader)?);
+    let mut vec = Vec::new();
+    while vec.len() < len {
+        // Grows geometrically to keep the copies amortized linear, but not beyond `len`
+        // so that no extra capacity remains.
+        let additional = (len - vec.len()).min(vec.len().max(max_capa));
+        vec.reserve_exact(additional);
+        for _ in 0..additional {
+            vec.push(deserialize(&mut reader)?);
+        }
     }
     Ok(vec)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vec_exact_capacity() {
+        // Longer than the preallocation bound of MAX_PREALLOC_BYTES / 8 elements.
+        let vals: Vec<u64> = (0..300_000).collect();
+        let mut bytes = vec![];
+        vals.serialize_into(&mut bytes).unwrap();
+        let other = Vec::<u64>::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(vals, other);
+        assert_eq!(other.capacity(), other.len());
+    }
 }

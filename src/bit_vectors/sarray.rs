@@ -327,6 +327,11 @@ impl Serializable for SArray {
         Ok(mem)
     }
 
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the inner [`EliasFano`].
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let ef = Option::<EliasFano>::deserialize_from(&mut reader)?;
         let num_bits = usize::deserialize_from(&mut reader)?;
@@ -340,6 +345,11 @@ impl Serializable for SArray {
         })
     }
 
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the inner [`EliasFano`] without the checks.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let ef = Option::<EliasFano>::deserialize_from_unchecked(&mut reader)?;
         let num_bits = usize::deserialize_from(&mut reader)?;

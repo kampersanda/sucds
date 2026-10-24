@@ -246,12 +246,22 @@ impl Serializable for Rank9Sel {
         Ok(mem)
     }
 
+    /// Deserializes the data structure, and checks the index by rebuilding it from the bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u / 64)`$, where $`u`$ is the number of bits. Rebuilding the index scans the words.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         let r9s = Self::deserialize_from_unchecked(reader)?;
         r9s.rs.validate(&r9s.bv)?;
         Ok(r9s)
     }
 
+    /// Deserializes the data structure without checking the index.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u / 64)`$, where $`u`$ is the number of bits.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let rs = Rank9SelIndex::deserialize_from(&mut reader)?;

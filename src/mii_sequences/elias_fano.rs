@@ -562,11 +562,24 @@ impl Serializable for EliasFano {
         Ok(mem)
     }
 
+    /// Deserializes the sequence and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(n + n\ell / 64)`$, where $`n`$ is the number of integers and $`\ell`$ is the number of low bits per integer.
+    /// It includes rebuilding the indexes of the high bits, which have $`O(n)`$ bits,
+    /// and checking the integers in the last high bucket.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let high_bits = DArray::deserialize_from(&mut reader)?;
         Self::deserialize_rest(high_bits, reader)
     }
 
+    /// Deserializes the sequence without checking the indexes of the high bits.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(n / 64 + n\ell / 64 + b)`$ plus the size of the indexes, where $`n`$ is the number of integers,
+    /// $`\ell`$ is the number of low bits per integer, and $`b`$ is the number of integers in the last high bucket.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let high_bits = DArray::deserialize_from_unchecked(&mut reader)?;
         Self::deserialize_rest(high_bits, reader)

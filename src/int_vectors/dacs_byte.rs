@@ -255,12 +255,23 @@ impl Serializable for DacsByte {
         Ok(mem)
     }
 
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the data, including the time to check the [`Rank9Sel`] of each level
+    /// by rebuilding its index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
         let flags = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
         Ok(Self { data, flags })
     }
 
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the data.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
         let flags = Vec::<Rank9Sel>::deserialize_from_unchecked(&mut reader)?;

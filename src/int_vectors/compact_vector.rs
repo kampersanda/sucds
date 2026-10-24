@@ -509,6 +509,12 @@ impl Serializable for CompactVector {
         Ok(mem)
     }
 
+    /// Deserializes the vector and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(nw / 64)`$, where $`n`$ is the number of integers and $`w`$ is the width.
+    /// The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let chunks = BitVector::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;

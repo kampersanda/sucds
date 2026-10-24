@@ -255,6 +255,11 @@ impl Serializable for DArrayIndex {
         Ok(mem)
     }
 
+    /// Deserializes the index without checking it against a bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let block_inventory = Vec::<i64>::deserialize_from(&mut reader)?;
         let subblock_inventory = Vec::<u16>::deserialize_from(&mut reader)?;

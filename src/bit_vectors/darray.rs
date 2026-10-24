@@ -289,6 +289,11 @@ impl Serializable for DArray {
         Ok(mem)
     }
 
+    /// Deserializes the data structure, and checks the indexes by rebuilding them from the bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u)`$, where $`u`$ is the number of bits. Rebuilding an index visits every position it indexes.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         let da = Self::deserialize_from_unchecked(reader)?;
         da.s1.validate(&da.bv, true)?;
@@ -301,6 +306,11 @@ impl Serializable for DArray {
         Ok(da)
     }
 
+    /// Deserializes the data structure without checking the indexes.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u / 64)`$ plus the size of the indexes, where $`u`$ is the number of bits.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let s1 = DArrayIndex::deserialize_from(&mut reader)?;
