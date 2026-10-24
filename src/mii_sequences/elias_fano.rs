@@ -547,8 +547,11 @@ impl Serializable for EliasFano {
         if let Some(last) = len.checked_sub(1) {
             let high = |k| ef.high_bits.select1(k).unwrap() - k;
             let last_high = high(last);
+            // Checking the high part first keeps `select` from wrapping around in the shift.
             let mut last_bucket = (0..len).rev().take_while(|&k| high(k) == last_high);
-            if last_bucket.any(|k| ef.select(k).unwrap() >= universe) {
+            if last_high as u64 > universe >> low_len
+                || last_bucket.any(|k| ef.select(k).unwrap() >= universe)
+            {
                 return Err(SucdsError::invalid_data(format!(
                     "Values must be less than universe={universe}."
                 )));
@@ -818,6 +821,14 @@ mod tests {
             1,
             5,
         );
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_wrapping_value() {
+        // The value is 2^64, which wraps to 0 when decoded.
+        let bytes = serialize_raw(&[false, false, true], &[false; 63], 63, 1);
         let e = EliasFano::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
