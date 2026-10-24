@@ -536,12 +536,25 @@ impl Serializable for EliasFano {
                 high_bits.len() - len
             )));
         }
-        Ok(Self {
+        let ef = Self {
             high_bits,
             low_bits,
             low_len,
             universe,
-        })
+        };
+        // High parts never decrease, so the largest value is in the last high bucket,
+        // whose low parts can be in any order.
+        if let Some(last) = len.checked_sub(1) {
+            let high = |k| ef.high_bits.select1(k).unwrap() - k;
+            let last_high = high(last);
+            let mut last_bucket = (0..len).rev().take_while(|&k| high(k) == last_high);
+            if last_bucket.any(|k| ef.select(k).unwrap() >= universe) {
+                return Err(SucdsError::invalid_data(format!(
+                    "Values must be less than universe={universe}."
+                )));
+            }
+        }
+        Ok(ef)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -767,6 +780,44 @@ mod tests {
         let mut bytes = serialized_example();
         let n = bytes.len();
         bytes[n - 8..].copy_from_slice(&u64::MAX.to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    fn serialize_raw(
+        high_bits: &[bool],
+        low_bits: &[bool],
+        low_len: usize,
+        universe: u64,
+    ) -> alloc::vec::Vec<u8> {
+        let ef = EliasFano {
+            high_bits: DArray::from_bits(high_bits.iter().copied()),
+            low_bits: BitVector::from_bits(low_bits.iter().copied()),
+            low_len,
+            universe,
+        };
+        let mut bytes = vec![];
+        ef.serialize_into(&mut bytes).unwrap();
+        bytes
+    }
+
+    #[test]
+    fn test_deserialize_high_part_beyond_universe() {
+        // select(0) would be 3 >= universe = 2.
+        let bytes = serialize_raw(&[false, false, false, true, false], &[], 0, 2);
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_low_part_beyond_universe() {
+        // Values are [4, 5], both in the last high bucket, and 5 >= universe = 5.
+        let bytes = serialize_raw(
+            &[false, false, true, true, false, false, false],
+            &[false, true],
+            1,
+            5,
+        );
         let e = EliasFano::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
