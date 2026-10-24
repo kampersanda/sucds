@@ -175,13 +175,19 @@ where
     }
 }
 
+/// Returns the number of elements preallocated within [`MAX_PREALLOC_BYTES`],
+/// which is at least one so that deserialization always makes progress.
+fn max_prealloc_len<S>() -> usize {
+    (MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1)).max(1)
+}
+
 fn deserialize_vec<R, S, F>(mut reader: R, mut deserialize: F) -> Result<Vec<S>>
 where
     R: Read,
     F: FnMut(&mut R) -> Result<S>,
 {
     let len = usize::deserialize_from(&mut reader)?;
-    let max_capa = MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1);
+    let max_capa = max_prealloc_len::<S>();
     let mut vec = Vec::new();
     while vec.len() < len {
         // Grows geometrically to keep the copies amortized linear, but not beyond `len`
@@ -208,6 +214,14 @@ mod tests {
         let other = Vec::<u64>::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(vals, other);
         assert_eq!(other.capacity(), other.len());
+    }
+
+    #[test]
+    fn test_max_prealloc_len() {
+        assert_eq!(max_prealloc_len::<u64>(), MAX_PREALLOC_BYTES / 8);
+        assert_eq!(max_prealloc_len::<()>(), MAX_PREALLOC_BYTES);
+        // A type larger than the bound must still preallocate one element.
+        assert_eq!(max_prealloc_len::<[u8; MAX_PREALLOC_BYTES + 1]>(), 1);
     }
 
     fn assert_default_round_trip<S>()
