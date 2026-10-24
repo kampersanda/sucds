@@ -135,55 +135,13 @@ impl DArrayIndex {
 
     /// Checks that the index is consistent with `bv`, used after deserialization.
     ///
-    /// It checks the sizes and positions stored in the index, not that every position is correct.
+    /// It rebuilds the index from `bv` and compares, which takes time linear in the number of words,
+    /// i.e., the same order as reading `bv`.
     pub(crate) fn validate(&self, bv: &BitVector, over_one: bool) -> Result<()> {
-        if self.over_one != over_one {
-            return Err(SucdsError::invalid_data(format!(
-                "over_one must be {over_one}, but got {}.",
-                self.over_one
-            )));
-        }
-        let num_positions = if over_one {
-            bv.num_ones()
-        } else {
-            bv.num_zeros()
-        };
-        if self.num_positions != num_positions {
-            return Err(SucdsError::invalid_data(format!(
-                "The number of positions must be {num_positions}, but got {}.",
-                self.num_positions
-            )));
-        }
-        let num_blocks = (num_positions + BLOCK_LEN - 1) / BLOCK_LEN;
-        let num_subblocks = (num_positions + SUBBLOCK_LEN - 1) / SUBBLOCK_LEN;
-        if self.block_inventory.len() != num_blocks
-            || self.subblock_inventory.len() != num_subblocks
-        {
-            return Err(SucdsError::invalid_data(format!(
-                "The numbers of blocks and subblocks must be {num_blocks} and {num_subblocks}, but got {} and {}.",
-                self.block_inventory.len(),
-                self.subblock_inventory.len()
-            )));
-        }
-        let out_of_range = || SucdsError::invalid_data("A position in the index is out of range.");
-        for (block, &block_pos) in self.block_inventory.iter().enumerate() {
-            if block_pos < 0 {
-                let overflow_pos = !block_pos as usize; // == -block_pos - 1 without overflow
-                let block_len = BLOCK_LEN.min(num_positions - block * BLOCK_LEN);
-                let end = overflow_pos.checked_add(block_len);
-                if end.map_or(true, |end| end > self.overflow_positions.len()) {
-                    return Err(out_of_range());
-                }
-            }
-        }
-        for (subblock, &subblock_pos) in self.subblock_inventory.iter().enumerate() {
-            let block_pos = self.block_inventory[subblock * SUBBLOCK_LEN / BLOCK_LEN];
-            if block_pos >= 0 && block_pos as usize + subblock_pos as usize >= bv.len() {
-                return Err(out_of_range());
-            }
-        }
-        if self.overflow_positions.iter().any(|&pos| pos >= bv.len()) {
-            return Err(out_of_range());
+        if *self != Self::new(bv, over_one) {
+            return Err(SucdsError::invalid_data(
+                "The select index does not match the bit vector.",
+            ));
         }
         Ok(())
     }
@@ -324,6 +282,52 @@ impl Serializable for DArrayIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn example_bv() -> BitVector {
+        BitVector::from_bits((0..5000).map(|i| i % 3 == 0))
+    }
+
+    #[test]
+    fn test_validate_ok() {
+        let bv = example_bv();
+        assert!(DArrayIndex::new(&bv, true).validate(&bv, true).is_ok());
+        assert!(DArrayIndex::new(&bv, false).validate(&bv, false).is_ok());
+    }
+
+    #[test]
+    fn test_validate_wrong_over_one() {
+        let bv = example_bv();
+        let e = DArrayIndex::new(&bv, true).validate(&bv, false);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_shifted_block_position() {
+        let bv = example_bv();
+        let mut da = DArrayIndex::new(&bv, true);
+        da.block_inventory[0] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_shifted_subblock_position() {
+        let bv = example_bv();
+        let mut da = DArrayIndex::new(&bv, true);
+        da.subblock_inventory[1] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_wrong_overflow_position() {
+        let bv = BitVector::from_bits((0..100_000).map(|i| i == 70_000 || i < 1023));
+        let mut da = DArrayIndex::new(&bv, true);
+        assert!(da.block_inventory[0] < 0);
+        da.overflow_positions[1] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
 
     #[test]
     fn test_all_zeros_index() {
