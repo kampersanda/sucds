@@ -956,7 +956,7 @@ mod tests {
             .serialize_into(&mut bytes)
             .unwrap();
         let n = bytes.len();
-        bytes[n - 8..].copy_from_slice(&200usize.to_le_bytes());
+        bytes[n - 8..].copy_from_slice(&200u64.to_le_bytes());
         let e = BitVector::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -968,7 +968,7 @@ mod tests {
             .serialize_into(&mut bytes)
             .unwrap();
         let n = bytes.len();
-        bytes[n - 8..].copy_from_slice(&99usize.to_le_bytes());
+        bytes[n - 8..].copy_from_slice(&99u64.to_le_bytes());
         let e = BitVector::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }

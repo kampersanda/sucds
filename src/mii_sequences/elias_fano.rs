@@ -757,7 +757,7 @@ mod tests {
     fn test_deserialize_inconsistent_low_len() {
         let mut bytes = serialized_example();
         let n = bytes.len();
-        bytes[n - 16..n - 8].copy_from_slice(&40usize.to_le_bytes());
+        bytes[n - 16..n - 8].copy_from_slice(&40u64.to_le_bytes());
         let e = EliasFano::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }

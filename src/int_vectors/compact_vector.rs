@@ -543,7 +543,7 @@ mod tests {
             .serialize_into(&mut bytes)
             .unwrap();
         let n = bytes.len();
-        bytes[n - 8..].copy_from_slice(&3usize.to_le_bytes());
+        bytes[n - 8..].copy_from_slice(&3u64.to_le_bytes());
         let e = CompactVector::deserialize_from(&bytes[..]);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
