@@ -502,6 +502,59 @@ impl EliasFano {
     }
 }
 
+impl EliasFano {
+    /// Deserializes the fields after `high_bits` and checks their consistency.
+    fn deserialize_rest<R: Read>(high_bits: DArray, mut reader: R) -> Result<Self> {
+        let low_bits = BitVector::deserialize_from(&mut reader)?;
+        let low_len = usize::deserialize_from(&mut reader)?;
+        let universe = u64::deserialize_from(&mut reader)?;
+        if low_len >= 64 {
+            return Err(SucdsError::invalid_data(format!(
+                "low_len must be less than 64, but got {low_len}."
+            )));
+        }
+        let len = high_bits.num_ones();
+        if len.checked_mul(low_len) != Some(low_bits.len()) {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of low bits must be len*low_len={len}*{low_len}, but got {}.",
+                low_bits.len()
+            )));
+        }
+        // rank(val) for val < universe needs the unset bit for the high part of val.
+        if let Some(max_val) = universe.checked_sub(1) {
+            if (high_bits.len() - len) as u64 <= max_val >> low_len {
+                return Err(SucdsError::invalid_data(format!(
+                    "The high bits must have more than {} unset bits, but got {}.",
+                    max_val >> low_len,
+                    high_bits.len() - len
+                )));
+            }
+        }
+        let ef = Self {
+            high_bits,
+            low_bits,
+            low_len,
+            universe,
+        };
+        // High parts never decrease, so the largest value is in the last high bucket,
+        // whose low parts can be in any order.
+        if let Some(last) = len.checked_sub(1) {
+            let high = |k| ef.high_bits.select1(k).unwrap() - k;
+            let last_high = high(last);
+            // Checking the high part first keeps `select` from wrapping around in the shift.
+            let mut last_bucket = (0..len).rev().take_while(|&k| high(k) == last_high);
+            if last_high as u64 > universe >> low_len
+                || last_bucket.any(|k| ef.select(k).unwrap() >= universe)
+            {
+                return Err(SucdsError::invalid_data(format!(
+                    "Values must be less than universe={universe}."
+                )));
+            }
+        }
+        Ok(ef)
+    }
+}
+
 impl Serializable for EliasFano {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -512,17 +565,27 @@ impl Serializable for EliasFano {
         Ok(mem)
     }
 
+    /// Deserializes the sequence and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(n + n\ell)`$, where $`n`$ is the number of integers and $`\ell`$ is the number of low bits per integer.
+    /// It includes rebuilding the indexes of the high bits, which have $`O(n)`$ bits,
+    /// and checking the integers in the last high bucket.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let high_bits = DArray::deserialize_from(&mut reader)?;
-        let low_bits = BitVector::deserialize_from(&mut reader)?;
-        let low_len = usize::deserialize_from(&mut reader)?;
-        let universe = u64::deserialize_from(&mut reader)?;
-        Ok(Self {
-            high_bits,
-            low_bits,
-            low_len,
-            universe,
-        })
+        Self::deserialize_rest(high_bits, reader)
+    }
+
+    /// Deserializes the sequence without checking the indexes of the high bits.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(n + n\ell)`$, where $`n`$ is the number of integers and $`\ell`$ is the number of low bits per integer.
+    /// It skips rebuilding the indexes of the high bits, but still checks the integers in the last high bucket.
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let high_bits = DArray::deserialize_from_unchecked(&mut reader)?;
+        Self::deserialize_rest(high_bits, reader)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -716,6 +779,97 @@ mod tests {
         assert_eq!(ef, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, ef.size_in_bytes());
+    }
+
+    fn serialized_example() -> alloc::vec::Vec<u8> {
+        let mut b = EliasFanoBuilder::new(65, 4).unwrap();
+        b.extend([0, 2, 4, 64]).unwrap();
+        let mut bytes = vec![];
+        b.build().serialize_into(&mut bytes).unwrap();
+        bytes
+    }
+
+    #[test]
+    fn test_deserialize_unchecked() {
+        let mut b = EliasFanoBuilder::new(10_000, 1000).unwrap();
+        b.extend((0..1000).map(|i| i * 7)).unwrap();
+        let efs = vec![b.build().enable_rank()];
+        let mut bytes = vec![];
+        efs.serialize_into(&mut bytes).unwrap();
+        let other = alloc::vec::Vec::<EliasFano>::deserialize_from_unchecked(&bytes[..]).unwrap();
+        assert_eq!(efs, other);
+    }
+
+    #[test]
+    fn test_deserialize_huge_len() {
+        let mut bytes = serialized_example();
+        bytes[0..8].copy_from_slice(&(1u64 << 43).to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(e.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_low_len() {
+        let mut bytes = serialized_example();
+        let n = bytes.len();
+        bytes[n - 16..n - 8].copy_from_slice(&40u64.to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_universe() {
+        let mut bytes = serialized_example();
+        let n = bytes.len();
+        bytes[n - 8..].copy_from_slice(&u64::MAX.to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    fn serialize_raw(
+        high_bits: &[bool],
+        low_bits: &[bool],
+        low_len: usize,
+        universe: u64,
+    ) -> alloc::vec::Vec<u8> {
+        let ef = EliasFano {
+            high_bits: DArray::from_bits(high_bits.iter().copied()),
+            low_bits: BitVector::from_bits(low_bits.iter().copied()),
+            low_len,
+            universe,
+        };
+        let mut bytes = vec![];
+        ef.serialize_into(&mut bytes).unwrap();
+        bytes
+    }
+
+    #[test]
+    fn test_deserialize_high_part_beyond_universe() {
+        // select(0) would be 3 >= universe = 2.
+        let bytes = serialize_raw(&[false, false, false, true, false], &[], 0, 2);
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_low_part_beyond_universe() {
+        // Values are [4, 5], both in the last high bucket, and 5 >= universe = 5.
+        let bytes = serialize_raw(
+            &[false, false, true, true, false, false, false],
+            &[false, true],
+            1,
+            5,
+        );
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_wrapping_value() {
+        // The value is 2^64, which wraps to 0 when decoded.
+        let bytes = serialize_raw(&[false, false, true], &[false; 63], 63, 1);
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
 
     #[test]

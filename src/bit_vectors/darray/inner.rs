@@ -7,6 +7,7 @@ use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
 use crate::Serializable;
+use crate::SucdsError;
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -132,6 +133,19 @@ impl DArrayIndex {
         self.num_positions
     }
 
+    /// Checks that the index is consistent with `bv`, used after deserialization.
+    ///
+    /// It rebuilds the index from `bv` and compares, which takes time linear in the number of words,
+    /// i.e., the same order as reading `bv`.
+    pub(crate) fn validate(&self, bv: &BitVector, over_one: bool) -> Result<()> {
+        if *self != Self::new(bv, over_one) {
+            return Err(SucdsError::invalid_data(
+                "The select index does not match the bit vector.",
+            ));
+        }
+        Ok(())
+    }
+
     fn build(bv: &BitVector, over_one: bool) -> Self {
         let mut cur_block_positions = vec![];
         let mut block_inventory = vec![];
@@ -241,6 +255,11 @@ impl Serializable for DArrayIndex {
         Ok(mem)
     }
 
+    /// Deserializes the index without checking it against a bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let block_inventory = Vec::<i64>::deserialize_from(&mut reader)?;
         let subblock_inventory = Vec::<u16>::deserialize_from(&mut reader)?;
@@ -268,6 +287,52 @@ impl Serializable for DArrayIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn example_bv() -> BitVector {
+        BitVector::from_bits((0..5000).map(|i| i % 3 == 0))
+    }
+
+    #[test]
+    fn test_validate_ok() {
+        let bv = example_bv();
+        assert!(DArrayIndex::new(&bv, true).validate(&bv, true).is_ok());
+        assert!(DArrayIndex::new(&bv, false).validate(&bv, false).is_ok());
+    }
+
+    #[test]
+    fn test_validate_wrong_over_one() {
+        let bv = example_bv();
+        let e = DArrayIndex::new(&bv, true).validate(&bv, false);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_shifted_block_position() {
+        let bv = example_bv();
+        let mut da = DArrayIndex::new(&bv, true);
+        da.block_inventory[0] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_shifted_subblock_position() {
+        let bv = example_bv();
+        let mut da = DArrayIndex::new(&bv, true);
+        da.subblock_inventory[1] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_wrong_overflow_position() {
+        let bv = BitVector::from_bits((0..100_000).map(|i| i == 70_000 || i < 1023));
+        let mut da = DArrayIndex::new(&bv, true);
+        assert!(da.block_inventory[0] < 0);
+        da.overflow_positions[1] += 1;
+        let e = da.validate(&bv, true);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
 
     #[test]
     fn test_all_zeros_index() {

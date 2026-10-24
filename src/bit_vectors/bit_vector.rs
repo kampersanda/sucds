@@ -693,7 +693,7 @@ impl BitVector {
 
     #[inline(always)]
     const fn words_for(n: usize) -> usize {
-        (n + WORD_LEN - 1) / WORD_LEN
+        n / WORD_LEN + (n % WORD_LEN != 0) as usize
     }
 }
 
@@ -923,9 +923,25 @@ impl Serializable for BitVector {
         Ok(mem)
     }
 
+    /// Deserializes the bit vector and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u)`$, where $`u`$ is the number of bits. The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let words = Vec::<u64>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
+        if words.len() != Self::words_for(len) {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of words must be {} for len={len}, but got {}.",
+                Self::words_for(len),
+                words.len()
+            )));
+        }
+        let shift = len % WORD_LEN;
+        if shift != 0 && words[words.len() - 1] >> shift != 0 {
+            return Err(SucdsError::invalid_data("Bits beyond len must be unset."));
+        }
         Ok(Self { words, len })
     }
 
@@ -937,6 +953,43 @@ impl Serializable for BitVector {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_deserialize_inconsistent_len() {
+        let mut bytes = vec![];
+        BitVector::from_bit(true, 100)
+            .serialize_into(&mut bytes)
+            .unwrap();
+        let n = bytes.len();
+        bytes[n - 8..].copy_from_slice(&200u64.to_le_bytes());
+        let e = BitVector::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_huge_len() {
+        // words_for(len) must not overflow for these lengths.
+        for len in [usize::MAX - 62, usize::MAX - 1, usize::MAX] {
+            let mut bytes = vec![];
+            BitVector::new().serialize_into(&mut bytes).unwrap();
+            let n = bytes.len();
+            bytes[n - 8..].copy_from_slice(&(len as u64).to_le_bytes());
+            let e = BitVector::deserialize_from(&bytes[..]);
+            assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+        }
+    }
+
+    #[test]
+    fn test_deserialize_set_bits_beyond_len() {
+        let mut bytes = vec![];
+        BitVector::from_bit(true, 100)
+            .serialize_into(&mut bytes)
+            .unwrap();
+        let n = bytes.len();
+        bytes[n - 8..].copy_from_slice(&99u64.to_le_bytes());
+        let e = BitVector::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
 
     #[test]
     fn test_set_bit_oob() {

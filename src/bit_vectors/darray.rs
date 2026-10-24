@@ -51,7 +51,7 @@ use inner::DArrayIndex;
 ///
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DArray {
     bv: BitVector,
     s1: DArrayIndex,
@@ -279,6 +279,13 @@ impl Select for DArray {
     }
 }
 
+impl Default for DArray {
+    fn default() -> Self {
+        // Builds the index for ones, which the derived default would not.
+        Self::from_bits([])
+    }
+}
+
 impl Serializable for DArray {
     fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = 0;
@@ -289,7 +296,29 @@ impl Serializable for DArray {
         Ok(mem)
     }
 
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+    /// Deserializes the data structure, and checks the indexes by rebuilding them from the bit vector.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u)`$, where $`u`$ is the number of bits. Rebuilding an index visits every position it indexes.
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        let da = Self::deserialize_from_unchecked(reader)?;
+        da.s1.validate(&da.bv, true)?;
+        if let Some(s0) = &da.s0 {
+            s0.validate(&da.bv, false)?;
+        }
+        if let Some(r9) = &da.r9 {
+            r9.validate(&da.bv)?;
+        }
+        Ok(da)
+    }
+
+    /// Deserializes the data structure without checking the indexes.
+    ///
+    /// # Complexity
+    ///
+    /// $`O(u)`$, where $`u`$ is the number of bits. It skips rebuilding the indexes.
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let s1 = DArrayIndex::deserialize_from(&mut reader)?;
         let s0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
@@ -345,5 +374,41 @@ mod tests {
         assert_eq!(da, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, da.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_index() {
+        let da = DArray::from_bits([true, false, true]);
+        let bv = BitVector::from_bits([true, true, true]);
+        let mut bytes = vec![];
+        bv.serialize_into(&mut bytes).unwrap();
+        let mut da_bytes = vec![];
+        da.serialize_into(&mut da_bytes).unwrap();
+        bytes.extend_from_slice(&da_bytes[da.bv.size_in_bytes()..]);
+        let e = DArray::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(crate::SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_unchecked() {
+        let da = DArray::from_bits((0..5000).map(|i| i % 3 == 0))
+            .enable_rank()
+            .enable_select0();
+        let mut bytes = vec![];
+        Some(da.clone()).serialize_into(&mut bytes).unwrap();
+        let other = Option::<DArray>::deserialize_from_unchecked(&bytes[..]).unwrap();
+        assert_eq!(Some(da), other);
+    }
+
+    #[test]
+    fn test_deserialize_unchecked_skips_index_check() {
+        let da = DArray::from_bits([true, false, true]);
+        let bv = BitVector::from_bits([true, true, true]);
+        let mut bytes = vec![];
+        bv.serialize_into(&mut bytes).unwrap();
+        let mut da_bytes = vec![];
+        da.serialize_into(&mut da_bytes).unwrap();
+        bytes.extend_from_slice(&da_bytes[da.bv.size_in_bytes()..]);
+        assert!(DArray::deserialize_from_unchecked(&bytes[..]).is_ok());
     }
 }

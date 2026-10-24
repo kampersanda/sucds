@@ -630,20 +630,9 @@ where
     }
 }
 
-impl<B> Serializable for WaveletMatrix<B>
-where
-    B: Serializable,
-{
-    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = self.layers.serialize_into(&mut writer)?;
-        mem += self.max_value.serialize_into(&mut writer)?;
-        mem += self.zeros.serialize_into(&mut writer)?;
-        mem += self.len.serialize_into(&mut writer)?;
-        Ok(mem)
-    }
-
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = Vec::<B>::deserialize_from(&mut reader)?;
+impl<B> WaveletMatrix<B> {
+    /// Deserializes the fields after `layers` and checks their consistency.
+    fn deserialize_rest<R: Read>(layers: Vec<B>, mut reader: R) -> Result<Self> {
         let max_value = u64::deserialize_from(&mut reader)?;
         let zeros = Vec::<usize>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
@@ -660,6 +649,39 @@ where
             len,
             max_value,
         })
+    }
+}
+
+impl<B> Serializable for WaveletMatrix<B>
+where
+    B: Serializable,
+{
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = self.layers.serialize_into(&mut writer)?;
+        mem += self.max_value.serialize_into(&mut writer)?;
+        mem += self.zeros.serialize_into(&mut writer)?;
+        mem += self.len.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the layers `B`, plus time linear in the number of layers.
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let layers = Vec::<B>::deserialize_from(&mut reader)?;
+        Self::deserialize_rest(layers, reader)
+    }
+
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing the layers `B` without the checks, plus time linear in the number of layers.
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let layers = Vec::<B>::deserialize_from_unchecked(&mut reader)?;
+        Self::deserialize_rest(layers, reader)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -768,6 +790,8 @@ mod test {
         let mut bytes = vec![];
         let size = wm.serialize_into(&mut bytes).unwrap();
         let other = WaveletMatrix::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(wm, other);
+        let other = WaveletMatrix::<Rank9Sel>::deserialize_from_unchecked(&bytes[..]).unwrap();
         assert_eq!(wm, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, wm.size_in_bytes());

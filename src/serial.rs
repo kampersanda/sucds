@@ -7,6 +7,12 @@ use alloc::vec::Vec;
 use crate::io::{Read, Write};
 use crate::Result;
 
+/// Upper bound of the bytes preallocated for a deserialized [`Vec`].
+///
+/// A length read from corrupted input can be huge, so beyond this bound the vector grows while reading,
+/// at most doubling each time, and such input fails with an I/O error instead of aborting on allocation.
+const MAX_PREALLOC_BYTES: usize = 1 << 20;
+
 /// Trait to serialize/deserialize data structures.
 ///
 /// # Examples
@@ -41,7 +47,36 @@ pub trait Serializable: Sized {
     /// # Arguments
     ///
     /// - `reader`: [`Read`] variable.
+    ///
+    /// # Complexity
+    ///
+    /// It depends on the data structure; see each implementation.
+    /// Reading the data takes time linear in its size, and some data structures
+    /// additionally check the consistency of their fields.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self>;
+
+    /// Deserializes the data structure from the reader, skipping costly consistency checks.
+    ///
+    /// [`Self::deserialize_from()`] rebuilds the rank/select indexes of some data structures
+    /// (e.g., [`DArray`](crate::bit_vectors::DArray)) and compares them with the deserialized ones,
+    /// which takes time linear in the data size. This function skips such checks for faster loading,
+    /// and is intended for trusted input, e.g., data serialized by this crate itself.
+    /// By default, it is the same as [`Self::deserialize_from()`].
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: [`Read`] variable.
+    ///
+    /// # Complexity
+    ///
+    /// It depends on the data structure; see each implementation.
+    ///
+    /// # Panics
+    ///
+    /// Queries on the returned data structure may panic if the input is corrupted.
+    fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
+        Self::deserialize_from(reader)
+    }
 
     /// Returns the number of bytes to serialize the data structure.
     fn size_in_bytes(&self) -> usize;
@@ -67,9 +102,28 @@ where
         Ok(mem)
     }
 
+    /// Deserializes `Some(x)` or `None`.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing `x`, if any.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let x = if bool::deserialize_from(&mut reader)? {
             Some(S::deserialize_from(&mut reader)?)
+        } else {
+            None
+        };
+        Ok(x)
+    }
+
+    /// Deserializes `Some(x)` or `None`, without costly consistency checks of `x`.
+    ///
+    /// # Complexity
+    ///
+    /// That of deserializing `x` without the checks, if any.
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let x = if bool::deserialize_from(&mut reader)? {
+            Some(S::deserialize_from_unchecked(&mut reader)?)
         } else {
             None
         };
@@ -93,13 +147,24 @@ where
         Ok(mem)
     }
 
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let len = usize::deserialize_from(&mut reader)?;
-        let mut vec = Self::with_capacity(len);
-        for _ in 0..len {
-            vec.push(S::deserialize_from(&mut reader)?);
-        }
-        Ok(vec)
+    /// Deserializes the elements.
+    ///
+    /// # Complexity
+    ///
+    /// The sum of those of deserializing the elements.
+    /// The capacity grows geometrically, which takes amortized linear time in the length.
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        deserialize_vec(reader, |r| S::deserialize_from(r))
+    }
+
+    /// Deserializes the elements without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// The sum of those of deserializing the elements without the checks.
+    /// The capacity grows geometrically, which takes amortized linear time in the length.
+    fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
+        deserialize_vec(reader, |r| S::deserialize_from_unchecked(r))
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -107,5 +172,86 @@ where
             || usize::size_of().unwrap() + self.iter().fold(0, |acc, x| acc + x.size_in_bytes()),
             |m| usize::size_of().unwrap() + m * self.len(),
         )
+    }
+}
+
+/// Returns the number of elements preallocated within [`MAX_PREALLOC_BYTES`],
+/// which is at least one so that deserialization always makes progress.
+fn max_prealloc_len<S>() -> usize {
+    (MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1)).max(1)
+}
+
+fn deserialize_vec<R, S, F>(mut reader: R, mut deserialize: F) -> Result<Vec<S>>
+where
+    R: Read,
+    F: FnMut(&mut R) -> Result<S>,
+{
+    let len = usize::deserialize_from(&mut reader)?;
+    let max_capa = max_prealloc_len::<S>();
+    let mut vec = Vec::new();
+    while vec.len() < len {
+        // Grows geometrically to keep the copies amortized linear, but not beyond `len`
+        // so that no extra capacity remains.
+        let additional = (len - vec.len()).min(vec.len().max(max_capa));
+        vec.reserve_exact(additional);
+        for _ in 0..additional {
+            vec.push(deserialize(&mut reader)?);
+        }
+    }
+    Ok(vec)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vec_exact_capacity() {
+        // Longer than the preallocation bound of MAX_PREALLOC_BYTES / 8 elements.
+        let vals: Vec<u64> = (0..300_000).collect();
+        let mut bytes = vec![];
+        vals.serialize_into(&mut bytes).unwrap();
+        let other = Vec::<u64>::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(vals, other);
+        assert_eq!(other.capacity(), other.len());
+    }
+
+    #[test]
+    fn test_max_prealloc_len() {
+        assert_eq!(max_prealloc_len::<u64>(), MAX_PREALLOC_BYTES / 8);
+        assert_eq!(max_prealloc_len::<()>(), MAX_PREALLOC_BYTES);
+        // A type larger than the bound must still preallocate one element.
+        assert_eq!(max_prealloc_len::<[u8; MAX_PREALLOC_BYTES + 1]>(), 1);
+    }
+
+    fn assert_default_round_trip<S>()
+    where
+        S: Serializable + Default + PartialEq + core::fmt::Debug,
+    {
+        let x = S::default();
+        let mut bytes = vec![];
+        x.serialize_into(&mut bytes).unwrap();
+        assert_eq!(S::deserialize_from(&bytes[..]).unwrap(), x);
+        assert_eq!(S::deserialize_from_unchecked(&bytes[..]).unwrap(), x);
+    }
+
+    #[test]
+    fn test_default_round_trip() {
+        use crate::bit_vectors::{BitVector, DArray, Rank9Sel, SArray};
+        use crate::char_sequences::WaveletMatrix;
+        use crate::int_vectors::{CompactVector, DacsByte, DacsOpt, PrefixSummedEliasFano};
+        use crate::mii_sequences::EliasFano;
+
+        assert_default_round_trip::<BitVector>();
+        assert_default_round_trip::<DArray>();
+        assert_default_round_trip::<Rank9Sel>();
+        assert_default_round_trip::<SArray>();
+        assert_default_round_trip::<CompactVector>();
+        assert_default_round_trip::<DacsByte>();
+        assert_default_round_trip::<DacsOpt>();
+        assert_default_round_trip::<PrefixSummedEliasFano>();
+        assert_default_round_trip::<EliasFano>();
+        assert_default_round_trip::<WaveletMatrix<Rank9Sel>>();
+        assert_default_round_trip::<WaveletMatrix<DArray>>();
     }
 }

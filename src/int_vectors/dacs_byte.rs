@@ -255,9 +255,26 @@ impl Serializable for DacsByte {
         Ok(mem)
     }
 
+    /// Deserializes the data structure and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the data, including the time to check the [`Rank9Sel`] of each level
+    /// by rebuilding its index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
         let flags = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
+        Ok(Self { data, flags })
+    }
+
+    /// Deserializes the data structure without costly consistency checks.
+    ///
+    /// # Complexity
+    ///
+    /// Linear in the size of the data.
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
+        let flags = Vec::<Rank9Sel>::deserialize_from_unchecked(&mut reader)?;
         Ok(Self { data, flags })
     }
 
@@ -332,8 +349,35 @@ mod tests {
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = DacsByte::deserialize_from(&bytes[..]).unwrap();
         assert_eq!(seq, other);
+        let other = DacsByte::deserialize_from_unchecked(&bytes[..]).unwrap();
+        assert_eq!(seq, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, seq.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_unchecked_forwarded() {
+        use crate::bit_vectors::BitVector;
+
+        // A Rank9Sel whose index was built for another bit vector.
+        let r9s = Rank9Sel::from_bits([true, false, true]);
+        let mut r9s_bytes = vec![];
+        r9s.serialize_into(&mut r9s_bytes).unwrap();
+        let bv = BitVector::from_bits([true, true, true]);
+        let mut bytes = vec![];
+        bv.serialize_into(&mut bytes).unwrap();
+        bytes.extend_from_slice(&r9s_bytes[bv.size_in_bytes()..]);
+        let bad = Rank9Sel::deserialize_from_unchecked(&bytes[..]).unwrap();
+
+        let seq = DacsByte {
+            data: vec![vec![1, 2, 3]],
+            flags: vec![bad],
+        };
+        let mut bytes = vec![];
+        seq.serialize_into(&mut bytes).unwrap();
+        let e = DacsByte::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(crate::SucdsError::InvalidData(_))));
+        assert!(DacsByte::deserialize_from_unchecked(&bytes[..]).is_ok());
     }
 
     #[test]

@@ -26,6 +26,9 @@ pub enum SucdsError {
     /// The operation is not supported by the data structure.
     Unsupported(String),
 
+    /// Deserialized data is corrupted, i.e., its fields are inconsistent with each other.
+    InvalidData(String),
+
     /// An I/O error occurred in serialization or deserialization.
     ///
     /// The payload is [`io::Error`](crate::io::Error), which is a re-export of
@@ -65,6 +68,14 @@ impl SucdsError {
     {
         Self::Unsupported(msg.into())
     }
+
+    /// Creates [`SucdsError::InvalidData`] with a message.
+    pub fn invalid_data<S>(msg: S) -> Self
+    where
+        S: Into<String>,
+    {
+        Self::InvalidData(msg.into())
+    }
 }
 
 impl fmt::Display for SucdsError {
@@ -74,6 +85,7 @@ impl fmt::Display for SucdsError {
             Self::OutOfBounds(msg) => write!(f, "out of bounds: {msg}"),
             Self::InvalidState(msg) => write!(f, "invalid state: {msg}"),
             Self::Unsupported(msg) => write!(f, "unsupported operation: {msg}"),
+            Self::InvalidData(msg) => write!(f, "invalid data: {msg}"),
             Self::Io(e) => write!(f, "io error: {e}"),
         }
     }
