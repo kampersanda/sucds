@@ -7,6 +7,7 @@ use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
 use crate::Serializable;
+use crate::SucdsError;
 
 const BLOCK_LEN: usize = 1024;
 const SUBBLOCK_LEN: usize = 32;
@@ -130,6 +131,61 @@ impl DArrayIndex {
     #[inline(always)]
     pub const fn num_ones(&self) -> usize {
         self.num_positions
+    }
+
+    /// Checks that the index is consistent with `bv`, used after deserialization.
+    ///
+    /// It checks the sizes and positions stored in the index, not that every position is correct.
+    pub(crate) fn validate(&self, bv: &BitVector, over_one: bool) -> Result<()> {
+        if self.over_one != over_one {
+            return Err(SucdsError::invalid_data(format!(
+                "over_one must be {over_one}, but got {}.",
+                self.over_one
+            )));
+        }
+        let num_positions = if over_one {
+            bv.num_ones()
+        } else {
+            bv.num_zeros()
+        };
+        if self.num_positions != num_positions {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of positions must be {num_positions}, but got {}.",
+                self.num_positions
+            )));
+        }
+        let num_blocks = (num_positions + BLOCK_LEN - 1) / BLOCK_LEN;
+        let num_subblocks = (num_positions + SUBBLOCK_LEN - 1) / SUBBLOCK_LEN;
+        if self.block_inventory.len() != num_blocks
+            || self.subblock_inventory.len() != num_subblocks
+        {
+            return Err(SucdsError::invalid_data(format!(
+                "The numbers of blocks and subblocks must be {num_blocks} and {num_subblocks}, but got {} and {}.",
+                self.block_inventory.len(),
+                self.subblock_inventory.len()
+            )));
+        }
+        let out_of_range = || SucdsError::invalid_data("A position in the index is out of range.");
+        for (block, &block_pos) in self.block_inventory.iter().enumerate() {
+            if block_pos < 0 {
+                let overflow_pos = !block_pos as usize; // == -block_pos - 1 without overflow
+                let block_len = BLOCK_LEN.min(num_positions - block * BLOCK_LEN);
+                let end = overflow_pos.checked_add(block_len);
+                if end.map_or(true, |end| end > self.overflow_positions.len()) {
+                    return Err(out_of_range());
+                }
+            }
+        }
+        for (subblock, &subblock_pos) in self.subblock_inventory.iter().enumerate() {
+            let block_pos = self.block_inventory[subblock * SUBBLOCK_LEN / BLOCK_LEN];
+            if block_pos >= 0 && block_pos as usize + subblock_pos as usize >= bv.len() {
+                return Err(out_of_range());
+            }
+        }
+        if self.overflow_positions.iter().any(|&pos| pos >= bv.len()) {
+            return Err(out_of_range());
+        }
+        Ok(())
     }
 
     fn build(bv: &BitVector, over_one: bool) -> Self {

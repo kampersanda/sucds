@@ -513,6 +513,17 @@ impl Serializable for CompactVector {
         let chunks = BitVector::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
         let width = usize::deserialize_from(&mut reader)?;
+        if !(1..=64).contains(&width) {
+            return Err(SucdsError::invalid_data(format!(
+                "width must be in 1..=64, but got {width}."
+            )));
+        }
+        if len.checked_mul(width) != Some(chunks.len()) {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of bits must be len*width={len}*{width}, but got {}.",
+                chunks.len()
+            )));
+        }
         Ok(Self { chunks, len, width })
     }
 
@@ -524,6 +535,18 @@ impl Serializable for CompactVector {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_deserialize_inconsistent_width() {
+        let mut bytes = vec![];
+        CompactVector::from_slice(&[1u64, 2, 3])
+            .serialize_into(&mut bytes)
+            .unwrap();
+        let n = bytes.len();
+        bytes[n - 8..].copy_from_slice(&3usize.to_le_bytes());
+        let e = CompactVector::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
 
     #[test]
     fn test_new_oob_0() {

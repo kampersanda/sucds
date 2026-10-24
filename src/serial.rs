@@ -7,6 +7,12 @@ use alloc::vec::Vec;
 use crate::io::{Read, Write};
 use crate::Result;
 
+/// Upper bound of the bytes preallocated for a deserialized [`Vec`].
+///
+/// A length read from corrupted input can be huge, so the vector grows while reading
+/// beyond this bound, and such input fails with an I/O error instead of aborting on allocation.
+const MAX_PREALLOC_BYTES: usize = 1 << 20;
+
 /// Trait to serialize/deserialize data structures.
 ///
 /// # Examples
@@ -95,7 +101,8 @@ where
 
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let len = usize::deserialize_from(&mut reader)?;
-        let mut vec = Self::with_capacity(len);
+        let max_capa = MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1);
+        let mut vec = Self::with_capacity(len.min(max_capa));
         for _ in 0..len {
             vec.push(S::deserialize_from(&mut reader)?);
         }

@@ -517,6 +517,25 @@ impl Serializable for EliasFano {
         let low_bits = BitVector::deserialize_from(&mut reader)?;
         let low_len = usize::deserialize_from(&mut reader)?;
         let universe = u64::deserialize_from(&mut reader)?;
+        if low_len >= 64 {
+            return Err(SucdsError::invalid_data(format!(
+                "low_len must be less than 64, but got {low_len}."
+            )));
+        }
+        let len = high_bits.num_ones();
+        if len.checked_mul(low_len) != Some(low_bits.len()) {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of low bits must be len*low_len={len}*{low_len}, but got {}.",
+                low_bits.len()
+            )));
+        }
+        if (high_bits.len() - len) as u64 <= universe >> low_len {
+            return Err(SucdsError::invalid_data(format!(
+                "The high bits must have more than {} unset bits, but got {}.",
+                universe >> low_len,
+                high_bits.len() - len
+            )));
+        }
         Ok(Self {
             high_bits,
             low_bits,
@@ -716,6 +735,40 @@ mod tests {
         assert_eq!(ef, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, ef.size_in_bytes());
+    }
+
+    fn serialized_example() -> alloc::vec::Vec<u8> {
+        let mut b = EliasFanoBuilder::new(65, 4).unwrap();
+        b.extend([0, 2, 4, 64]).unwrap();
+        let mut bytes = vec![];
+        b.build().serialize_into(&mut bytes).unwrap();
+        bytes
+    }
+
+    #[test]
+    fn test_deserialize_huge_len() {
+        let mut bytes = serialized_example();
+        bytes[0..8].copy_from_slice(&(1u64 << 43).to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(e.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_low_len() {
+        let mut bytes = serialized_example();
+        let n = bytes.len();
+        bytes[n - 16..n - 8].copy_from_slice(&40usize.to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_universe() {
+        let mut bytes = serialized_example();
+        let n = bytes.len();
+        bytes[n - 8..].copy_from_slice(&u64::MAX.to_le_bytes());
+        let e = EliasFano::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
 
     #[test]

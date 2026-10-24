@@ -249,6 +249,7 @@ impl Serializable for Rank9Sel {
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let rs = Rank9SelIndex::deserialize_from(&mut reader)?;
+        rs.validate(&bv)?;
         Ok(Self { bv, rs })
     }
 

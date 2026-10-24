@@ -294,6 +294,13 @@ impl Serializable for DArray {
         let s1 = DArrayIndex::deserialize_from(&mut reader)?;
         let s0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
         let r9 = Option::<Rank9SelIndex>::deserialize_from(&mut reader)?;
+        s1.validate(&bv, true)?;
+        if let Some(s0) = &s0 {
+            s0.validate(&bv, false)?;
+        }
+        if let Some(r9) = &r9 {
+            r9.validate(&bv)?;
+        }
         Ok(Self { bv, s1, s0, r9 })
     }
 
@@ -345,5 +352,18 @@ mod tests {
         assert_eq!(da, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, da.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_inconsistent_index() {
+        let da = DArray::from_bits([true, false, true]);
+        let bv = BitVector::from_bits([true, true, true]);
+        let mut bytes = vec![];
+        bv.serialize_into(&mut bytes).unwrap();
+        let mut da_bytes = vec![];
+        da.serialize_into(&mut da_bytes).unwrap();
+        bytes.extend_from_slice(&da_bytes[da.bv.size_in_bytes()..]);
+        let e = DArray::deserialize_from(&bytes[..]);
+        assert!(matches!(e, Err(crate::SucdsError::InvalidData(_))));
     }
 }

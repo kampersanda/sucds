@@ -7,6 +7,7 @@ use crate::broadword;
 use crate::io::{Read, Write};
 use crate::Result;
 use crate::Serializable;
+use crate::SucdsError;
 
 const BLOCK_LEN: usize = 8;
 const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
@@ -117,6 +118,40 @@ impl Rank9SelIndex {
 
         self.select0_hints = Some(select0_hints);
         self
+    }
+
+    /// Checks that the index is consistent with `bv`, used after deserialization.
+    pub(crate) fn validate(&self, bv: &BitVector) -> Result<()> {
+        if self.len != bv.len() {
+            return Err(SucdsError::invalid_data(format!(
+                "The index length must be {}, but got {}.",
+                bv.len(),
+                self.len
+            )));
+        }
+        let num_blocks = (bv.num_words() + BLOCK_LEN - 1) / BLOCK_LEN;
+        if self.block_rank_pairs.len() != 2 * (num_blocks + 1) {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of block rank pairs must be {}, but got {}.",
+                2 * (num_blocks + 1),
+                self.block_rank_pairs.len()
+            )));
+        }
+        if self.num_ones() != bv.num_ones() {
+            return Err(SucdsError::invalid_data(format!(
+                "The number of ones must be {}, but got {}.",
+                bv.num_ones(),
+                self.num_ones()
+            )));
+        }
+        for hints in self.select1_hints.iter().chain(self.select0_hints.iter()) {
+            if hints.last() != Some(&num_blocks) || hints.iter().any(|&h| h > num_blocks) {
+                return Err(SucdsError::invalid_data(
+                    "Select hints must point to blocks and end with the number of blocks.",
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Gets the number of bits set.
