@@ -520,12 +520,15 @@ impl EliasFano {
                 low_bits.len()
             )));
         }
-        if (high_bits.len() - len) as u64 <= universe >> low_len {
-            return Err(SucdsError::invalid_data(format!(
-                "The high bits must have more than {} unset bits, but got {}.",
-                universe >> low_len,
-                high_bits.len() - len
-            )));
+        // rank(val) for val < universe needs the unset bit for the high part of val.
+        if let Some(max_val) = universe.checked_sub(1) {
+            if (high_bits.len() - len) as u64 <= max_val >> low_len {
+                return Err(SucdsError::invalid_data(format!(
+                    "The high bits must have more than {} unset bits, but got {}.",
+                    max_val >> low_len,
+                    high_bits.len() - len
+                )));
+            }
         }
         let ef = Self {
             high_bits,

@@ -51,7 +51,7 @@ use inner::DArrayIndex;
 ///
 ///  - D. Okanohara, and K. Sadakane, "Practical Entropy-Compressed Rank/Select Dictionary,"
 ///    In ALENEX, 2007.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DArray {
     bv: BitVector,
     s1: DArrayIndex,
@@ -276,6 +276,13 @@ impl Select for DArray {
     fn select0(&self, k: usize) -> Option<usize> {
         let s0 = self.s0.as_ref().expect("enable_select0() must be set up.");
         unsafe { s0.select(&self.bv, k) }
+    }
+}
+
+impl Default for DArray {
+    fn default() -> Self {
+        // Builds the index for ones, which the derived default would not.
+        Self::from_bits([])
     }
 }
 

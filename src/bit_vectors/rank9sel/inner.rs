@@ -14,7 +14,7 @@ const SELECT_ONES_PER_HINT: usize = 64 * BLOCK_LEN * 2;
 const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 
 /// The index implementation of [`Rank9Sel`](super::Rank9Sel) separated from the bit vector.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rank9SelIndex {
     len: usize,
     block_rank_pairs: Vec<u64>,
@@ -412,6 +412,13 @@ impl Rank9SelIndex {
         let sel = word_offset * 64
             + broadword::select_in_word(!bv.words()[word_offset], k - cur_rank).unwrap();
         Some(sel)
+    }
+}
+
+impl Default for Rank9SelIndex {
+    fn default() -> Self {
+        // An index needs a rank pair even for an empty bit vector.
+        Self::new(&BitVector::new())
     }
 }
 

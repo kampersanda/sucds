@@ -519,7 +519,8 @@ impl Serializable for CompactVector {
         let chunks = BitVector::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;
         let width = usize::deserialize_from(&mut reader)?;
-        if !(1..=64).contains(&width) {
+        // The default vector is empty with width 0.
+        if !(1..=64).contains(&width) && !(width == 0 && len == 0) {
             return Err(SucdsError::invalid_data(format!(
                 "width must be in 1..=64, but got {width}."
             )));

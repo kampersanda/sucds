@@ -209,4 +209,35 @@ mod tests {
         assert_eq!(vals, other);
         assert_eq!(other.capacity(), other.len());
     }
+
+    fn assert_default_round_trip<S>()
+    where
+        S: Serializable + Default + PartialEq + core::fmt::Debug,
+    {
+        let x = S::default();
+        let mut bytes = vec![];
+        x.serialize_into(&mut bytes).unwrap();
+        assert_eq!(S::deserialize_from(&bytes[..]).unwrap(), x);
+        assert_eq!(S::deserialize_from_unchecked(&bytes[..]).unwrap(), x);
+    }
+
+    #[test]
+    fn test_default_round_trip() {
+        use crate::bit_vectors::{BitVector, DArray, Rank9Sel, SArray};
+        use crate::char_sequences::WaveletMatrix;
+        use crate::int_vectors::{CompactVector, DacsByte, DacsOpt, PrefixSummedEliasFano};
+        use crate::mii_sequences::EliasFano;
+
+        assert_default_round_trip::<BitVector>();
+        assert_default_round_trip::<DArray>();
+        assert_default_round_trip::<Rank9Sel>();
+        assert_default_round_trip::<SArray>();
+        assert_default_round_trip::<CompactVector>();
+        assert_default_round_trip::<DacsByte>();
+        assert_default_round_trip::<DacsOpt>();
+        assert_default_round_trip::<PrefixSummedEliasFano>();
+        assert_default_round_trip::<EliasFano>();
+        assert_default_round_trip::<WaveletMatrix<Rank9Sel>>();
+        assert_default_round_trip::<WaveletMatrix<DArray>>();
+    }
 }
