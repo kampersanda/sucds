@@ -310,7 +310,7 @@ impl Serializable for DArray {
     ///
     /// # Complexity
     ///
-    /// $`O(u / 64)`$ plus the size of the indexes, where $`u`$ is the number of bits.
+    /// $`O(u)`$, where $`u`$ is the number of bits. It skips rebuilding the indexes.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let s1 = DArrayIndex::deserialize_from(&mut reader)?;

@@ -927,7 +927,7 @@ impl Serializable for BitVector {
     ///
     /// # Complexity
     ///
-    /// $`O(u / 64)`$, where $`u`$ is the number of bits. The consistency checks take constant time.
+    /// $`O(u)`$, where $`u`$ is the number of bits. The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
         let words = Vec::<u64>::deserialize_from(&mut reader)?;
         let len = usize::deserialize_from(&mut reader)?;

@@ -250,7 +250,7 @@ impl Serializable for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// $`O(u / 64)`$, where $`u`$ is the number of bits. Rebuilding the index scans the words.
+    /// $`O(u)`$, where $`u`$ is the number of bits. Rebuilding the index scans the words.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         let r9s = Self::deserialize_from_unchecked(reader)?;
         r9s.rs.validate(&r9s.bv)?;
@@ -261,7 +261,7 @@ impl Serializable for Rank9Sel {
     ///
     /// # Complexity
     ///
-    /// $`O(u / 64)`$, where $`u`$ is the number of bits.
+    /// $`O(u)`$, where $`u`$ is the number of bits. It skips rebuilding the index.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let rs = Rank9SelIndex::deserialize_from(&mut reader)?;
