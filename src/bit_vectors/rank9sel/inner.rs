@@ -121,35 +121,21 @@ impl Rank9SelIndex {
     }
 
     /// Checks that the index is consistent with `bv`, used after deserialization.
+    ///
+    /// It rebuilds the index from `bv` and compares, which takes time linear in the number of words,
+    /// i.e., the same order as reading `bv`.
     pub(crate) fn validate(&self, bv: &BitVector) -> Result<()> {
-        if self.len != bv.len() {
-            return Err(SucdsError::invalid_data(format!(
-                "The index length must be {}, but got {}.",
-                bv.len(),
-                self.len
-            )));
+        let mut expected = Self::new(bv);
+        if self.select1_hints.is_some() {
+            expected = expected.build_select1();
         }
-        let num_blocks = (bv.num_words() + BLOCK_LEN - 1) / BLOCK_LEN;
-        if self.block_rank_pairs.len() != 2 * (num_blocks + 1) {
-            return Err(SucdsError::invalid_data(format!(
-                "The number of block rank pairs must be {}, but got {}.",
-                2 * (num_blocks + 1),
-                self.block_rank_pairs.len()
-            )));
+        if self.select0_hints.is_some() {
+            expected = expected.build_select0();
         }
-        if self.num_ones() != bv.num_ones() {
-            return Err(SucdsError::invalid_data(format!(
-                "The number of ones must be {}, but got {}.",
-                bv.num_ones(),
-                self.num_ones()
-            )));
-        }
-        for hints in self.select1_hints.iter().chain(self.select0_hints.iter()) {
-            if hints.last() != Some(&num_blocks) || hints.iter().any(|&h| h > num_blocks) {
-                return Err(SucdsError::invalid_data(
-                    "Select hints must point to blocks and end with the number of blocks.",
-                ));
-            }
+        if *self != expected {
+            return Err(SucdsError::invalid_data(
+                "The rank/select index does not match the bit vector.",
+            ));
         }
         Ok(())
     }
@@ -457,5 +443,57 @@ impl Serializable for Rank9SelIndex {
             + self.block_rank_pairs.size_in_bytes()
             + self.select1_hints.size_in_bytes()
             + self.select0_hints.size_in_bytes()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn example_bv() -> BitVector {
+        BitVector::from_bits((0..3000).map(|i| i % 2 == 0))
+    }
+
+    #[test]
+    fn test_validate_ok() {
+        let bv = example_bv();
+        let idx = Rank9SelIndex::new(&bv).select1_hints().select0_hints();
+        assert!(idx.validate(&bv).is_ok());
+    }
+
+    #[test]
+    fn test_validate_short_select1_hints() {
+        let bv = example_bv();
+        let mut idx = Rank9SelIndex::new(&bv).select1_hints();
+        idx.select1_hints = Some(vec![idx.num_blocks()]);
+        let e = idx.validate(&bv);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_short_select0_hints() {
+        let bv = example_bv();
+        let mut idx = Rank9SelIndex::new(&bv).select0_hints();
+        idx.select0_hints = Some(vec![idx.num_blocks()]);
+        let e = idx.validate(&bv);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_inflated_block_rank() {
+        let bv = example_bv();
+        let mut idx = Rank9SelIndex::new(&bv);
+        idx.block_rank_pairs[2] += 1;
+        let e = idx.validate(&bv);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_validate_corrupted_subranks() {
+        let bv = example_bv();
+        let mut idx = Rank9SelIndex::new(&bv);
+        idx.block_rank_pairs[1] ^= 1;
+        let e = idx.validate(&bv);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
 }
