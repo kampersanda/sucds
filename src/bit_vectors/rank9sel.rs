@@ -246,10 +246,15 @@ impl Serializable for Rank9Sel {
         Ok(mem)
     }
 
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        let r9s = Self::deserialize_from_unchecked(reader)?;
+        r9s.rs.validate(&r9s.bv)?;
+        Ok(r9s)
+    }
+
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
         let bv = BitVector::deserialize_from(&mut reader)?;
         let rs = Rank9SelIndex::deserialize_from(&mut reader)?;
-        rs.validate(&bv)?;
         Ok(Self { bv, rs })
     }
 
@@ -321,5 +326,16 @@ mod tests {
         assert_eq!(bv, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, bv.size_in_bytes());
+    }
+
+    #[test]
+    fn test_deserialize_unchecked() {
+        let r9s = Rank9Sel::from_bits((0..3000).map(|i| i % 3 == 0))
+            .select1_hints()
+            .select0_hints();
+        let mut bytes = vec![];
+        r9s.serialize_into(&mut bytes).unwrap();
+        let other = Rank9Sel::deserialize_from_unchecked(&bytes[..]).unwrap();
+        assert_eq!(r9s, other);
     }
 }

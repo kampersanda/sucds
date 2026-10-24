@@ -502,18 +502,9 @@ impl EliasFano {
     }
 }
 
-impl Serializable for EliasFano {
-    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
-        let mut mem = 0;
-        mem += self.high_bits.serialize_into(&mut writer)?;
-        mem += self.low_bits.serialize_into(&mut writer)?;
-        mem += self.low_len.serialize_into(&mut writer)?;
-        mem += self.universe.serialize_into(&mut writer)?;
-        Ok(mem)
-    }
-
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let high_bits = DArray::deserialize_from(&mut reader)?;
+impl EliasFano {
+    /// Deserializes the fields after `high_bits` and checks their consistency.
+    fn deserialize_rest<R: Read>(high_bits: DArray, mut reader: R) -> Result<Self> {
         let low_bits = BitVector::deserialize_from(&mut reader)?;
         let low_len = usize::deserialize_from(&mut reader)?;
         let universe = u64::deserialize_from(&mut reader)?;
@@ -558,6 +549,27 @@ impl Serializable for EliasFano {
             }
         }
         Ok(ef)
+    }
+}
+
+impl Serializable for EliasFano {
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+        let mut mem = 0;
+        mem += self.high_bits.serialize_into(&mut writer)?;
+        mem += self.low_bits.serialize_into(&mut writer)?;
+        mem += self.low_len.serialize_into(&mut writer)?;
+        mem += self.universe.serialize_into(&mut writer)?;
+        Ok(mem)
+    }
+
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        let high_bits = DArray::deserialize_from(&mut reader)?;
+        Self::deserialize_rest(high_bits, reader)
+    }
+
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let high_bits = DArray::deserialize_from_unchecked(&mut reader)?;
+        Self::deserialize_rest(high_bits, reader)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -759,6 +771,17 @@ mod tests {
         let mut bytes = vec![];
         b.build().serialize_into(&mut bytes).unwrap();
         bytes
+    }
+
+    #[test]
+    fn test_deserialize_unchecked() {
+        let mut b = EliasFanoBuilder::new(10_000, 1000).unwrap();
+        b.extend((0..1000).map(|i| i * 7)).unwrap();
+        let efs = vec![b.build().enable_rank()];
+        let mut bytes = vec![];
+        efs.serialize_into(&mut bytes).unwrap();
+        let other = alloc::vec::Vec::<EliasFano>::deserialize_from_unchecked(&bytes[..]).unwrap();
+        assert_eq!(efs, other);
     }
 
     #[test]

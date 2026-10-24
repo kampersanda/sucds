@@ -49,6 +49,25 @@ pub trait Serializable: Sized {
     /// - `reader`: [`Read`] variable.
     fn deserialize_from<R: Read>(reader: R) -> Result<Self>;
 
+    /// Deserializes the data structure from the reader, skipping costly consistency checks.
+    ///
+    /// [`Self::deserialize_from()`] rebuilds the rank/select indexes of some data structures
+    /// (e.g., [`DArray`](crate::bit_vectors::DArray)) and compares them with the deserialized ones,
+    /// which takes time linear in the data size. This function skips such checks for faster loading,
+    /// and is intended for trusted input, e.g., data serialized by this crate itself.
+    /// By default, it is the same as [`Self::deserialize_from()`].
+    ///
+    /// # Arguments
+    ///
+    /// - `reader`: [`Read`] variable.
+    ///
+    /// # Panics
+    ///
+    /// Queries on the returned data structure may panic if the input is corrupted.
+    fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
+        Self::deserialize_from(reader)
+    }
+
     /// Returns the number of bytes to serialize the data structure.
     fn size_in_bytes(&self) -> usize;
 
@@ -82,6 +101,15 @@ where
         Ok(x)
     }
 
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let x = if bool::deserialize_from(&mut reader)? {
+            Some(S::deserialize_from_unchecked(&mut reader)?)
+        } else {
+            None
+        };
+        Ok(x)
+    }
+
     fn size_in_bytes(&self) -> usize {
         self.as_ref().map_or(0, |x| x.size_in_bytes()) + bool::size_of().unwrap()
     }
@@ -99,14 +127,12 @@ where
         Ok(mem)
     }
 
-    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let len = usize::deserialize_from(&mut reader)?;
-        let max_capa = MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1);
-        let mut vec = Self::with_capacity(len.min(max_capa));
-        for _ in 0..len {
-            vec.push(S::deserialize_from(&mut reader)?);
-        }
-        Ok(vec)
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+        deserialize_vec(reader, |r| S::deserialize_from(r))
+    }
+
+    fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
+        deserialize_vec(reader, |r| S::deserialize_from_unchecked(r))
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -115,4 +141,18 @@ where
             |m| usize::size_of().unwrap() + m * self.len(),
         )
     }
+}
+
+fn deserialize_vec<R, S, F>(mut reader: R, mut deserialize: F) -> Result<Vec<S>>
+where
+    R: Read,
+    F: FnMut(&mut R) -> Result<S>,
+{
+    let len = usize::deserialize_from(&mut reader)?;
+    let max_capa = MAX_PREALLOC_BYTES / core::mem::size_of::<S>().max(1);
+    let mut vec = Vec::with_capacity(len.min(max_capa));
+    for _ in 0..len {
+        vec.push(deserialize(&mut reader)?);
+    }
+    Ok(vec)
 }
