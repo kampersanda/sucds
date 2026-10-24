@@ -371,6 +371,12 @@ impl Serializable for DacsOpt {
         Ok(Self { data, flags })
     }
 
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
+        let flags = Vec::<Rank9Sel>::deserialize_from_unchecked(&mut reader)?;
+        Ok(Self { data, flags })
+    }
+
     fn size_in_bytes(&self) -> usize {
         self.data.size_in_bytes() + self.flags.size_in_bytes()
     }
@@ -502,6 +508,8 @@ mod tests {
         let seq = DacsOpt::from_slice(&[0b11u8, 0b1, 0b1111, 0b11], None).unwrap();
         let size = seq.serialize_into(&mut bytes).unwrap();
         let other = DacsOpt::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(seq, other);
+        let other = DacsOpt::deserialize_from_unchecked(&bytes[..]).unwrap();
         assert_eq!(seq, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, seq.size_in_bytes());

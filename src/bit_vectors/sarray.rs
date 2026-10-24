@@ -340,6 +340,19 @@ impl Serializable for SArray {
         })
     }
 
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        let ef = Option::<EliasFano>::deserialize_from_unchecked(&mut reader)?;
+        let num_bits = usize::deserialize_from(&mut reader)?;
+        let num_ones = usize::deserialize_from(&mut reader)?;
+        let has_rank = bool::deserialize_from(&mut reader)?;
+        Ok(Self {
+            ef,
+            num_bits,
+            num_ones,
+            has_rank,
+        })
+    }
+
     fn size_in_bytes(&self) -> usize {
         self.ef.size_in_bytes()
             + self.num_bits.size_in_bytes()
@@ -402,6 +415,8 @@ mod tests {
         let sa = SArray::from_bits([true, false, false, true]);
         let size = sa.serialize_into(&mut bytes).unwrap();
         let other = SArray::deserialize_from(&bytes[..]).unwrap();
+        assert_eq!(sa, other);
+        let other = SArray::deserialize_from_unchecked(&bytes[..]).unwrap();
         assert_eq!(sa, other);
         assert_eq!(size, bytes.len());
         assert_eq!(size, sa.size_in_bytes());
