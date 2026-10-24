@@ -962,6 +962,19 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_huge_len() {
+        // words_for(len) must not overflow for these lengths.
+        for len in [usize::MAX - 62, usize::MAX - 1, usize::MAX] {
+            let mut bytes = vec![];
+            BitVector::new().serialize_into(&mut bytes).unwrap();
+            let n = bytes.len();
+            bytes[n - 8..].copy_from_slice(&(len as u64).to_le_bytes());
+            let e = BitVector::deserialize_from(&bytes[..]);
+            assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+        }
+    }
+
+    #[test]
     fn test_deserialize_set_bits_beyond_len() {
         let mut bytes = vec![];
         BitVector::from_bit(true, 100)
