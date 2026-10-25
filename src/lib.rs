@@ -36,7 +36,6 @@
 //! ```
 //! use sucds::bit_vectors::{Rank, Rank9Sel, Select};
 //! use sucds::int_vectors::{Access, DacsOpt};
-//! use sucds::Serializable;
 //!
 //! # fn main() -> sucds::Result<()> {
 //! // Bit vector with rank/select indexes.
@@ -47,11 +46,6 @@
 //! // Compressed integer vector.
 //! let iv = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
 //! assert_eq!(iv.access(2), Some(100000));
-//!
-//! // Serialization/deserialization.
-//! let mut bytes = vec![];
-//! iv.serialize_into(&mut bytes)?;
-//! assert_eq!(iv, DacsOpt::deserialize_from(&bytes[..])?);
 //! # Ok(())
 //! # }
 //! ```
@@ -63,6 +57,19 @@
 //! in the [`io`] module.
 //! With the `std` feature (enabled by default), those traits are re-exports of `std::io`,
 //! and any reader or writer of the standard library can be used as usual.
+//!
+//! ```
+//! use sucds::int_vectors::DacsOpt;
+//! use sucds::Serializable;
+//!
+//! # fn main() -> sucds::Result<()> {
+//! let iv = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
+//! let mut bytes = vec![];
+//! iv.serialize_into(&mut bytes)?;
+//! assert_eq!(iv, DacsOpt::deserialize_from(&bytes[..])?);
+//! # Ok(())
+//! # }
+//! ```
 //!
 //! ### Memory-mapped files
 //!
