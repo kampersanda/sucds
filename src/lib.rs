@@ -4,18 +4,16 @@
 //! powerful tools to store a variety of data structures in compressed space and
 //! quickly perform operations on the compressed data.
 //!
-//! ## Design policy
+//! ## Features
 //!
-//! Thus far, many succinct data structures and their implementation techniques have been developed
-//! for a wide range of applications.
-//! To handle them in a single crate, we set up several design policies:
-//!
-//! - **Curated collection:** Rather than offering every possible succinct data structure,
-//!   only those with competitive advantages are provided.
+//! - **Curated collection:** Data structures in four categories are provided,
+//!   focusing on those with competitive advantages.
 //! - **Consistent interfaces:** Data structures in the same category share traits
 //!   such as `Access`, `Rank`, and `Select`, and are easily replaceable.
-//! - **Ensured safety:** Unsafe instructions, typically reserved for extremely low-level
-//!   programming, are avoided.
+//! - **Safe interfaces:** The data structures are used through safe APIs,
+//!   and unsafe code is confined to a few internal parts.
+//! - **Memory-mapped files:** Data structures can be loaded from a [memory-mapped file](#memory-mapped-files)
+//!   in constant time without copying their arrays.
 //! - **Pure Rust:** The implementation is written in pure Rust, with optional `no_std` support.
 //!
 //! ## Data structures
@@ -31,6 +29,25 @@
 //!
 //! Throughout this document, we write $`\log_2`$ with $`\lg`$.
 //!
+//! ## Example
+//!
+//! ```
+//! use sucds::bit_vectors::{Rank, Rank9Sel, Select};
+//! use sucds::int_vectors::{Access, DacsOpt};
+//!
+//! # fn main() -> sucds::Result<()> {
+//! // Bit vector with rank/select indexes.
+//! let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
+//! assert_eq!(bv.rank1(3), Some(1)); // Number of ones in bv[0..3]
+//! assert_eq!(bv.select1(1), Some(3)); // Position of the 1st one (0-origin)
+//!
+//! // Compressed integer vector.
+//! let iv = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
+//! assert_eq!(iv.access(2), Some(100000));
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Serialization/deserialization
 //!
 //! All the data structures can be serialized or deserialized through the `Serializable` trait,
@@ -38,6 +55,19 @@
 //! in the [`io`] module.
 //! With the `std` feature (enabled by default), those traits are re-exports of `std::io`,
 //! and any reader or writer of the standard library can be used as usual.
+//!
+//! ```
+//! use sucds::int_vectors::DacsOpt;
+//! use sucds::Serializable;
+//!
+//! # fn main() -> sucds::Result<()> {
+//! let iv = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
+//! let mut bytes = vec![];
+//! iv.serialize_into(&mut bytes)?;
+//! assert_eq!(iv, DacsOpt::deserialize_from(&bytes[..])?);
+//! # Ok(())
+//! # }
+//! ```
 //!
 //! ### Memory-mapped files
 //!
@@ -69,9 +99,6 @@
 //! let other = Rank9Sel::deserialize_from_bytes_unchecked(&mut bytes).unwrap();
 //! assert_eq!(other.rank1(4), Some(2));
 //! ```
-//!
-//! See [`examples/mmap.rs`](https://github.com/kampersanda/sucds/blob/main/examples/mmap.rs)
-//! for a comparison of the loading times with and without memory maps.
 //!
 //! Note that:
 //!

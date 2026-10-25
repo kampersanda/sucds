@@ -10,9 +10,9 @@ Sucds provides some [succinct data structures](https://en.wikipedia.org/wiki/Suc
 
 - **Curated collection:** Data structures in four categories are provided, focusing on those with competitive advantages.
 - **Consistent interfaces:** Data structures in the same category share traits such as `Access`, `Rank`, and `Select`, and are easily replaceable.
-- **Ensured safety:** Unsafe instructions, typically reserved for extremely low-level
-  programming, are avoided.
-- **Pure Rust:** The implementation is written in safe and pure Rust, with optional `no_std` support.
+- **Safe interfaces:** The data structures are used through safe APIs, and unsafe code is confined to a few internal parts.
+- **Memory-mapped files:** Data structures can be loaded from a [memory-mapped file](#memory-mapped-files) in constant time without copying their arrays.
+- **Pure Rust:** The implementation is written in pure Rust, with optional `no_std` support.
 
 ## Data structures
 
@@ -75,8 +75,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
-
-See [`examples/mmap.rs`](examples/mmap.rs) for a comparison of the loading times.
 
 ## Documentation
 
