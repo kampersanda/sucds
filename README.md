@@ -76,17 +76,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Note that:
-
-- The file must not be modified or truncated while mapped; otherwise, the behavior is undefined.
-  This is why `Mmap::map()` is unsafe.
-- The arrays are shared only if the bytes start at an 8-byte boundary, which memory maps satisfy,
-  and the machine is little-endian. Otherwise, they are copied.
-- The unchecked variant skips the consistency checks scanning the whole data,
-  so queries may panic for corrupted files.
-  Use `deserialize_from_bytes()` for untrusted files.
-- Modifying a loaded data structure (e.g., `BitVector::set_bit()`) copies its arrays into the heap.
-
 See [`examples/mmap.rs`](examples/mmap.rs) for a comparison of the loading times.
 
 ## Documentation

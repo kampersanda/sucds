@@ -49,6 +49,30 @@
 //! The unchecked variant loads the data in constant time, skipping the consistency checks
 //! that scan the whole data.
 //!
+//! ```
+//! use std::fs::File;
+//!
+//! use memmap2::Mmap;
+//! use sucds::bit_vectors::{Rank, Rank9Sel};
+//! use sucds::serial::Bytes;
+//! use sucds::Serializable;
+//!
+//! let bv = Rank9Sel::from_bits([true, false, false, true]);
+//! let mut buf = vec![];
+//! bv.serialize_into(&mut buf).unwrap();
+//! let path = std::env::temp_dir().join("sucds_doc_mmap.bin");
+//! std::fs::write(&path, &buf).unwrap();
+//!
+//! // SAFETY: The file is not modified while mapped.
+//! let mmap = unsafe { Mmap::map(&File::open(&path).unwrap()).unwrap() };
+//! let mut bytes = Bytes::from_owner(mmap);
+//! let other = Rank9Sel::deserialize_from_bytes_unchecked(&mut bytes).unwrap();
+//! assert_eq!(other.rank1(4), Some(2));
+//! ```
+//!
+//! See [`examples/mmap.rs`](https://github.com/kampersanda/sucds/blob/main/examples/mmap.rs)
+//! for a comparison of the loading times with and without memory maps.
+//!
 //! Note that:
 //!
 //! - The file must not be modified or truncated while mapped; otherwise, the behavior is undefined.
