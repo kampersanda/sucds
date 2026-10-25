@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         rust:
-          - 1.62.0 # MSRV
+          - 1.65.0 # MSRV
           - stable
     steps:
       - uses: actions/checkout@v7
@@ -99,7 +99,7 @@ jobs:
       fail-fast: false
       matrix:
         rust:
-          - 1.62.0 # MSRV
+          - 1.65.0 # MSRV
           - stable
     steps:
       - uses: actions/checkout@v7
