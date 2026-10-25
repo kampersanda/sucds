@@ -3,6 +3,7 @@
 use crate::bit_vectors::BitVector;
 use crate::int_vectors::prelude::*;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::utils;
 use crate::Result;
 use crate::Serializable;
@@ -516,9 +517,29 @@ impl Serializable for CompactVector {
     /// $`O(nw)`$, where $`n`$ is the number of integers and $`w`$ is the width.
     /// The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let chunks = BitVector::deserialize_from(&mut reader)?;
-        let len = usize::deserialize_from(&mut reader)?;
-        let width = usize::deserialize_from(&mut reader)?;
+        Self::deserialize_with(&mut reader, true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.chunks.size_in_bytes() + usize::size_of().unwrap() * 2
+    }
+}
+
+impl CompactVector {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        let chunks: BitVector = src.read(checked)?;
+        let len: usize = src.read(checked)?;
+        let width: usize = src.read(checked)?;
         // The default vector is empty with width 0.
         if !(1..=64).contains(&width) && !(width == 0 && len == 0) {
             return Err(SucdsError::invalid_data(format!(
@@ -532,10 +553,6 @@ impl Serializable for CompactVector {
             )));
         }
         Ok(Self { chunks, len, width })
-    }
-
-    fn size_in_bytes(&self) -> usize {
-        self.chunks.size_in_bytes() + usize::size_of().unwrap() * 2
     }
 }
 

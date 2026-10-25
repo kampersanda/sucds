@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
 use crate::io::{Read, Write};
-use crate::serial::{read_from_bytes, Bytes};
+use crate::serial::{Bytes, Shared, Source};
 use crate::storage::Storage;
 use crate::utils::MatrixView;
 use crate::Result;
@@ -942,9 +942,7 @@ impl Serializable for BitVector {
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = Storage::deserialize_from(&mut reader)?;
-        let len = usize::deserialize_from(&mut reader)?;
-        Self::from_parts(words, len)
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the bit vector sharing the words with `bytes` and checks its consistency.
@@ -953,9 +951,7 @@ impl Serializable for BitVector {
     ///
     /// Constant time if the words are shared, or $`O(u)`$ if copied.
     fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
-        let words = Storage::deserialize_from_bytes(bytes)?;
-        let len = read_from_bytes(bytes, |r| usize::deserialize_from(r))?;
-        Self::from_parts(words, len)
+        Self::deserialize_with(&mut Shared(bytes), true)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -964,8 +960,9 @@ impl Serializable for BitVector {
 }
 
 impl BitVector {
-    /// Creates a bit vector from the deserialized parts, checking their consistency.
-    fn from_parts(words: Storage<u64>, len: usize) -> Result<Self> {
+    fn deserialize_with<S: Source>(src: &mut S, checked: bool) -> Result<Self> {
+        let words: Storage<u64> = src.read(checked)?;
+        let len: usize = src.read(checked)?;
         if words.len() != Self::words_for(len) {
             return Err(SucdsError::invalid_data(format!(
                 "The number of words must be {} for len={len}, but got {}.",

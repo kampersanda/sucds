@@ -8,7 +8,7 @@ use core::ptr::NonNull;
 use bytes::Bytes;
 
 use crate::io::{Read, Write};
-use crate::serial::read_from_bytes;
+use crate::serial::{padding_len, read_from_bytes, write_padding};
 use crate::Result;
 use crate::Serializable;
 use crate::SucdsError;
@@ -99,28 +99,42 @@ where
         }
     }
 
-    /// Serializes the array in the same format as [`Vec`].
-    pub fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
+    #[cfg(test)]
+    pub fn is_shared(&self) -> bool {
+        matches!(self.repr, Repr::Shared(_))
+    }
+}
+
+/// Serialized in the same format as [`Vec`].
+impl<T> Serializable for Storage<T>
+where
+    T: Pod,
+{
+    fn serialize_into<W: Write>(&self, mut writer: W) -> Result<usize> {
         let mut mem = self.len().serialize_into(&mut writer)?;
         for x in self.iter() {
             mem += x.serialize_into(&mut writer)?;
         }
+        mem += write_padding(&mut writer, mem)?;
         Ok(mem)
     }
 
-    /// Deserializes the array into an owned vector.
-    pub fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
+    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
         Vec::<T>::deserialize_from(reader).map(Self::from)
     }
 
-    /// Deserializes the array sharing `bytes`, advancing `bytes` past the array.
+    /// Deserializes the array sharing `bytes`.
     ///
     /// The array is copied if `bytes` is not aligned for `T` or the machine is big-endian.
-    pub fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+    ///
+    /// # Complexity
+    ///
+    /// Constant time if shared, or linear in the length if copied.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
         let len = read_from_bytes(bytes, |r| usize::deserialize_from(r))?;
         let size = len
             .checked_mul(size_of::<T>())
-            .filter(|&size| size <= bytes.len())
+            .filter(|&size| size + padding_len(size) <= bytes.len())
             .ok_or_else(|| {
                 SucdsError::invalid_data(format!(
                     "The array of {len} elements exceeds the remaining {} bytes.",
@@ -128,6 +142,7 @@ where
                 ))
             })?;
         let data = bytes.split_to(size);
+        let _ = bytes.split_to(padding_len(size));
         if size != 0
             && cfg!(target_endian = "little")
             && data.as_ptr() as usize % align_of::<T>() == 0
@@ -141,14 +156,9 @@ where
         }
     }
 
-    #[cfg(test)]
-    pub fn is_shared(&self) -> bool {
-        matches!(self.repr, Repr::Shared(_))
-    }
-
-    /// Returns the number of bytes to serialize the array.
-    pub fn size_in_bytes(&self) -> usize {
-        usize::size_of().unwrap() + T::size_of().unwrap() * self.len()
+    fn size_in_bytes(&self) -> usize {
+        let size = T::size_of().unwrap() * self.len();
+        usize::size_of().unwrap() + size + padding_len(size)
     }
 }
 
@@ -198,6 +208,15 @@ where
 }
 
 impl<T> Eq for Storage<T> where T: Pod + Eq {}
+
+impl<T> core::fmt::Debug for Storage<T>
+where
+    T: Pod + core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self[..].fmt(f)
+    }
+}
 
 #[cfg(test)]
 pub(crate) mod tests {

@@ -5,6 +5,7 @@ use crate::bit_vectors::BitVector;
 use crate::broadword;
 use crate::io::{Read, Write};
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
+use crate::serial::{Bytes, Shared, Source};
 use crate::Result;
 use crate::Serializable;
 
@@ -333,16 +334,7 @@ impl Serializable for SArray {
     ///
     /// That of deserializing the inner [`EliasFano`].
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let ef = Option::<EliasFano>::deserialize_from(&mut reader)?;
-        let num_bits = usize::deserialize_from(&mut reader)?;
-        let num_ones = usize::deserialize_from(&mut reader)?;
-        let has_rank = bool::deserialize_from(&mut reader)?;
-        Ok(Self {
-            ef,
-            num_bits,
-            num_ones,
-            has_rank,
-        })
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without costly consistency checks.
@@ -351,16 +343,27 @@ impl Serializable for SArray {
     ///
     /// That of deserializing the inner [`EliasFano`] without the checks.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let ef = Option::<EliasFano>::deserialize_from_unchecked(&mut reader)?;
-        let num_bits = usize::deserialize_from(&mut reader)?;
-        let num_ones = usize::deserialize_from(&mut reader)?;
-        let has_rank = bool::deserialize_from(&mut reader)?;
-        Ok(Self {
-            ef,
-            num_bits,
-            num_ones,
-            has_rank,
-        })
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -368,6 +371,17 @@ impl Serializable for SArray {
             + self.num_bits.size_in_bytes()
             + self.num_ones.size_in_bytes()
             + self.has_rank.size_in_bytes()
+    }
+}
+
+impl SArray {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            ef: src.read(checked)?,
+            num_bits: src.read(checked)?,
+            num_ones: src.read(checked)?,
+            has_rank: src.read(checked)?,
+        })
     }
 }
 

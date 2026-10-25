@@ -6,6 +6,7 @@ use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::rank9sel::inner::Rank9SelIndex;
 use crate::bit_vectors::BitVector;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::Result;
 use crate::Serializable;
 use inner::DArrayIndex;
@@ -301,16 +302,8 @@ impl Serializable for DArray {
     /// # Complexity
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. Rebuilding an index visits every position it indexes.
-    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let da = Self::deserialize_from_unchecked(reader)?;
-        da.s1.validate(&da.bv, true)?;
-        if let Some(s0) = &da.s0 {
-            s0.validate(&da.bv, false)?;
-        }
-        if let Some(r9) = &da.r9 {
-            r9.validate(&da.bv)?;
-        }
-        Ok(da)
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without checking the indexes.
@@ -319,11 +312,27 @@ impl Serializable for DArray {
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. It skips rebuilding the indexes.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let bv = BitVector::deserialize_from(&mut reader)?;
-        let s1 = DArrayIndex::deserialize_from(&mut reader)?;
-        let s0 = Option::<DArrayIndex>::deserialize_from(&mut reader)?;
-        let r9 = Option::<Rank9SelIndex>::deserialize_from(&mut reader)?;
-        Ok(Self { bv, s1, s0, r9 })
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -331,6 +340,25 @@ impl Serializable for DArray {
             + self.s1.size_in_bytes()
             + self.s0.size_in_bytes()
             + self.r9.size_in_bytes()
+    }
+}
+
+impl DArray {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        let bv: BitVector = src.read(checked)?;
+        let s1: DArrayIndex = src.read(checked)?;
+        let s0: Option<DArrayIndex> = src.read(checked)?;
+        let r9: Option<Rank9SelIndex> = src.read(checked)?;
+        if checked {
+            s1.validate(&bv, true)?;
+            if let Some(s0) = &s0 {
+                s0.validate(&bv, false)?;
+            }
+            if let Some(r9) = &r9 {
+                r9.validate(&bv)?;
+            }
+        }
+        Ok(Self { bv, s1, s0, r9 })
     }
 }
 

@@ -92,20 +92,21 @@ impl Serializable for isize {
     }
 }
 
+/// `bool` is serialized as a 64-bit integer so that the following data stay aligned to 8 bytes.
 impl Serializable for bool {
     fn serialize_into<W: Write>(&self, writer: W) -> Result<usize> {
-        (*self as u8).serialize_into(writer)
+        (*self as u64).serialize_into(writer)
     }
 
     fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        u8::deserialize_from(reader).map(|x| x != 0)
+        u64::deserialize_from(reader).map(|x| x != 0)
     }
 
     fn size_in_bytes(&self) -> usize {
-        core::mem::size_of::<u8>()
+        core::mem::size_of::<u64>()
     }
 
     fn size_of() -> Option<usize> {
-        Some(core::mem::size_of::<u8>())
+        Some(core::mem::size_of::<u64>())
     }
 }

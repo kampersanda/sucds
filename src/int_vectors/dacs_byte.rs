@@ -7,6 +7,8 @@ use core::convert::TryFrom;
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::Access;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
+use crate::storage::Storage;
 use crate::utils;
 use crate::Result;
 use crate::Serializable;
@@ -53,7 +55,7 @@ const LEVEL_MASK: u64 = (1 << LEVEL_WIDTH) - 1;
 ///   codes." Information Processing & Management, 49(1), 392-404, 2013.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DacsByte {
-    data: Vec<Vec<u8>>,
+    data: Vec<Storage<u8>>,
     flags: Vec<Rank9Sel>,
 }
 
@@ -86,7 +88,7 @@ impl DacsByte {
                 .map(|x| u8::try_from((*x).into()).unwrap())
                 .collect();
             return Self {
-                data: vec![data],
+                data: vec![data.into()],
                 flags: vec![],
             };
         }
@@ -110,6 +112,7 @@ impl DacsByte {
             }
         }
 
+        let data = data.into_iter().map(Storage::from).collect();
         let flags = flags.into_iter().map(Rank9Sel::new).collect();
         Self { data, flags }
     }
@@ -166,7 +169,7 @@ impl Default for DacsByte {
     fn default() -> Self {
         Self {
             // Needs a single level at least.
-            data: vec![vec![]],
+            data: vec![Storage::default()],
             flags: vec![],
         }
     }
@@ -262,9 +265,7 @@ impl Serializable for DacsByte {
     /// Linear in the size of the data, including the time to check the [`Rank9Sel`] of each level
     /// by rebuilding its index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
-        let flags = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
-        Ok(Self { data, flags })
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without costly consistency checks.
@@ -273,9 +274,27 @@ impl Serializable for DacsByte {
     ///
     /// Linear in the size of the data.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let data = Vec::<Vec<u8>>::deserialize_from(&mut reader)?;
-        let flags = Vec::<Rank9Sel>::deserialize_from_unchecked(&mut reader)?;
-        Ok(Self { data, flags })
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -283,9 +302,31 @@ impl Serializable for DacsByte {
     }
 }
 
+impl DacsByte {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            data: src.read(checked)?,
+            flags: src.read(checked)?,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::tests::aligned;
+
+    #[test]
+    fn test_deserialize_from_bytes_shared() {
+        let seq = DacsByte::from_slice(&[0xFFFFu64, 0xFF, 0xF, 0xFFFFF, 0xF]);
+        let mut src = vec![];
+        seq.serialize_into(&mut src).unwrap();
+        let other = DacsByte::deserialize_from_bytes_unchecked(&mut aligned(&src)).unwrap();
+        assert_eq!(seq, other);
+        if cfg!(target_endian = "little") {
+            assert!(other.data.iter().all(|d| d.is_shared()));
+        }
+    }
 
     #[test]
     fn test_basic() {
@@ -294,9 +335,9 @@ mod tests {
         assert_eq!(
             seq.data,
             vec![
-                vec![0xFF, 0xFF, 0xF, 0xFF, 0xF],
-                vec![0xFF, 0xFF],
-                vec![0xF]
+                vec![0xFF, 0xFF, 0xF, 0xFF, 0xF].into(),
+                vec![0xFF, 0xFF].into(),
+                vec![0xF].into()
             ]
         );
 
@@ -370,7 +411,7 @@ mod tests {
         let bad = Rank9Sel::deserialize_from_unchecked(&bytes[..]).unwrap();
 
         let seq = DacsByte {
-            data: vec![vec![1, 2, 3]],
+            data: vec![vec![1, 2, 3].into()],
             flags: vec![bad],
         };
         let mut bytes = vec![];

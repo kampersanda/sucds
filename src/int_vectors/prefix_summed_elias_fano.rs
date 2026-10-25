@@ -3,6 +3,7 @@
 use crate::int_vectors::prelude::*;
 use crate::io::{Read, Write};
 use crate::mii_sequences::{EliasFano, EliasFanoBuilder};
+use crate::serial::{Bytes, Shared, Source};
 use crate::Result;
 use crate::Serializable;
 use crate::SucdsError;
@@ -186,9 +187,8 @@ impl Serializable for PrefixSummedEliasFano {
     /// # Complexity
     ///
     /// That of deserializing the inner [`EliasFano`].
-    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let ef = Option::<EliasFano>::deserialize_from(reader)?;
-        Ok(Self { ef })
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without costly consistency checks.
@@ -196,13 +196,40 @@ impl Serializable for PrefixSummedEliasFano {
     /// # Complexity
     ///
     /// That of deserializing the inner [`EliasFano`] without the checks.
-    fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
-        let ef = Option::<EliasFano>::deserialize_from_unchecked(reader)?;
-        Ok(Self { ef })
+    fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
         self.ef.size_in_bytes()
+    }
+}
+
+impl PrefixSummedEliasFano {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            ef: src.read(checked)?,
+        })
     }
 }
 
