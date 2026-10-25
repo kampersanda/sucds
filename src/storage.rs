@@ -265,10 +265,11 @@ pub mod tests {
 
     #[test]
     fn test_unaligned_copied() {
-        let mut src = vec![0; 4];
+        // Shifted by one byte, which is unaligned for `u64` on any machine.
+        let mut src = vec![0; 1];
         src.extend(serialized(&[1, 2, 3]));
         let mut bytes = aligned(&src);
-        let _ = bytes.split_to(4);
+        let _ = bytes.split_to(1);
         let s = Storage::<u64>::deserialize_from_bytes(&mut bytes).unwrap();
         assert!(!s.is_shared());
         assert_eq!(&s[..], &[1, 2, 3]);
