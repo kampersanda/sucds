@@ -18,7 +18,7 @@ rust-version = "1.62.0"
 [features]
 default = ["std"]
 
-std = []
+std = ["bytes/std"]
 intrinsics = []
 
 [package.metadata.docs.rs]
@@ -26,3 +26,9 @@ rustdoc-args = ["--html-in-header", "katex.html"]
 
 [workspace]
 members = ["bench"]
+
+[dependencies]
+bytes = { version = "1.9", default-features = false }
+
+[dev-dependencies]
+memmap2 = "0.9"

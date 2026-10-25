@@ -88,6 +88,7 @@ mod intrinsics;
 pub mod io;
 pub mod mii_sequences;
 pub mod serial;
+mod storage;
 pub mod utils;
 
 pub use errors::SucdsError;

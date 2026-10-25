@@ -4,6 +4,8 @@ pub mod primitive;
 
 use alloc::vec::Vec;
 
+pub use bytes::Bytes;
+
 use crate::io::{Read, Write};
 use crate::Result;
 
@@ -76,6 +78,25 @@ pub trait Serializable: Sized {
     /// Queries on the returned data structure may panic if the input is corrupted.
     fn deserialize_from_unchecked<R: Read>(reader: R) -> Result<Self> {
         Self::deserialize_from(reader)
+    }
+
+    /// Deserializes the data structure from the shared bytes, advancing `bytes` past the read data.
+    ///
+    /// Data structures supporting zero-copy deserialization share their arrays with `bytes`
+    /// instead of copying them, which is useful for memory-mapped files
+    /// (see [`Bytes::from_owner()`]). The arrays are copied anyway if `bytes` is not aligned for them
+    /// or the machine is big-endian.
+    /// By default, it copies the data through [`Self::deserialize_from()`].
+    ///
+    /// # Arguments
+    ///
+    /// - `bytes`: Bytes of the serialized data.
+    ///
+    /// # Complexity
+    ///
+    /// It depends on the data structure; see each implementation.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        read_from_bytes(bytes, |r| Self::deserialize_from(r))
     }
 
     /// Returns the number of bytes to serialize the data structure.
@@ -199,6 +220,17 @@ where
         }
     }
     Ok(vec)
+}
+
+/// Deserializes a value from `bytes` with `deserialize`, advancing `bytes` past the read data.
+pub(crate) fn read_from_bytes<S, F>(bytes: &mut Bytes, deserialize: F) -> Result<S>
+where
+    F: FnOnce(&mut &[u8]) -> Result<S>,
+{
+    let mut reader = &bytes[..];
+    let x = deserialize(&mut reader)?;
+    let _ = bytes.split_to(bytes.len() - reader.len());
+    Ok(x)
 }
 
 #[cfg(test)]
