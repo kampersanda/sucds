@@ -134,7 +134,10 @@ where
         let len = read_from_bytes(bytes, |r| usize::deserialize_from(r))?;
         let size = len
             .checked_mul(size_of::<T>())
-            .filter(|&size| size + padding_len(size) <= bytes.len())
+            .filter(|&size| {
+                size.checked_add(padding_len(size))
+                    .map_or(false, |padded| padded <= bytes.len())
+            })
             .ok_or_else(|| {
                 SucdsError::invalid_data(format!(
                     "The array of {len} elements exceeds the remaining {} bytes.",
@@ -289,6 +292,14 @@ pub mod tests {
     fn test_too_short() {
         let mut bytes = aligned(&serialized(&[1, 2, 3])).slice(..16);
         let e = Storage::<u64>::deserialize_from_bytes(&mut bytes);
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
+
+    #[test]
+    fn test_padded_size_overflow() {
+        // The padding of `usize::MAX` bytes overflows.
+        let mut bytes = aligned(&(usize::MAX as u64).to_le_bytes());
+        let e = Storage::<u8>::deserialize_from_bytes(&mut bytes);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
 }

@@ -329,6 +329,15 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_from_bytes_huge_level() {
+        // One level of `usize::MAX` bytes.
+        let mut src = 1u64.to_le_bytes().to_vec();
+        src.extend((usize::MAX as u64).to_le_bytes());
+        let e = DacsByte::deserialize_from_bytes(&mut aligned(&src));
+        assert!(matches!(e, Err(crate::SucdsError::InvalidData(_))));
+    }
+
+    #[test]
     fn test_basic() {
         let seq = DacsByte::from_slice(&[0xFFFFu64, 0xFF, 0xF, 0xFFFFF, 0xF]);
 
