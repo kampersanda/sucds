@@ -31,6 +31,31 @@
 //!
 //! Throughout this document, we write $`\log_2`$ with $`\lg`$.
 //!
+//! ## Example
+//!
+//! ```
+//! use sucds::bit_vectors::{Rank, Rank9Sel, Select};
+//! use sucds::int_vectors::{Access, DacsOpt};
+//! use sucds::Serializable;
+//!
+//! # fn main() -> sucds::Result<()> {
+//! // Bit vector with rank/select indexes.
+//! let bv = Rank9Sel::from_bits([true, false, false, true]).select1_hints();
+//! assert_eq!(bv.rank1(3), Some(1)); // Number of ones in bv[0..3]
+//! assert_eq!(bv.select1(1), Some(3)); // Position of the 1st one (0-origin)
+//!
+//! // Compressed integer vector.
+//! let iv = DacsOpt::from_slice(&[5u64, 0, 100000, 334], None)?;
+//! assert_eq!(iv.access(2), Some(100000));
+//!
+//! // Serialization/deserialization.
+//! let mut bytes = vec![];
+//! iv.serialize_into(&mut bytes)?;
+//! assert_eq!(iv, DacsOpt::deserialize_from(&bytes[..])?);
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Serialization/deserialization
 //!
 //! All the data structures can be serialized or deserialized through the `Serializable` trait,
