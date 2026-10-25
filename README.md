@@ -47,6 +47,37 @@ fn main() -> sucds::Result<()> {
 }
 ```
 
+## Memory-mapped files
+
+Data structures can be loaded from a memory-mapped file without copying their arrays,
+through `Serializable::deserialize_from_bytes_unchecked()` on [`bytes::Bytes`](https://docs.rs/bytes).
+The loading takes constant time independent of the data size.
+
+```rust
+use std::fs::File;
+
+use memmap2::Mmap;
+use sucds::bit_vectors::{Rank, Rank9Sel};
+use sucds::serial::Bytes;
+use sucds::Serializable;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let path = std::env::temp_dir().join("sucds_readme.bin");
+    let bv = Rank9Sel::from_bits([true, false, false, true]);
+    bv.serialize_into(File::create(&path)?)?;
+
+    // SAFETY: The file is not modified while mapped.
+    let mmap = unsafe { Mmap::map(&File::open(&path)?)? };
+    let mut bytes = Bytes::from_owner(mmap);
+    let other = Rank9Sel::deserialize_from_bytes_unchecked(&mut bytes)?;
+    assert_eq!(other.rank1(4), Some(2));
+
+    Ok(())
+}
+```
+
+See [`examples/mmap.rs`](examples/mmap.rs) for a comparison of the loading times.
+
 ## Documentation
 
 https://docs.rs/sucds/

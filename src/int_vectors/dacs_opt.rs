@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use crate::bit_vectors::{self, BitVector, Rank, Rank9Sel};
 use crate::int_vectors::{Access, CompactVector};
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::utils;
 use crate::Result;
 use crate::Serializable;
@@ -372,9 +373,7 @@ impl Serializable for DacsOpt {
     /// Linear in the size of the data, including the time to check the [`Rank9Sel`] of each level
     /// by rebuilding its index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
-        let flags = Vec::<Rank9Sel>::deserialize_from(&mut reader)?;
-        Ok(Self { data, flags })
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without costly consistency checks.
@@ -383,13 +382,40 @@ impl Serializable for DacsOpt {
     ///
     /// Linear in the size of the data.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let data = Vec::<CompactVector>::deserialize_from(&mut reader)?;
-        let flags = Vec::<Rank9Sel>::deserialize_from_unchecked(&mut reader)?;
-        Ok(Self { data, flags })
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
         self.data.size_in_bytes() + self.flags.size_in_bytes()
+    }
+}
+
+impl DacsOpt {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            data: src.read(checked)?,
+            flags: src.read(checked)?,
+        })
     }
 }
 

@@ -7,6 +7,7 @@ use core::ops::Range;
 use crate::bit_vectors::{Access, BitVector, DArray, Select};
 use crate::broadword;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::Result;
 use crate::Serializable;
 use crate::SucdsError;
@@ -503,11 +504,12 @@ impl EliasFano {
 }
 
 impl EliasFano {
-    /// Deserializes the fields after `high_bits` and checks their consistency.
-    fn deserialize_rest<R: Read>(high_bits: DArray, mut reader: R) -> Result<Self> {
-        let low_bits = BitVector::deserialize_from(&mut reader)?;
-        let low_len = usize::deserialize_from(&mut reader)?;
-        let universe = u64::deserialize_from(&mut reader)?;
+    /// Deserializes the sequence and checks the consistency of its fields.
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        let high_bits: DArray = src.read(checked)?;
+        let low_bits: BitVector = src.read(checked)?;
+        let low_len: usize = src.read(checked)?;
+        let universe: u64 = src.read(checked)?;
         if low_len >= 64 {
             return Err(SucdsError::invalid_data(format!(
                 "low_len must be less than 64, but got {low_len}."
@@ -573,8 +575,7 @@ impl Serializable for EliasFano {
     /// It includes rebuilding the indexes of the high bits, which have $`O(n)`$ bits,
     /// and checking the integers in the last high bucket.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let high_bits = DArray::deserialize_from(&mut reader)?;
-        Self::deserialize_rest(high_bits, reader)
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the sequence without checking the indexes of the high bits.
@@ -584,8 +585,27 @@ impl Serializable for EliasFano {
     /// $`O(n + n\ell)`$, where $`n`$ is the number of integers and $`\ell`$ is the number of low bits per integer.
     /// It skips rebuilding the indexes of the high bits, but still checks the integers in the last high bucket.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let high_bits = DArray::deserialize_from_unchecked(&mut reader)?;
-        Self::deserialize_rest(high_bits, reader)
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {

@@ -5,6 +5,8 @@ use alloc::vec::Vec;
 use crate::bit_vectors::BitVector;
 use crate::broadword;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
+use crate::storage::Storage;
 use crate::Result;
 use crate::Serializable;
 use crate::SucdsError;
@@ -16,9 +18,9 @@ const MAX_IN_BLOCK_DISTANCE: usize = 1 << 16;
 /// The index implementation of [`DArray`](super::DArray) separated from the bit vector.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DArrayIndex {
-    block_inventory: Vec<i64>,
-    subblock_inventory: Vec<u16>,
-    overflow_positions: Vec<usize>,
+    block_inventory: Storage<i64>,
+    subblock_inventory: Storage<u16>,
+    overflow_positions: Storage<u64>,
     num_positions: usize,
     over_one: bool, // WANT_TODO(kampersanda): Solve with generics
 }
@@ -90,7 +92,7 @@ impl DArrayIndex {
 
         if block_pos < 0 {
             let overflow_pos = (-block_pos - 1) as usize;
-            return Some(self.overflow_positions[overflow_pos + (k % BLOCK_LEN)]);
+            return Some(self.overflow_positions[overflow_pos + (k % BLOCK_LEN)] as usize);
         }
 
         let subblock = k / SUBBLOCK_LEN;
@@ -202,9 +204,9 @@ impl DArrayIndex {
         overflow_positions.shrink_to_fit();
 
         Self {
-            block_inventory,
-            subblock_inventory,
-            overflow_positions,
+            block_inventory: block_inventory.into(),
+            subblock_inventory: subblock_inventory.into(),
+            overflow_positions: overflow_positions.into(),
             num_positions,
             over_one,
         }
@@ -214,7 +216,7 @@ impl DArrayIndex {
         cur_block_positions: &mut Vec<usize>,
         block_inventory: &mut Vec<i64>,
         subblock_inventory: &mut Vec<u16>,
-        overflow_positions: &mut Vec<usize>,
+        overflow_positions: &mut Vec<u64>,
     ) {
         let &first = cur_block_positions.first().unwrap();
         let &last = cur_block_positions.last().unwrap();
@@ -226,7 +228,7 @@ impl DArrayIndex {
         } else {
             block_inventory.push(-((overflow_positions.len() + 1) as i64));
             for &x in cur_block_positions.iter() {
-                overflow_positions.push(x);
+                overflow_positions.push(x as u64);
             }
             for _ in (0..cur_block_positions.len()).step_by(SUBBLOCK_LEN) {
                 subblock_inventory.push(u16::MAX);
@@ -261,18 +263,17 @@ impl Serializable for DArrayIndex {
     ///
     /// Linear in the size of the index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let block_inventory = Vec::<i64>::deserialize_from(&mut reader)?;
-        let subblock_inventory = Vec::<u16>::deserialize_from(&mut reader)?;
-        let overflow_positions = Vec::<usize>::deserialize_from(&mut reader)?;
-        let num_positions = usize::deserialize_from(&mut reader)?;
-        let over_one = bool::deserialize_from(&mut reader)?;
-        Ok(Self {
-            block_inventory,
-            subblock_inventory,
-            overflow_positions,
-            num_positions,
-            over_one,
-        })
+        Self::deserialize_with(&mut reader, true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -284,9 +285,39 @@ impl Serializable for DArrayIndex {
     }
 }
 
+impl DArrayIndex {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            block_inventory: src.read(checked)?,
+            subblock_inventory: src.read(checked)?,
+            overflow_positions: src.read(checked)?,
+            num_positions: src.read(checked)?,
+            over_one: src.read(checked)?,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::tests::aligned;
+
+    #[test]
+    fn test_deserialize_from_bytes_shared() {
+        // The first block overflows, and the second does not.
+        let bv =
+            BitVector::from_bits((0..110_000).map(|i| i < 1023 || i == 70_000 || i >= 100_000));
+        let da = DArrayIndex::new(&bv, true);
+        let mut src = vec![];
+        da.serialize_into(&mut src).unwrap();
+        let other = DArrayIndex::deserialize_from_bytes(&mut aligned(&src)).unwrap();
+        assert_eq!(da, other);
+        if cfg!(target_endian = "little") {
+            assert!(other.block_inventory.is_shared());
+            assert!(other.subblock_inventory.is_shared());
+            assert!(other.overflow_positions.is_shared());
+        }
+    }
 
     fn example_bv() -> BitVector {
         BitVector::from_bits((0..5000).map(|i| i % 3 == 0))
@@ -310,7 +341,7 @@ mod tests {
     fn test_validate_shifted_block_position() {
         let bv = example_bv();
         let mut da = DArrayIndex::new(&bv, true);
-        da.block_inventory[0] += 1;
+        da.block_inventory.update(|v| v[0] += 1);
         let e = da.validate(&bv, true);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -319,7 +350,7 @@ mod tests {
     fn test_validate_shifted_subblock_position() {
         let bv = example_bv();
         let mut da = DArrayIndex::new(&bv, true);
-        da.subblock_inventory[1] += 1;
+        da.subblock_inventory.update(|v| v[1] += 1);
         let e = da.validate(&bv, true);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -329,7 +360,7 @@ mod tests {
         let bv = BitVector::from_bits((0..100_000).map(|i| i == 70_000 || i < 1023));
         let mut da = DArrayIndex::new(&bv, true);
         assert!(da.block_inventory[0] < 0);
-        da.overflow_positions[1] += 1;
+        da.overflow_positions.update(|v| v[1] += 1);
         let e = da.validate(&bv, true);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }

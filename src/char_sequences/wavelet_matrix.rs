@@ -8,6 +8,7 @@ use core::ops::Range;
 use crate::bit_vectors::{Access, BitVector, Rank, Select};
 use crate::int_vectors::CompactVector;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::utils;
 use crate::Result;
 use crate::Serializable;
@@ -630,12 +631,16 @@ where
     }
 }
 
-impl<B> WaveletMatrix<B> {
-    /// Deserializes the fields after `layers` and checks their consistency.
-    fn deserialize_rest<R: Read>(layers: Vec<B>, mut reader: R) -> Result<Self> {
-        let max_value = u64::deserialize_from(&mut reader)?;
-        let zeros = Vec::<usize>::deserialize_from(&mut reader)?;
-        let len = usize::deserialize_from(&mut reader)?;
+impl<B> WaveletMatrix<B>
+where
+    B: Serializable,
+{
+    /// Deserializes the data structure and checks the consistency of its fields.
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        let layers: Vec<B> = src.read(checked)?;
+        let max_value: u64 = src.read(checked)?;
+        let zeros: Vec<usize> = src.read(checked)?;
+        let len: usize = src.read(checked)?;
         if zeros.len() != layers.len() {
             return Err(SucdsError::invalid_state(format!(
                 "zeros.len()={} must be equal to layers.len()={}.",
@@ -670,8 +675,7 @@ where
     ///
     /// That of deserializing the layers `B`, plus time linear in the number of layers.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = Vec::<B>::deserialize_from(&mut reader)?;
-        Self::deserialize_rest(layers, reader)
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without costly consistency checks.
@@ -680,8 +684,27 @@ where
     ///
     /// That of deserializing the layers `B` without the checks, plus time linear in the number of layers.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let layers = Vec::<B>::deserialize_from_unchecked(&mut reader)?;
-        Self::deserialize_rest(layers, reader)
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {

@@ -11,14 +11,14 @@ homepage = "https://github.com/kampersanda/sucds"
 keywords = ["succinct", "compression"]
 categories = ["data-structures", "no-std"]
 edition = "2018"
-rust-version = "1.62.0"
+rust-version = "1.65.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = ["std"]
 
-std = []
+std = ["bytes/std"]
 intrinsics = []
 
 [package.metadata.docs.rs]
@@ -26,3 +26,13 @@ rustdoc-args = ["--html-in-header", "katex.html"]
 
 [workspace]
 members = ["bench"]
+
+[dependencies]
+bytes = { version = "1.9", default-features = false }
+
+[dev-dependencies]
+memmap2 = "0.9"
+
+[[example]]
+name = "mmap"
+required-features = ["std"]

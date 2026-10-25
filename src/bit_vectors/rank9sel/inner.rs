@@ -1,10 +1,10 @@
 //! Internal index structure of [`Rank9Sel`](super::Rank9Sel).
 
-use alloc::vec::Vec;
-
 use crate::bit_vectors::BitVector;
 use crate::broadword;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
+use crate::storage::Storage;
 use crate::Result;
 use crate::Serializable;
 use crate::SucdsError;
@@ -17,9 +17,9 @@ const SELECT_ZEROS_PER_HINT: usize = SELECT_ONES_PER_HINT;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rank9SelIndex {
     len: usize,
-    block_rank_pairs: Vec<u64>,
-    select1_hints: Option<Vec<usize>>,
-    select0_hints: Option<Vec<usize>>,
+    block_rank_pairs: Storage<u64>,
+    select1_hints: Option<Storage<u64>>,
+    select0_hints: Option<Storage<u64>>,
 }
 
 impl Rank9SelIndex {
@@ -82,7 +82,7 @@ impl Rank9SelIndex {
 
         Self {
             len: bv.len(),
-            block_rank_pairs,
+            block_rank_pairs: block_rank_pairs.into(),
             select1_hints: None,
             select0_hints: None,
         }
@@ -93,14 +93,14 @@ impl Rank9SelIndex {
         let mut cur_ones_threshold = SELECT_ONES_PER_HINT;
         for i in 0..self.num_blocks() {
             if self.block_rank(i + 1) > cur_ones_threshold {
-                select1_hints.push(i);
+                select1_hints.push(i as u64);
                 cur_ones_threshold += SELECT_ONES_PER_HINT;
             }
         }
-        select1_hints.push(self.num_blocks());
+        select1_hints.push(self.num_blocks() as u64);
         select1_hints.shrink_to_fit();
 
-        self.select1_hints = Some(select1_hints);
+        self.select1_hints = Some(select1_hints.into());
         self
     }
 
@@ -109,14 +109,14 @@ impl Rank9SelIndex {
         let mut cur_zeros_threshold = SELECT_ZEROS_PER_HINT;
         for i in 0..self.num_blocks() {
             if self.block_rank0(i + 1) > cur_zeros_threshold {
-                select0_hints.push(i);
+                select0_hints.push(i as u64);
                 cur_zeros_threshold += SELECT_ZEROS_PER_HINT;
             }
         }
-        select0_hints.push(self.num_blocks());
+        select0_hints.push(self.num_blocks() as u64);
         select0_hints.shrink_to_fit();
 
-        self.select0_hints = Some(select0_hints);
+        self.select0_hints = Some(select0_hints.into());
         self
     }
 
@@ -302,9 +302,9 @@ impl Rank9SelIndex {
             if let Some(select1_hints) = self.select1_hints.as_ref() {
                 let chunk = k / SELECT_ONES_PER_HINT;
                 if chunk != 0 {
-                    a = select1_hints[chunk - 1];
+                    a = select1_hints[chunk - 1] as usize;
                 }
-                b = select1_hints[chunk] + 1;
+                b = select1_hints[chunk] as usize + 1;
             }
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
@@ -378,9 +378,9 @@ impl Rank9SelIndex {
             if let Some(select0_hints) = self.select0_hints.as_ref() {
                 let chunk = k / SELECT_ZEROS_PER_HINT;
                 if chunk != 0 {
-                    a = select0_hints[chunk - 1];
+                    a = select0_hints[chunk - 1] as usize;
                 }
-                b = select0_hints[chunk] + 1;
+                b = select0_hints[chunk] as usize + 1;
             }
             while b - a > 1 {
                 let mid = a + (b - a) / 2;
@@ -438,16 +438,17 @@ impl Serializable for Rank9SelIndex {
     ///
     /// Linear in the size of the index.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let len = usize::deserialize_from(&mut reader)?;
-        let block_rank_pairs = Vec::<u64>::deserialize_from(&mut reader)?;
-        let select1_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
-        let select0_hints = Option::<Vec<usize>>::deserialize_from(&mut reader)?;
-        Ok(Self {
-            len,
-            block_rank_pairs,
-            select1_hints,
-            select0_hints,
-        })
+        Self::deserialize_with(&mut reader, true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
     }
 
     fn size_in_bytes(&self) -> usize {
@@ -458,9 +459,36 @@ impl Serializable for Rank9SelIndex {
     }
 }
 
+impl Rank9SelIndex {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        Ok(Self {
+            len: src.read(checked)?,
+            block_rank_pairs: src.read(checked)?,
+            select1_hints: src.read(checked)?,
+            select0_hints: src.read(checked)?,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::tests::aligned;
+
+    #[test]
+    fn test_deserialize_from_bytes_shared() {
+        let bv = BitVector::from_bits((0..10_000).map(|i| i % 3 == 0));
+        let idx = Rank9SelIndex::new(&bv).select1_hints().select0_hints();
+        let mut src = vec![];
+        idx.serialize_into(&mut src).unwrap();
+        let other = Rank9SelIndex::deserialize_from_bytes(&mut aligned(&src)).unwrap();
+        assert_eq!(idx, other);
+        if cfg!(target_endian = "little") {
+            assert!(other.block_rank_pairs.is_shared());
+            assert!(other.select1_hints.unwrap().is_shared());
+            assert!(other.select0_hints.unwrap().is_shared());
+        }
+    }
 
     fn example_bv() -> BitVector {
         BitVector::from_bits((0..3000).map(|i| i % 2 == 0))
@@ -477,7 +505,7 @@ mod tests {
     fn test_validate_short_select1_hints() {
         let bv = example_bv();
         let mut idx = Rank9SelIndex::new(&bv).select1_hints();
-        idx.select1_hints = Some(vec![idx.num_blocks()]);
+        idx.select1_hints = Some(vec![idx.num_blocks() as u64].into());
         let e = idx.validate(&bv);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -486,7 +514,7 @@ mod tests {
     fn test_validate_short_select0_hints() {
         let bv = example_bv();
         let mut idx = Rank9SelIndex::new(&bv).select0_hints();
-        idx.select0_hints = Some(vec![idx.num_blocks()]);
+        idx.select0_hints = Some(vec![idx.num_blocks() as u64].into());
         let e = idx.validate(&bv);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -495,7 +523,7 @@ mod tests {
     fn test_validate_inflated_block_rank() {
         let bv = example_bv();
         let mut idx = Rank9SelIndex::new(&bv);
-        idx.block_rank_pairs[2] += 1;
+        idx.block_rank_pairs.update(|v| v[2] += 1);
         let e = idx.validate(&bv);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }
@@ -504,7 +532,7 @@ mod tests {
     fn test_validate_corrupted_subranks() {
         let bv = example_bv();
         let mut idx = Rank9SelIndex::new(&bv);
-        idx.block_rank_pairs[1] ^= 1;
+        idx.block_rank_pairs.update(|v| v[1] ^= 1);
         let e = idx.validate(&bv);
         assert!(matches!(e, Err(SucdsError::InvalidData(_))));
     }

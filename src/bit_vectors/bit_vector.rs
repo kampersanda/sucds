@@ -7,6 +7,8 @@ use alloc::vec::Vec;
 use crate::bit_vectors::prelude::*;
 use crate::broadword;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
+use crate::storage::Storage;
 use crate::utils::MatrixView;
 use crate::Result;
 use crate::Serializable;
@@ -42,7 +44,7 @@ pub const WORD_LEN: usize = u64::BITS as usize;
 /// This is a yet another Rust port of [succinct::bit_vector](https://github.com/ot/succinct/blob/master/bit_vector.hpp).
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct BitVector {
-    words: Vec<u64>,
+    words: Storage<u64>,
     len: usize,
 }
 
@@ -78,7 +80,7 @@ impl BitVector {
     /// ```
     pub fn with_capacity(capa: usize) -> Self {
         Self {
-            words: Vec::with_capacity(Self::words_for(capa)),
+            words: Vec::with_capacity(Self::words_for(capa)).into(),
             len: 0,
         }
     }
@@ -108,7 +110,10 @@ impl BitVector {
             let mask = (1 << shift) - 1;
             *words.last_mut().unwrap() &= mask;
         }
-        Self { words, len }
+        Self {
+            words: words.into(),
+            len,
+        }
     }
 
     /// Creates a new vector from input bit stream `bits`.
@@ -194,8 +199,10 @@ impl BitVector {
         }
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
-        self.words[word] &= !(1 << pos_in_word);
-        self.words[word] |= (bit as u64) << pos_in_word;
+        self.words.update(|words| {
+            words[word] &= !(1 << pos_in_word);
+            words[word] |= (bit as u64) << pos_in_word;
+        });
         Ok(())
     }
 
@@ -218,12 +225,14 @@ impl BitVector {
     #[inline(always)]
     pub fn push_bit(&mut self, bit: bool) {
         let pos_in_word = self.len % WORD_LEN;
-        if pos_in_word == 0 {
-            self.words.push(bit as u64);
-        } else {
-            let cur_word = self.words.last_mut().unwrap();
-            *cur_word |= (bit as u64) << pos_in_word;
-        }
+        self.words.update(|words| {
+            if pos_in_word == 0 {
+                words.push(bit as u64);
+            } else {
+                let cur_word = words.last_mut().unwrap();
+                *cur_word |= (bit as u64) << pos_in_word;
+            }
+        });
         self.len += 1;
     }
 
@@ -331,14 +340,16 @@ impl BitVector {
         let word = pos / WORD_LEN;
         let pos_in_word = pos % WORD_LEN;
 
-        self.words[word] &= !(mask << pos_in_word);
-        self.words[word] |= bits << pos_in_word;
+        self.words.update(|words| {
+            words[word] &= !(mask << pos_in_word);
+            words[word] |= bits << pos_in_word;
 
-        let stored = WORD_LEN - pos_in_word;
-        if stored < len {
-            self.words[word + 1] &= !(mask >> stored);
-            self.words[word + 1] |= bits >> stored;
-        }
+            let stored = WORD_LEN - pos_in_word;
+            if stored < len {
+                words[word + 1] &= !(mask >> stored);
+                words[word + 1] |= bits >> stored;
+            }
+        });
         Ok(())
     }
 
@@ -394,15 +405,17 @@ impl BitVector {
         let bits = bits & mask;
 
         let pos_in_word = self.len % WORD_LEN;
-        if pos_in_word == 0 {
-            self.words.push(bits);
-        } else {
-            let cur_word = self.words.last_mut().unwrap();
-            *cur_word |= bits << pos_in_word;
-            if len > WORD_LEN - pos_in_word {
-                self.words.push(bits >> (WORD_LEN - pos_in_word));
+        self.words.update(|words| {
+            if pos_in_word == 0 {
+                words.push(bits);
+            } else {
+                let cur_word = words.last_mut().unwrap();
+                *cur_word |= bits << pos_in_word;
+                if len > WORD_LEN - pos_in_word {
+                    words.push(bits >> (WORD_LEN - pos_in_word));
+                }
             }
-        }
+        });
         self.len += len;
         Ok(())
     }
@@ -672,7 +685,7 @@ impl BitVector {
 
     /// Converts into the slice of raw words.
     pub fn into_words(self) -> Vec<u64> {
-        self.words
+        self.words.into_vec()
     }
 
     /// Returns the total number of bits it can hold without reallocating.
@@ -929,8 +942,27 @@ impl Serializable for BitVector {
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. The consistency checks take constant time.
     fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
-        let words = Vec::<u64>::deserialize_from(&mut reader)?;
-        let len = usize::deserialize_from(&mut reader)?;
+        Self::deserialize_with(&mut reader, true)
+    }
+
+    /// Deserializes the bit vector sharing the words with `bytes` and checks its consistency.
+    ///
+    /// # Complexity
+    ///
+    /// Constant time if the words are shared, or $`O(u)`$ if copied.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    fn size_in_bytes(&self) -> usize {
+        self.words.size_in_bytes() + usize::size_of().unwrap()
+    }
+}
+
+impl BitVector {
+    fn deserialize_with<S: Source>(src: &mut S, checked: bool) -> Result<Self> {
+        let words: Storage<u64> = src.read(checked)?;
+        let len: usize = src.read(checked)?;
         if words.len() != Self::words_for(len) {
             return Err(SucdsError::invalid_data(format!(
                 "The number of words must be {} for len={len}, but got {}.",
@@ -944,15 +976,51 @@ impl Serializable for BitVector {
         }
         Ok(Self { words, len })
     }
-
-    fn size_in_bytes(&self) -> usize {
-        self.words.size_in_bytes() + usize::size_of().unwrap()
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::tests::aligned;
+
+    #[test]
+    fn test_deserialize_from_bytes() {
+        let bv = BitVector::from_bits((0..1000).map(|i| i % 3 == 0));
+        let mut src = vec![];
+        bv.serialize_into(&mut src).unwrap();
+        src.extend([1, 2, 3]);
+        let mut bytes = aligned(&src);
+        let other = BitVector::deserialize_from_bytes(&mut bytes).unwrap();
+        assert!(cfg!(target_endian = "big") || other.words.is_shared());
+        assert_eq!(bv, other);
+        assert_eq!(&bytes[..], &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_update_shared() {
+        let bv = BitVector::from_bits((0..100).map(|i| i % 3 == 0));
+        let mut src = vec![];
+        bv.serialize_into(&mut src).unwrap();
+        let mut other = BitVector::deserialize_from_bytes(&mut aligned(&src)).unwrap();
+        other.set_bit(1, true).unwrap();
+        other.push_bit(true);
+        assert!(!other.words.is_shared());
+        assert_eq!(other.get_bit(1), Some(true));
+        assert_eq!(other.get_bit(100), Some(true));
+        assert_eq!(bv.get_bit(1), Some(false));
+    }
+
+    #[test]
+    fn test_deserialize_from_bytes_inconsistent_len() {
+        let mut src = vec![];
+        BitVector::from_bit(true, 100)
+            .serialize_into(&mut src)
+            .unwrap();
+        let n = src.len();
+        src[n - 8..].copy_from_slice(&200u64.to_le_bytes());
+        let e = BitVector::deserialize_from_bytes(&mut aligned(&src));
+        assert!(matches!(e, Err(SucdsError::InvalidData(_))));
+    }
 
     #[test]
     fn test_deserialize_inconsistent_len() {

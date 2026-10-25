@@ -5,6 +5,7 @@ pub mod inner;
 use crate::bit_vectors::prelude::*;
 use crate::bit_vectors::BitVector;
 use crate::io::{Read, Write};
+use crate::serial::{Bytes, Shared, Source};
 use crate::Result;
 use crate::Serializable;
 use inner::Rank9SelIndex;
@@ -251,10 +252,8 @@ impl Serializable for Rank9Sel {
     /// # Complexity
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. Rebuilding the index scans the words.
-    fn deserialize_from<R: Read>(reader: R) -> Result<Self> {
-        let r9s = Self::deserialize_from_unchecked(reader)?;
-        r9s.rs.validate(&r9s.bv)?;
-        Ok(r9s)
+    fn deserialize_from<R: Read>(mut reader: R) -> Result<Self> {
+        Self::deserialize_with(&mut reader, true)
     }
 
     /// Deserializes the data structure without checking the index.
@@ -263,13 +262,42 @@ impl Serializable for Rank9Sel {
     ///
     /// $`O(u)`$, where $`u`$ is the number of bits. It skips rebuilding the index.
     fn deserialize_from_unchecked<R: Read>(mut reader: R) -> Result<Self> {
-        let bv = BitVector::deserialize_from(&mut reader)?;
-        let rs = Rank9SelIndex::deserialize_from(&mut reader)?;
-        Ok(Self { bv, rs })
+        Self::deserialize_with(&mut reader, false)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), true)
+    }
+
+    /// Deserializes the data structure from the shared bytes in the same manner as
+    /// [`Self::deserialize_from_unchecked()`], sharing its arrays with `bytes`.
+    ///
+    /// # Complexity
+    ///
+    /// That of [`Self::deserialize_from_unchecked()`], except that the arrays are shared in constant time.
+    fn deserialize_from_bytes_unchecked(bytes: &mut Bytes) -> Result<Self> {
+        Self::deserialize_with(&mut Shared(bytes), false)
     }
 
     fn size_in_bytes(&self) -> usize {
         self.bv.size_in_bytes() + self.rs.size_in_bytes()
+    }
+}
+
+impl Rank9Sel {
+    fn deserialize_with<Src: Source>(src: &mut Src, checked: bool) -> Result<Self> {
+        let bv: BitVector = src.read(checked)?;
+        let rs: Rank9SelIndex = src.read(checked)?;
+        if checked {
+            rs.validate(&bv)?;
+        }
+        Ok(Self { bv, rs })
     }
 }
 
