@@ -18,7 +18,7 @@ use crate::SucdsError;
 /// # Safety
 ///
 /// Every bit pattern must be a valid value of the type.
-pub(crate) unsafe trait Pod: Serializable + Copy {}
+pub unsafe trait Pod: Serializable + Copy {}
 
 unsafe impl Pod for u8 {}
 unsafe impl Pod for u16 {}
@@ -32,7 +32,7 @@ unsafe impl Pod for i64 {}
 /// Array of primitive integers that is owned or shared with serialized bytes.
 ///
 /// The shared array is copied into an owned one when it is modified.
-pub(crate) struct Storage<T> {
+pub struct Storage<T> {
     // View of the array in `repr`, cached so that accesses need no branch.
     ptr: NonNull<T>,
     len: usize,
@@ -100,7 +100,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn is_shared(&self) -> bool {
+    pub const fn is_shared(&self) -> bool {
         matches!(self.repr, Repr::Shared(_))
     }
 }
@@ -219,7 +219,7 @@ where
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub mod tests {
     use super::*;
 
     /// Bytes aligned for `u64`.
@@ -233,7 +233,7 @@ pub(crate) mod tests {
     }
 
     /// Copies `src` into bytes aligned for `u64`.
-    pub(crate) fn aligned(src: &[u8]) -> Bytes {
+    pub fn aligned(src: &[u8]) -> Bytes {
         let words = src
             .chunks(8)
             .map(|c| {
