@@ -70,7 +70,9 @@ where
     run("mmap + .._bytes_unchecked", &|| {
         // SAFETY: The file is not modified while mapped.
         let mmap = unsafe { Mmap::map(&File::open(path)?)? };
-        Ok(S::deserialize_from_bytes_unchecked(&mut Bytes::from_owner(mmap))?)
+        Ok(S::deserialize_from_bytes_unchecked(
+            &mut Bytes::from_owner(mmap),
+        )?)
     })?;
     Ok(())
 }
@@ -86,7 +88,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = dir.join("sucds_mmap_rank9sel.bin");
     save(&r9, &path)?;
     drop(r9);
-    println!("Rank9Sel: {num_bits} bits, {} bytes", path.metadata()?.len());
+    println!(
+        "Rank9Sel: {num_bits} bits, {} bytes",
+        path.metadata()?.len()
+    );
     measure::<Rank9Sel, _>("Rank9Sel", &path, |x, r| {
         x.rank1((r % num_bits) as usize).unwrap() + x.select1((r % num_ones) as usize).unwrap()
     })?;
@@ -99,7 +104,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = dir.join("sucds_mmap_wavelet_matrix.bin");
     save(&wm, &path)?;
     drop(wm);
-    println!("WaveletMatrix: {len} values, {} bytes", path.metadata()?.len());
+    println!(
+        "WaveletMatrix: {len} values, {} bytes",
+        path.metadata()?.len()
+    );
     measure::<WaveletMatrix<Rank9Sel>, _>("WaveletMatrix", &path, |x, r| {
         x.access((r % len) as usize).unwrap() as usize
     })?;

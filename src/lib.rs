@@ -39,6 +39,25 @@
 //! With the `std` feature (enabled by default), those traits are re-exports of `std::io`,
 //! and any reader or writer of the standard library can be used as usual.
 //!
+//! ### Memory-mapped files
+//!
+//! Data structures can also be deserialized from [`serial::Bytes`] without copying their arrays,
+//! through [`Serializable::deserialize_from_bytes()`] and
+//! [`Serializable::deserialize_from_bytes_unchecked()`].
+//! With [`Bytes::from_owner()`](serial::Bytes::from_owner), the bytes can be a memory-mapped file
+//! (e.g., `memmap2::Mmap`), which the deserialized data structure keeps alive.
+//! The unchecked variant loads the data in constant time, skipping the consistency checks
+//! that scan the whole data.
+//!
+//! Note that:
+//!
+//! - The file must not be modified or truncated while mapped; otherwise, the behavior is undefined.
+//! - The arrays are shared only if the bytes start at an 8-byte boundary, which memory maps satisfy,
+//!   and the machine is little-endian. Otherwise, they are copied.
+//! - Queries on a data structure from the unchecked variant may panic if the file is corrupted.
+//! - Modifying a loaded data structure (e.g., [`BitVector::set_bit()`](bit_vectors::BitVector::set_bit))
+//!   copies its arrays into the heap.
+//!
 //! ## `no_std` support
 //!
 //! This crate supports `no_std` environments by disabling the default `std` feature,
@@ -75,7 +94,7 @@
 extern crate alloc;
 
 /// Tests the code examples in README.md.
-#[cfg(doctest)]
+#[cfg(all(doctest, feature = "std"))]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
 
