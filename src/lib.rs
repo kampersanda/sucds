@@ -4,18 +4,16 @@
 //! powerful tools to store a variety of data structures in compressed space and
 //! quickly perform operations on the compressed data.
 //!
-//! ## Design policy
+//! ## Features
 //!
-//! Thus far, many succinct data structures and their implementation techniques have been developed
-//! for a wide range of applications.
-//! To handle them in a single crate, we set up several design policies:
-//!
-//! - **Curated collection:** Rather than offering every possible succinct data structure,
-//!   only those with competitive advantages are provided.
+//! - **Curated collection:** Data structures in four categories are provided,
+//!   focusing on those with competitive advantages.
 //! - **Consistent interfaces:** Data structures in the same category share traits
 //!   such as `Access`, `Rank`, and `Select`, and are easily replaceable.
-//! - **Ensured safety:** Unsafe instructions, typically reserved for extremely low-level
-//!   programming, are avoided.
+//! - **Safe interfaces:** The data structures are used through safe APIs,
+//!   and unsafe code is confined to a few internal parts.
+//! - **Memory-mapped files:** Data structures can be loaded from a [memory-mapped file](#memory-mapped-files)
+//!   in constant time without copying their arrays.
 //! - **Pure Rust:** The implementation is written in pure Rust, with optional `no_std` support.
 //!
 //! ## Data structures
