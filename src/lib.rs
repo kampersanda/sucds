@@ -70,9 +70,6 @@
 //! assert_eq!(other.rank1(4), Some(2));
 //! ```
 //!
-//! See [`examples/mmap.rs`](https://github.com/kampersanda/sucds/blob/main/examples/mmap.rs)
-//! for a comparison of the loading times with and without memory maps.
-//!
 //! Note that:
 //!
 //! - The file must not be modified or truncated while mapped; otherwise, the behavior is undefined.

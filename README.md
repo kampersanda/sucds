@@ -76,8 +76,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-See [`examples/mmap.rs`](examples/mmap.rs) for a comparison of the loading times.
-
 ## Documentation
 
 https://docs.rs/sucds/
